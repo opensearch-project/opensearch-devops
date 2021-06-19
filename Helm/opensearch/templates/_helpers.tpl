@@ -1,62 +1,65 @@
+{{/* vim: set filetype=mustache: */}}
 {{/*
 Expand the name of the chart.
 */}}
 {{- define "opensearch.name" -}}
-{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
-{{- end }}
+{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
 
 {{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
-If release name contains chart name it will be used as a full name.
 */}}
 {{- define "opensearch.fullname" -}}
-{{- if .Values.fullnameOverride }}
-{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
-{{- else }}
-{{- $name := default .Chart.Name .Values.nameOverride }}
-{{- if contains $name .Release.Name }}
-{{- .Release.Name | trunc 63 | trimSuffix "-" }}
-{{- else }}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" }}
-{{- end }}
-{{- end }}
-{{- end }}
+{{- $name := default .Chart.Name .Values.nameOverride -}}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
 
-{{/*
-Create chart name and version as used by the chart label.
-*/}}
-{{- define "opensearch.chart" -}}
-{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
-{{- end }}
+{{- define "opensearch.uname" -}}
+{{- if empty .Values.fullnameOverride -}}
+{{- if empty .Values.nameOverride -}}
+{{ .Values.clusterName }}-{{ .Values.nodeGroup }}
+{{- else -}}
+{{ .Values.nameOverride }}-{{ .Values.nodeGroup }}
+{{- end -}}
+{{- else -}}
+{{ .Values.fullnameOverride }}
+{{- end -}}
+{{- end -}}
 
-{{/*
-Common labels
-*/}}
-{{- define "opensearch.labels" -}}
-helm.sh/chart: {{ include "opensearch.chart" . }}
-{{ include "opensearch.selectorLabels" . }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-{{- end }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
-{{- end }}
+{{- define "opensearch.masterService" -}}
+{{- if empty .Values.masterService -}}
+{{- if empty .Values.fullnameOverride -}}
+{{- if empty .Values.nameOverride -}}
+{{ .Values.clusterName }}-master
+{{- else -}}
+{{ .Values.nameOverride }}-master
+{{- end -}}
+{{- else -}}
+{{ .Values.fullnameOverride }}
+{{- end -}}
+{{- else -}}
+{{ .Values.masterService }}
+{{- end -}}
+{{- end -}}
 
-{{/*
-Selector labels
-*/}}
-{{- define "opensearch.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "opensearch.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
-{{- end }}
+{{- define "opensearch.endpoints" -}}
+{{- $replicas := int (toString (.Values.replicas)) }}
+{{- $uname := (include "opensearch.uname" .) }}
+  {{- range $i, $e := untilStep 0 $replicas 1 -}}
+{{ $uname }}-{{ $i }},
+  {{- end -}}
+{{- end -}}
 
-{{/*
-Create the name of the service account to use
-*/}}
-{{- define "opensearch.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "opensearch.fullname" .) .Values.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.serviceAccount.name }}
-{{- end }}
-{{- end }}
+{{- define "opensearch.majorVersion" -}}
+{{- if .Values.majorVersion -}}
+{{ .Values.majorVersion }}
+{{- else -}}
+{{- $version := int (index (.Values.imageTag | splitList ".") 0) -}}
+  {{- if and (contains "docker.elastic.co/opensearch/opensearch" .Values.image) (not (eq $version 0)) -}}
+{{ $version }}
+  {{- else -}}
+7
+  {{- end -}}
+{{- end -}}
+{{- end -}}
