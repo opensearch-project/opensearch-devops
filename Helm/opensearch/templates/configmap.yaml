@@ -9,8 +9,8 @@ metadata:
     chart: "{{ .Chart.Name }}"
     app: "{{ template "opensearch.uname" . }}"
 data:
-  {{- range $path, $config := .Values.esConfig }}
+{{- range $path, $config := .Values.config }}
   {{ $path }}: |
-  {{ $config | indent 4 -}}
-  {{- end -}}
-  {{- end -}}
+{{ $config | indent 4 -}}
+{{- end -}}
+{{- end -}}
