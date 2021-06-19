@@ -56,7 +56,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{ .Values.majorVersion }}
 {{- else -}}
 {{- $version := int (index (.Values.imageTag | splitList ".") 0) -}}
-  {{- if and (contains "docker.elastic.co/opensearch/opensearch" .Values.image) (not (eq $version 0)) -}}
+  {{- if and (contains "opensearchproject/opensearch" .Values.image) (not (eq $version 0)) -}}
 {{ $version }}
   {{- else -}}
 7

@@ -178,9 +178,15 @@ spec:
           done
 
           # Add the bootstrap password since otherwise the opensearch entrypoint tries to do this on startup
+<<<<<<< HEAD
           if [ ! -z ${ELASTIC_PASSWORD+x} ]; then
             echo 'Adding env $ELASTIC_PASSWORD to keystore as key bootstrap.password'
             echo "$ELASTIC_PASSWORD" | opensearch-keystore add -x bootstrap.password
+=======
+          if [ ! -z ${PASSWORD+x} ]; then
+            echo 'Adding env $PASSWORD to keystore as key bootstrap.password'
+            echo "$PASSWORD" | opensearch-keystore add -x bootstrap.password
+>>>>>>> ebba53b (Fix issues in templates)
           fi
 
           cp -a /usr/share/opensearch/config/opensearch.keystore /tmp/keystore/
@@ -236,8 +242,13 @@ spec:
                     set -- "$@" $args
                   fi
 
+<<<<<<< HEAD
                   if [ -n "${ELASTIC_USERNAME}" ] && [ -n "${ELASTIC_PASSWORD}" ]; then
                     set -- "$@" -u "${ELASTIC_USERNAME}:${ELASTIC_PASSWORD}"
+=======
+                  if [ -n "${USERNAME}" ] && [ -n "${PASSWORD}" ]; then
+                    set -- "$@" -u "${USERNAME}:${PASSWORD}"
+>>>>>>> ebba53b (Fix issues in templates)
                   fi
 
                   curl --output /dev/null -k "$@" "{{ .Values.protocol }}://127.0.0.1:{{ .Values.httpPort }}${path}"
@@ -352,7 +363,10 @@ spec:
       {{- if .Values.masterTerminationFix }}
       {{- if eq .Values.roles.master "true" }}
       # This sidecar will prevent slow master re-election
+<<<<<<< HEAD
       # https://github.com/elastic/helm-charts/issues/63
+=======
+>>>>>>> ebba53b (Fix issues in templates)
       - name: opensearch-master-graceful-termination-handler
         image: "{{ .Values.image }}:{{ .Values.imageTag }}"
         imagePullPolicy: "{{ .Values.imagePullPolicy }}"
@@ -365,9 +379,15 @@ spec:
 
           http () {
               local path="${1}"
+<<<<<<< HEAD
               if [ -n "${ELASTIC_USERNAME}" ] && [ -n "${ELASTIC_PASSWORD}" ]; then
                 BASIC_AUTH="-u ${ELASTIC_USERNAME}:${ELASTIC_PASSWORD}"
               else
+=======
+              if [ -n "${USERNAME}" ] && [ -n "${PASSWORD}" ]; then
+                BASIC_AUTH="-u ${USERNAME}:${PASSWORD}"
+              elses
+>>>>>>> ebba53b (Fix issues in templates)
                 BASIC_AUTH=''
               fi
               curl -XGET -s -k --fail ${BASIC_AUTH} {{ .Values.protocol }}://{{ template "opensearch.masterService" . }}:{{ .Values.httpPort }}${path}

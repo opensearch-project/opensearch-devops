@@ -1,5 +1,5 @@
 {{- if .Values.podSecurityPolicy.create -}}
-  {{- $fullName := include "opensearch.uname" . -}}
+{{- $fullName := include "opensearch.uname" . -}}
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
@@ -10,5 +10,5 @@ metadata:
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     app: {{ $fullName | quote }}
 spec:
-  {{ toYaml .Values.podSecurityPolicy.spec | indent 2 }}
-  {{- end -}}
+{{ toYaml .Values.podSecurityPolicy.spec | indent 2 }}
+{{- end -}}
