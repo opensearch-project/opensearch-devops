@@ -4,7 +4,7 @@ nodeGroup: "master"
 
 # The service that non master groups will try to connect to when joining the cluster
 # This should be set to clusterName + "-" + nodeGroup for your master group
-masterService: ""
+masterService: "opensearch-cluster-master"
 
 # OpenSearch roles that will be applied to this nodeGroup
 # These will be set as environment variables. E.g. node.master=true
@@ -14,23 +14,24 @@ roles:
   data: "true"
   remote_cluster_client: "true"
 
-replicas: 1
+replicas: 2
 minimumMasterNodes: 1
 
 majorVersion: ""
 
+
 # Allows you to add any config files in /usr/share/opensearch/config/
 # such as opensearch.yml and log4j2.properties
-esConfig:
-  opensearch.yml: |
-    xpack.security.enabled: false
-    xpack.security.transport.ssl.enabled: false
-    xpack.security.transport.ssl.verification_mode: certificate
-    xpack.security.transport.ssl.keystore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
-    xpack.security.transport.ssl.truststore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
-    xpack.security.http.ssl.enabled: false
-    xpack.security.http.ssl.truststore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
-    xpack.security.http.ssl.keystore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
+config:
+#  opensearch.yml: |
+#    xpack.security.enabled: false
+#    xpack.security.transport.ssl.enabled: false
+#    xpack.security.transport.ssl.verification_mode: certificate
+#    xpack.security.transport.ssl.keystore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
+#    xpack.security.transport.ssl.truststore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
+#    xpack.security.http.ssl.enabled: false
+#    xpack.security.http.ssl.truststore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
+#    xpack.security.http.ssl.keystore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
 
 
 # Extra environment variables to append to this nodeGroup
@@ -40,7 +41,7 @@ extraEnvs: []
 #  - name: MY_ENVIRONMENT_VAR
 #    value: the_value_goes_here
 
-# Allows you to load environment variables from kubernetes secret or config map
+# Allows you to load environment variables from kubernextes secret or config map
 envFrom: []
 # - secretRef:
 #     name: env-secret
@@ -69,7 +70,7 @@ podAnnotations: {}
 # additionals labels
 labels: {}
 
-esJavaOpts: "-Xmx1G -Xms1G"
+esJavaOpts: "-Xmx512M -Xms512M"
 
 resources:
   requests:
@@ -149,7 +150,7 @@ extraContainers: []
   #   command: ['do', 'something']
 
 extraInitContainers: []
-  # - name: do-something
+  # - name: do-somethings
   #   image: busybox
   #   command: ['do', 'something']
 
@@ -223,9 +224,7 @@ readinessProbe:
   initialDelaySeconds: 10
   periodSeconds: 10
   successThreshold: 3
-  timeoutSeconds: 1200
-
-clusterHealthCheckParams: "wait_for_status=green&timeout=1200s"
+  timeoutSeconds: 2000
 
 ## Use an alternate scheduler.
 ## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
