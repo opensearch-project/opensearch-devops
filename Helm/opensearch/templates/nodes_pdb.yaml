@@ -1,0 +1,23 @@
+{{- range .Values.opensearch.nodes }}
+{{- if .podDisruptionBudget.enabled }}
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ template "opensearch.fullname" $ }}-{{ .name }}-pod-disruption-budget  
+  labels:
+{{ include "opensearch.labels" $ | indent 4 }}
+spec:
+{{- if .podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .podDisruptionBudget.minAvailable }}
+{{- end }}
+{{- if .podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ .podDisruptionBudget.maxUnavailable }}
+{{- end }}
+  selector:
+    matchLabels:
+      app: {{ template "opensearch.fullname" $ }}
+      role: {{ .name }}
+{{ include "opensearch.selectorLabels" $ | indent 6 }}
+{{- end }}
+---
+{{- end }}

@@ -1,0 +1,150 @@
+{{- range .Values.opensearch.nodes }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ template "opensearch.fullname" $ }}-{{ .name }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ template "opensearch.fullname" $ }}
+      role: {{ .name }}
+{{ include "opensearch.selectorLabels" $ | indent 6 }}
+  serviceName: {{ template "opensearch.fullname" $ }}-{{ .name }}-service
+  replicas: {{ .replicas }}
+  template:
+    metadata:      
+      labels:
+        app: {{ template "opensearch.fullname" $ }}
+        role: {{ .name }}
+{{ include "opensearch.selectorLabels" $ | indent 8 }}
+    spec:
+      securityContext:
+        fsGroup: {{ .securityContext.fsGroup }}
+      containers:
+      - name: {{ template "opensearch.fullname" $ }}-{{ .name }}
+        image: "{{ $.Values.opensearch.global.registry }}/{{ .image.repository }}:{{ .image.tag }}"
+        imagePullPolicy: {{ .imagePullPolicy }}
+        env:
+        - name: cluster.name
+          value: "{{ $.Values.opensearch.global.clusterName }}"
+        - name: ROLES
+        {{- if .roles }}
+          value: "{{ join ", " .roles }}"
+        {{- else }}
+          value: ""
+        {{- end }}
+        - name: SEEDS
+          value: {{ template "opensearch.fullname" $ }}-master-service
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: PROCESSORS
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        - name: OPENSEARCH_JAVA_OPTS
+          value: {{ .javaOpts }}          
+        - name: node.name
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name          
+{{- if .extraEnvs }}
+{{ toYaml .extraEnvs | indent 8 }}
+{{- end }}                
+        resources:
+          requests:
+            cpu: {{ .resources.requests.cpu }}
+            memory: {{ .resources.requests.memory }}
+          limits:
+            cpu: {{ .resources.limits.cpu }}
+            memory: {{ .resources.limits.memory }}            
+        ports:
+        - containerPort: 9200
+          name: tcp-9200
+        - containerPort: 9300
+          name: tcp-9300
+        securityContext:
+          runAsUser: {{ .securityContext.runAsUser }}
+          runAsGroup: {{ .securityContext.runAsGroup }}
+          allowPrivilegeEscalation: {{ .securityContext.allowPrivilegeEscalation }}
+        volumeMounts:
+        - name: config
+          mountPath: /usr/share/opensearch/config        
+{{- if .persistence.enabled }}                  
+        - name: {{ template "opensearch.fullname" $ }}-{{ .name }}-data
+          mountPath: /usr/share/opensearch/data
+{{- end }}
+        - name: transport-ssl
+          mountPath: /usr/share/opensearch/config/ssl/transport          
+        {{- if $.Values.opensearch.global.ssl.rest.enabled }}
+        - name: rest-ssl
+          mountPath: /usr/share/opensearch/config/ssl/rest          
+        {{- end }}
+        {{- if $.Values.opensearch.global.ssl.admin.enabled }}
+        - name: admin-ssl
+          mountPath: /usr/share/opensearch/config/ssl/admin          
+        {{- end }}       
+        - name: opensearch-config
+          mountPath: /usr/share/opensearch/config/opensearch.yml
+          subPath: opensearch.yml
+        - name: opensearch-config
+          mountPath: /usr/share/opensearch/config/jvm.options
+          subPath: jvm.options
+        - name: opensearch-config
+          mountPath: /usr/share/opensearch/config/log4j2.properties
+          subPath: log4j2.properties
+        - name: opensearch-config
+          mountPath: /usr/share/opensearch/config/opensearch-notebooks/notebooks.yml
+          subPath: notebooks.yml
+        - name: opensearch-config
+          mountPath: /usr/share/opensearch/config/opensearch-reports-scheduler/reports-scheduler.yml
+          subPath: reports-scheduler.yml
+        - name: opensearch-security
+          mountPath: /usr/share/opensearch/plugins/opensearch-security/securityconfig
+      terminationGracePeriodSeconds: 0 
+      volumes:
+      - name: config
+        emptyDir: {}
+      - name: opensearch-security
+        secret:
+          secretName: {{ $.Values.opensearch.global.securityConfig.secretName }}
+      - name: transport-ssl
+        secret:
+          secretName: {{ $.Values.opensearch.global.ssl.transport.secretName }}          
+      {{- if $.Values.opensearch.global.ssl.rest.enabled }}
+      - name: rest-ssl
+        secret:
+          secretName: {{ $.Values.opensearch.global.ssl.rest.secretName }}
+      {{- end }}
+      {{- if $.Values.opensearch.global.ssl.admin.enabled }}    
+      - name: admin-ssl
+        secret:
+          secretName: {{ $.Values.opensearch.global.ssl.admin.secretName }}              
+      {{- end }}     
+      - name: opensearch-config
+        configMap:
+          name: opensearch-config
+          items:
+          - path: opensearch.yml
+            key: opensearch.yml
+          - path: jvm.options
+            key: jvm.options
+          - path: log4j2.properties
+            key: log4j2.properties
+          - path: notebooks.yml
+            key: notebooks.yml
+          - path: reports-scheduler.yml
+            key: reports-scheduler.yml
+{{- if .persistence.enabled }}
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ template "opensearch.fullname" $ }}-{{ .name }}-data
+    spec:
+      accessModes: {{ .persistence.accessModes }}
+      resources:
+        requests:
+          storage: {{ .persistence.size }}
+{{- end }}
+---
+{{- end }}

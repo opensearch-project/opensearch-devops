@@ -1,0 +1,23 @@
+apiVersion: v2
+name: opensearch
+description: A Helm chart for Opensearch on Kubernetes
+
+type: application
+
+version: 0.1.0
+
+appVersion: "1.0.0-rc1"
+
+sources:
+  - https://opensearch.org/
+
+dependencies:
+#- name: opensearch-dashboards
+  #version: 0.1.0
+  #repository: TBD
+  #condition: opensearch-dashboards.enabled
+
+maintainers:
+  - name: Andrew Young
+    email: adyoung@ironrain.io
+    

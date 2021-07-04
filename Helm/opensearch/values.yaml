@@ -1,0 +1,348 @@
+opensearch:
+  # notes
+  # export JAVA_HOME=$PWD/jdk
+  # ./plugins/opensearch-security/tools/securityadmin.sh -cd ./plugins/opensearch-security/securityconfig/ -cert ./config/ssl/admin/tls.crt -key ./config/ssl/admin/tls.key -cacert ./config/ssl/admin/ca.crt -icl -arc -nhnv
+
+  global:
+    clusterName: opensearch
+
+    registry: docker.io
+
+    imagePullSecrets:
+      enabled: false
+      secretName: pull-secret
+
+    rbac: 
+      enabled: true
+      # Run the opensearch nodes as a dedicated service account
+      serviceAccount:
+        enabled: true
+
+        create: true
+        name: opensearch-service-account
+      
+        # Optional role to bind the service account to, must exist already
+        role:
+          name: opensearch-role
+
+        # Bind the role above to the service account, optional if created already
+        rolebinding:
+          create: true
+          name: opensearch-rolebinding
+  
+    ssl:      
+      # CertManager can automatically generate the certificates and renew them
+      certManager: false
+      # Helm can also generate certificates, not recommended for production
+
+      # Transport is required, if CertManager is disabled then provide a secret with
+      # tls.crt, tls.key and ca.crt
+      transport:
+        commonName: CN=nodes
+        secretName: transport-tls
+
+      # Rest is optional, if CertManager and Helm is disabled then provide a secret with
+      # tls.crt, tls.key and ca.crt        
+      rest:
+        enabled: true
+        commonName: CN=rest          
+        secretName: rest-tls
+
+      # Admin is optional, if CertManager and Helm is disabled then provide a secret with
+      # tls.crt, tls.key and ca.crt
+      admin:
+        enabled: true
+        commonName: CN=admin          
+        secretName: admin-tls  
+  
+    # Add additional configuration to the opensearch.yml
+    additionalConfig: |
+      #plugins.security.x: y
+    log4jConfig: |
+      status = error
+
+      appender.console.type = Console
+      appender.console.name = console
+      appender.console.layout.type = PatternLayout
+      appender.console.layout.pattern = [%d{ISO8601}][%-5p][%-25c{1.}] [%node_name]%marker %m%n
+
+      rootLogger.level = info
+      rootLogger.appenderRef.console.ref = console
+
+    opensearchNotebook: |
+      opensearch.notebooks:
+        general:
+          operationTimeoutMs: 60000 # 60 seconds, Minimum 100ms
+          defaultItemsQueryCount: 100 # default number of items to query
+        polling:
+          jobLockDurationSeconds: 300 # 5 Minutes, Minimum 10 seconds
+          minPollingDurationSeconds: 300 # 5 Minutes, Minimum 60 seconds
+          maxPollingDurationSeconds: 900 # 15 Minutes, Minimum 5 Minutes
+          maxLockRetries: 1 # Max number of retries to retry locking
+        access:
+          adminAccess: "AllNotebooks"
+          # adminAccess values:
+          ## Standard -> Admin user access follows standard user
+          ## AllNotebooks -> Admin user with "all_access" role can see all notebooks of all users.
+          filterBy: "NoFilter" # Applied when tenant != __user__
+          # filterBy values:
+          ## NoFilter -> everyone see each other's notebooks
+          ## User -> notebooks are visible to only themselves
+          ## Roles -> notebooks are visible to users having any one of the role of creator
+          ## BackendRoles -> notebooks are visible to users having any one of the backend role of creator
+          ignoreRoles: ["own_index", "kibana_user", "notebooks_full_access", "notebooks_read_access"]
+
+    opensearchReports: |
+      opendistro.reports:
+        general:
+          operationTimeoutMs: 60000 # 60 seconds, Minimum 100ms
+          defaultItemsQueryCount: 100 # default number of items to query
+        polling:
+          jobLockDurationSeconds: 300 # 5 Minutes, Minimum 10 seconds
+          minPollingDurationSeconds: 300 # 5 Minutes, Minimum 60 seconds
+          maxPollingDurationSeconds: 900 # 15 Minutes, Minimum 5 Minutes
+          maxLockRetries: 1 # Max number of retries to retry locking
+        access:
+          adminAccess: "AllReports"
+          # adminAccess values:
+          ## Standard -> Admin user access follows standard user
+          ## AllReports -> Admin user with "all_access" role can see all reports of all users.
+          filterBy: "NoFilter" # Applied when tenant != __user__
+          # filterBy values:
+          ## NoFilter -> everyone see each other's reports
+          ## User -> reports are visible to only themselves
+          ## Roles -> reports are visible to users having any one of the role of creator
+          ## BackendRoles -> reports are visible to users having any one of the backend role of creator
+          ignoreRoles: ["own_index", "kibana_user", "reports_full_access", "reports_read_access", "reports_instances_read_access"]
+
+    # If defaults is true then the default opensearch config is used
+    # The secret must contain the following key pairs
+    # - action groups
+    # - config
+    # - internal users
+    # - roles secret
+    # - roles mapping
+    # - tenants
+    securityConfig:
+      secretName: opensearch-security
+
+      overrides:
+        enabled: false
+        #action_groups: |
+          #_meta:
+            #type: "actiongroups"
+            #config_version: 2  
+        #audit: |
+        #config: |
+        #internal_users: |
+        #roles: |
+        #roles_mapping: |
+        #tenants: |
+        #whitelist: |
+
+  # The hosts section supplies a daemonset that completes
+  # the privileged host OS configuration.
+  # It is highly recommended to not use this component and alter the 
+  # host OS's outside of Kubernetes. 
+  host:
+    sysctl:
+      enable: false
+
+  # Configuration settings for the master nodes, if no additional nodes are configured 
+  # remove the master flag from roles
+  master:    
+
+    # Removing the master flag will result in an all-role node
+    roles:
+      - master
+
+    # Runtime settings
+    image:
+      repository: opensearchproject/opensearch
+      tag: 1.0.0-rc1
+
+    imagePullPolicy: Never
+
+    # Replicas    
+    replicas: 1
+    updateStrategy: "RollingUpdates"
+
+    javaOpts: "-Xms1G -Xmx1G"
+
+    podDisruptionBudget:
+      enabled: true
+      # Set one or the other
+      minAvailable: 1
+      maxUnavailable: 
+
+    readinessProbe: []
+    livenessProbe: []
+    startupProbe: []
+
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+
+    podAnnotations: {}
+
+    persistence:
+      enabled: true
+      
+      accessModes:
+      - ReadWriteOnce
+      size: 1Gi
+      storageClass:
+      annotations: {}
+
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1024Mi
+      limits:
+        cpu: 500m
+        memory: 1024Mi
+
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      privileged: false
+      allowPrivilegeEscalation: false
+
+    extraEnvs: []
+
+    extraVolumes: []
+    # - name: volume-name
+    #   emptyDir: {}
+
+    extraVolumeMonts: []
+    # - name: volume-name
+    #   mountPath: /
+    #   readOnly: true
+  nodes:    
+    # List of nodes to deploy and roles, deployments will use the name settings
+    # Available roles are
+    # - master
+    # - data
+    # - data_content
+    # - data_hot
+    # - data_warm
+    # - data_cold
+    # - data_frozen
+    # - ingest
+    # - remote_cluster_client
+    - name: data
+      # Runtime settings
+      image:
+        repository: opensearchproject/opensearch
+        tag: 1.0.0-rc1
+              
+      roles:
+        - data        
+        - remote_cluster_client
+      # Replicas    
+      replicas: 1
+      updateStrategy: "RollingUpdates"
+
+      javaOpts: "-Xms512m -Xmx512m"
+
+      podDisruptionBudget:
+        enabled: true
+        minAvailable: 1
+
+      readinessProbe: []
+      livenessProbe: []
+      startupProbe: []
+
+      nodeSelector: {}
+      tolerations: []
+      affinity: {}
+
+      podAnnotations: {}
+
+      persistence:
+        enabled: true
+        
+        accessModes:
+        - ReadWriteOnce
+        size: 1Gi
+        storageClass:
+        annotations: {}
+
+      resources:
+        requests:
+          cpu: 500m
+          memory: 1024Mi
+        limits:
+          cpu: 500m
+          memory: 1024Mi
+
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        privileged: false        
+
+      extraEnvs: []
+
+      #extraVolumes: []
+      # - name: volume-name
+         #emptyDir: {}
+
+      #extraVolumeMounts: []
+      # - name: volume-name
+      #   mountPath: /
+      #   readOnly: true
+
+    - name: ingest
+      # Runtime settings
+      image:
+        repository: opensearchproject/opensearch
+        tag: 1.0.0-rc1
+                
+      roles:
+        - ingest
+      # Replicas    
+      replicas: 1
+      updateStrategy: "RollingUpdates"
+
+      javaOpts: "-Xms512m -Xmx512m"
+
+      podDisruptionBudget:
+        enabled: true
+        minAvailable: 1
+
+      readinessProbe: []
+      livenessProbe: []
+      startupProbe: []
+
+      nodeSelector: {}
+      tolerations: []
+      affinity: {}
+
+      podAnnotations: {}
+
+      persistence:
+        enabled: false
+        
+        accessModes:
+        - ReadWriteOnce
+        size: 8Gi
+        storageClass:
+        annotations: {}
+
+      resources:
+        requests:
+          cpu: 500m
+          memory: 1024Mi
+        limits:
+          cpu: 500m
+          memory: 1024Mi
+
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        privileged: false        
+
+      extraEnvs: []      

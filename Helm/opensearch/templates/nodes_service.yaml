@@ -1,0 +1,21 @@
+{{- range .Values.opensearch.nodes }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "opensearch.fullname" $ }}-{{ .name }}-service
+  labels:
+{{ include "opensearch.labels" $ | indent 4 }}  
+spec:
+  selector:
+    app: {{ template "opensearch.fullname" $ }}
+    role: {{ .name }}
+{{ include "opensearch.selectorLabels" $ | indent 4 }}
+  ports:
+  - name: tcp-9200
+    port: 9200
+    targetPort: 9200
+  - name: tcp-9300
+    port: 9300
+    targetPort: 9300    
+---    
+{{- end }}
