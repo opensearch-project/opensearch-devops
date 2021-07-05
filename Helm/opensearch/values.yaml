@@ -24,12 +24,12 @@ majorVersion: ""
 # such as opensearch.yml and log4j2.properties
 config:
 #  opensearch.yml: |
-#    xpack.security.enabled: false
-#    xpack.security.transport.ssl.enabled: false
+#    xpack.security.enabled: true
+#    xpack.security.transport.ssl.enabled: true
 #    xpack.security.transport.ssl.verification_mode: certificate
 #    xpack.security.transport.ssl.keystore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
 #    xpack.security.transport.ssl.truststore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
-#    xpack.security.http.ssl.enabled: false
+#    xpack.security.http.ssl.enabled: true
 #    xpack.security.http.ssl.truststore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
 #    xpack.security.http.ssl.keystore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
 
@@ -213,6 +213,26 @@ securityContext:
   # readOnlyRootFilesystem: true
   runAsNonRoot: true
   runAsUser: 1000
+
+securityConfig:
+  enabled: true
+  path: "/usr/share/elasticsearch/plugins/opendistro_security/securityconfig"
+  actionGroupsSecret:
+  configSecret:
+  internalUsersSecret:
+  rolesSecret:
+  rolesMappingSecret:
+  tenantsSecret:
+  #The following option simplifies securityConfig by using a single secret and specifying the respective secrets in the corresponding files instead of creating different secrets for config,internal users, roles, roles mapping and tenants
+  #Note that this is an alternative to the above secrets and shouldn't be used if the above secrets are used
+  config:
+    securityConfigSecret:
+    data: {}
+      # config.yml: |-
+      # internal_users.yml: |-
+      # roles.yml: |-
+      # rolesMapping.yml: |-
+    # tenants.yml: |-
 
 # How long to wait for opensearch to stop gracefully
 terminationGracePeriod: 120
