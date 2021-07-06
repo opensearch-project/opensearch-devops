@@ -24,12 +24,12 @@ majorVersion: ""
 # such as opensearch.yml and log4j2.properties
 config:
 #  opensearch.yml: |
-#    xpack.security.enabled: true
-#    xpack.security.transport.ssl.enabled: true
+#    xpack.security.enabled: false
+#    xpack.security.transport.ssl.enabled: false
 #    xpack.security.transport.ssl.verification_mode: certificate
 #    xpack.security.transport.ssl.keystore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
 #    xpack.security.transport.ssl.truststore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
-#    xpack.security.http.ssl.enabled: true
+#    xpack.security.http.ssl.enabled: false
 #    xpack.security.http.ssl.truststore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
 #    xpack.security.http.ssl.keystore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
 
