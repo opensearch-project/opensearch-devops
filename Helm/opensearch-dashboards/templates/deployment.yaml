@@ -84,11 +84,11 @@ spec:
         image: "{{ .Values.image }}:{{ .Values.imageTag }}"
         imagePullPolicy: "{{ .Values.imagePullPolicy }}"
         env:
-          {{- if .Values.opensearchhURL }}
+          {{- if .Values.opensearchURL }}
           - name: OPENSEARCH_URL
             value: "{{ .Values.opensearchURL }}"
-          {{- else if .Values.elasticsearchHosts }}
-          - name: ELASTICSEARCH_HOSTS
+          {{- else if .Values.opensearchHosts }}
+          - name: OPENSEARCH_HOSTS
             value: "{{ .Values.opensearchHosts }}"
           {{- end }}
           - name: SERVER_HOST

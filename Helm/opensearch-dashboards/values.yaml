@@ -2,7 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-opensearchHosts: "https://localhost:9200"
+opensearchHosts: "https://opensearch-cluster-master:9200"
 replicaCount: 1
 
 image: "opensearchproject/opensearch-dashboards"
@@ -47,6 +47,8 @@ hostAliases: []
 #  hostnames:
 #  - "foo.local"
 #  - "bar.local"
+
+serverHost: "0.0.0.0"
 
 service:
   type: ClusterIP
