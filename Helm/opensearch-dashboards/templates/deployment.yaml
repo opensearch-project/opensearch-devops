@@ -33,9 +33,7 @@ spec:
 {{- end }}
       securityContext:
 {{ toYaml .Values.podSecurityContext | indent 8 }}
-      {{- if .Values.serviceAccount }}
-      serviceAccount: {{ .Values.serviceAccount }}
-      {{- end }}
+      serviceAccountName: {{ template "opensearch-dashboards.serviceAccountName" . }}
       {{- if .Values.hostAliases }}
       hostAliases: {{ toYaml .Values.hostAliases | nindent 6 }}
       {{- end }}

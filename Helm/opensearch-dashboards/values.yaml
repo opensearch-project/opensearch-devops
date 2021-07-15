@@ -2,7 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-opensearchHosts: "https://opensearch-cluster-master:9200"
+opensearchHosts: "https://opensearch-cluster-client:9200"
 replicaCount: 1
 
 image: "opensearchproject/opensearch-dashboards"
@@ -13,7 +13,19 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
-serviceAccount: ""
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+
+rbac:
+  create: true
+
 
 podAnnotations: {}
 
@@ -31,7 +43,6 @@ securityContext:
   runAsNonRoot: true
   runAsUser: 1000
 
-healthCheckPath: "/app/dashboards"
 
 dashboardsConfig: {}
 
