@@ -14,7 +14,7 @@ roles:
   data: "true"
   remote_cluster_client: "true"
 
-replicas: 2
+replicas: 3
 minimumMasterNodes: 1
 
 majorVersion: ""
