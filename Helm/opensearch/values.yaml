@@ -23,7 +23,7 @@ majorVersion: ""
 # Allows you to add any config files in /usr/share/opensearch/config/
 # such as opensearch.yml and log4j2.properties
 config:
-  opensearch:
+  opensearch.yml:
     cluster.name: docker-cluster
 
     # Bind to all interfaces because we don't know what IP address Docker will assign to us.
@@ -47,10 +47,7 @@ config:
             pemtrustedcas_filepath: root-ca.pem
             enforce_hostname_verification: false
           http:
-            enabled: true
-            pemcert_filepath: esnode.pem
-            pemkey_filepath: esnode-key.pem
-            pemtrustedcas_filepath: root-ca.pem
+            enabled: false
         allow_unsafe_democertificates: true
         allow_default_init_securityindex: true
         authcz:
@@ -67,9 +64,7 @@ config:
     node:
       max_local_storage_nodes: 3
     ######## End OpenSearch Security Demo Configuration ########
-    vm:
-      max_map_count: 262144
-  # log4j2: 
+  # log4j2.properties: 
 
 # Extra environment variables to append to this nodeGroup
 # This will be appended to the current 'env:' key. You can use any of the kubernetes env
@@ -270,6 +265,8 @@ securityConfig:
 
 # How long to wait for opensearch to stop gracefully
 terminationGracePeriod: 120
+
+sysctlVmMaxMapCount: 262144
 
 readinessProbe:
   failureThreshold: 3

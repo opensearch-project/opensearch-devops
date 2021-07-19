@@ -17,6 +17,8 @@ spec:
   serviceName: {{ template "opensearch.uname" . }}-headless
   selector:
     matchLabels:
+      release: {{ .Release.Name | quote }}
+      chart: "{{ .Chart.Name }}"
       app: "{{ template "opensearch.uname" . }}"
   replicas: {{ .Values.replicas }}
   podManagementPolicy: {{ .Values.podManagementPolicy }}
@@ -69,7 +71,7 @@ spec:
         {{- if .Values.sysctl.enabled }}
         sysctls:
           - name: vm.max_map_count
-            value: {{ .Values.config.opensearch.vm.max_map_count | quote }}
+            value: {{ .Values.sysctlVmMaxMapCount | quote }}
         {{- end }}
         {{- if .Values.fsGroup }}
         fsGroup: {{ .Values.fsGroup }} # Deprecated value, please use .Values.podSecurityContext.fsGroup
