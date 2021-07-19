@@ -348,5 +348,6 @@ fsGroup: ""
 
 ## Set optimal sysctl's. This requires privilege. Can be disabled if
 ## the system has already been preconfigured. (Ex: https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html)
+## Also see: https://kubernetes.io/docs/tasks/administer-cluster/sysctl-cluster/
 sysctl:
   enabled: false
