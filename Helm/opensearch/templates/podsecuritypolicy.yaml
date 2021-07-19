@@ -11,4 +11,8 @@ metadata:
     app: {{ $fullName | quote }}
 spec:
 {{ toYaml .Values.podSecurityPolicy.spec | indent 2 }}
-{{- end -}}
+{{- if .Values.sysctl.enabled }}
+  allowedUnsafeSysctls:
+  - vm.max_map_count
+{{- end }}
+{{- end }}

@@ -17,6 +17,8 @@ spec:
   serviceName: {{ template "opensearch.uname" . }}-headless
   selector:
     matchLabels:
+      release: {{ .Release.Name | quote }}
+      chart: "{{ .Chart.Name }}"
       app: "{{ template "opensearch.uname" . }}"
   replicas: {{ .Values.replicas }}
   podManagementPolicy: {{ .Values.podManagementPolicy }}
@@ -66,6 +68,11 @@ spec:
       {{- end }}
       securityContext:
 {{ toYaml .Values.podSecurityContext | indent 8 }}
+        {{- if .Values.sysctl.enabled }}
+        sysctls:
+          - name: vm.max_map_count
+            value: {{ .Values.sysctlVmMaxMapCount | quote }}
+        {{- end }}
         {{- if .Values.fsGroup }}
         fsGroup: {{ .Values.fsGroup }} # Deprecated value, please use .Values.podSecurityContext.fsGroup
         {{- end }}
@@ -156,7 +163,7 @@ spec:
       {{- if .Values.hostAliases }}
       hostAliases: {{ toYaml .Values.hostAliases | nindent 8 }}
       {{- end }}
-      {{- if or (.Values.extraInitContainers) (.Values.keystore)  }}
+      {{- if or (.Values.extraInitContainers) (.Values.keystore) }}
       initContainers:
 {{ if .Values.keystore }}
       - name: keystore
