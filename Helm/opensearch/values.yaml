@@ -144,7 +144,7 @@ rbac:
   serviceAccountName: ""
 
 podSecurityPolicy:
-  create: false
+  create: true
   name: ""
   spec:
     privileged: true
@@ -161,9 +161,6 @@ podSecurityPolicy:
       - configMap
       - persistentVolumeClaim
       - emptyDir
-    volumeMounts:
-      - mountPath: /usr/share/opensearch/data
-        name: opensearch
 
 persistence:
   enabled: true
@@ -352,7 +349,4 @@ fsGroup: ""
 ## Set optimal sysctl's. This requires privilege. Can be disabled if
 ## the system has already been preconfigured. (Ex: https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html)
 sysctl:
-  enabled: true
-  ## Uses spec.securityContext.sysctls
-  ## See: https://kubernetes.io/docs/tasks/administer-cluster/sysctl-cluster/
-  useKubeletSecurityContext: false
+  enabled: false

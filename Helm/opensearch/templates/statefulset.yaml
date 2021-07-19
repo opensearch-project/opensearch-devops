@@ -66,7 +66,7 @@ spec:
       {{- end }}
       securityContext:
 {{ toYaml .Values.podSecurityContext | indent 8 }}
-        {{- if and (.Values.sysctl.enabled) (.Values.sysctls.useKubeletSecurityContext) }}
+        {{- if .Values.sysctl.enabled }}
         sysctls:
           - name: vm.max_map_count
             value: {{ .Values.config.opensearch.vm.max_map_count | quote }}
@@ -161,18 +161,8 @@ spec:
       {{- if .Values.hostAliases }}
       hostAliases: {{ toYaml .Values.hostAliases | nindent 8 }}
       {{- end }}
-      {{- if or (.Values.extraInitContainers) (.Values.keystore) (and .Values.sysctl.enabled (not .Values.sysctl.useKubeletSecurityContext)) }}
+      {{- if or (.Values.extraInitContainers) (.Values.keystore) }}
       initContainers:
-{{- if .Values.sysctl.enabled }}
-      - name: init-sysctl
-        image: busybox:latest
-        command:
-        - sysctl
-        - -w
-        - vm.max_map_count={{ .Values.config.opensearch.vm.max_map_count }}
-        securityContext:
-          privileged: true
-{{- end }}
 {{ if .Values.keystore }}
       - name: keystore
         image: "{{ .Values.image }}:{{ .Values.imageTag }}"
