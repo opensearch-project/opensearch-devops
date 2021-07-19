@@ -23,16 +23,53 @@ majorVersion: ""
 # Allows you to add any config files in /usr/share/opensearch/config/
 # such as opensearch.yml and log4j2.properties
 config:
-#  opensearch.yml: |
-#    xpack.security.enabled: false
-#    xpack.security.transport.ssl.enabled: false
-#    xpack.security.transport.ssl.verification_mode: certificate
-#    xpack.security.transport.ssl.keystore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
-#    xpack.security.transport.ssl.truststore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
-#    xpack.security.http.ssl.enabled: false
-#    xpack.security.http.ssl.truststore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
-#    xpack.security.http.ssl.keystore.path: /usr/share/opensearch/config/certs/opensearch-certificates.p12
+  opensearch:
+    cluster.name: docker-cluster
 
+    # Bind to all interfaces because we don't know what IP address Docker will assign to us.
+    network.host: 0.0.0.0
+
+    # # minimum_master_nodes need to be explicitly set when bound on a public IP
+    # # set to 1 to allow single node clusters
+    # discovery.zen.minimum_master_nodes: 1
+
+    # Setting network.host to a non-loopback address enables the annoying bootstrap checks. "Single-node" mode disables them again.
+    #discovery.type: single-node
+
+    ######## Start OpenSearch Security Demo Configuration ########
+    # WARNING: revise all the lines below before you go into production
+    plugins:
+      security:
+        ssl:
+          transport:
+            pemcert_filepath: esnode.pem
+            pemkey_filepath: esnode-key.pem
+            pemtrustedcas_filepath: root-ca.pem
+            enforce_hostname_verification: false
+          http:
+            enabled: true
+            pemcert_filepath: esnode.pem
+            pemkey_filepath: esnode-key.pem
+            pemtrustedcas_filepath: root-ca.pem
+        allow_unsafe_democertificates: true
+        allow_default_init_securityindex: true
+        authcz:
+          admin_dn:
+            - CN=kirk,OU=client,O=client,L=test, C=de
+        audit.type: internal_opensearch
+        enable_snapshot_restore_privilege: true
+        check_snapshot_restore_write_privileges: true
+        restapi:
+          roles_enabled: ["all_access", "security_rest_api_access"]
+        system_indices:
+          enabled: true
+          indices: [".opendistro-alerting-config", ".opendistro-alerting-alert*", ".opendistro-anomaly-results*", ".opendistro-anomaly-detector*", ".opendistro-anomaly-checkpoints", ".opendistro-anomaly-detection-state", ".opendistro-reports-*", ".opendistro-notifications-*", ".opendistro-notebooks", ".opendistro-asynchronous-search-response*"]
+    node:
+      max_local_storage_nodes: 3
+    ######## End OpenSearch Security Demo Configuration ########
+    vm:
+      max_map_count: 262144
+  # log4j2: 
 
 # Extra environment variables to append to this nodeGroup
 # This will be appended to the current 'env:' key. You can use any of the kubernetes env
@@ -237,8 +274,6 @@ securityConfig:
 # How long to wait for opensearch to stop gracefully
 terminationGracePeriod: 120
 
-sysctlVmMaxMapCount: 262144
-
 readinessProbe:
   failureThreshold: 3
   initialDelaySeconds: 10
@@ -313,3 +348,11 @@ networkPolicy:
 # Deprecated
 # please use the above podSecurityContext.fsGroup instead
 fsGroup: ""
+
+## Set optimal sysctl's. This requires privilege. Can be disabled if
+## the system has already been preconfigured. (Ex: https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html)
+sysctl:
+  enabled: true
+  ## Uses spec.securityContext.sysctls
+  ## See: https://kubernetes.io/docs/tasks/administer-cluster/sysctl-cluster/
+  useKubeletSecurityContext: false
