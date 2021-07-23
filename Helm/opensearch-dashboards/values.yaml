@@ -2,7 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-opensearchHosts: "https://opensearch-cluster-client:9200"
+opensearchHosts: "https://opensearch-cluster-master:9200"
 replicaCount: 1
 
 image: "opensearchproject/opensearch-dashboards"
@@ -44,11 +44,27 @@ securityContext:
   runAsUser: 1000
 
 
-dashboardsConfig: {}
+config:
+  dashboards.yml:
+    server:
+        name: dashboards
+        host: 0.0.0.0
+
+    ## Dashboards TLS Config
+        ssl:
+          enabled: true
+          key: /usr/share/dashboards/certs/dashboards-key.pem
+          certificate: /usr/share/dashboards/certs/dashboards-crt.pem
+    opensearch.ssl.certificateAuthorities: /usr/share/dashboards/certs/dashboards-root-ca.pem
 
 priorityClassName: ""
 
 httpPort: 5601
+
+opensearchAccount:
+  secret: ""
+  keyPassphrase:
+    enabled: false
 
 
 labels: {}

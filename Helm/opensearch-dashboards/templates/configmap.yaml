@@ -1,13 +1,12 @@
-{{- if .Values.dashboardsConfig }}
----
+{{- if .Values.config }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ template "opensearch-dashboards.fullname" . }}-config
   labels: {{ include "opensearch-dashboards.labels" . | nindent 4 }}
 data:
-  {{- range $path, $config := .Values.dashboardsConfig }}
-  {{ $path }}: |
-  {{ tpl $config $ | indent 4 -}}
-  {{- end -}}
-  {{- end -}}
+{{- range $configName, $configYaml := .Values.config }}
+  {{ $configName }}: |
+    {{- toYaml $configYaml | nindent 4 }}
+{{- end -}}
+{{- end -}}

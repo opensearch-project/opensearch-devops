@@ -24,7 +24,7 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{/* This forces a restart if the configmap has changed */}}
-        {{- if .Values.dashboardsConfig }}
+        {{- if .Values.config }}
         configchecksum: {{ include (print .Template.BasePath "/configmap.yaml") . | sha256sum | trunc 63 }}
         {{- end }}
     spec:
@@ -43,8 +43,8 @@ spec:
           secret:
             secretName: {{ .secretName }}
         {{- end }}
-        {{- if .Values.dashboardsConfig }}
-        - name: dashboardsConfig
+        {{- if .Values.config }}
+        - name: config
           configMap:
             name: {{ template "opensearch-dashboards.fullname" . }}-config
         {{- end }}
@@ -91,6 +91,31 @@ spec:
           {{- end }}
           - name: SERVER_HOST
             value: "{{ .Values.serverHost }}"
+            {{- if .Values.opensearchAccount.secret }}
+            - name: OPENSEARCH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.opensearchAccount.secret }}
+                  key: username
+            - name: OPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.opensearchAccount.secret }}
+                  key: password
+            {{- if and .Values.opensearchAccount.keyPassphrase.enabled }}
+            - name: KEY_PASSPHRASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.opensearchAccount.secret }}
+                  key: keypassphrase
+            # 32-character random string to be used as cookie password by security plugin
+            {{- end }}
+            - name: COOKIE_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.opensearchAccount.secret }}
+                  key: cookie
+            {{- end }}
 {{- if .Values.extraEnvs }}
 {{ toYaml .Values.extraEnvs | indent 10 }}
 {{- end }}
@@ -114,9 +139,9 @@ spec:
             subPath: {{ .subPath }}
             {{- end }}
           {{- end }}
-          {{- range $path, $config := .Values.dashboardsConfig }}
-          - name: dashboardsConfig
-            mountPath: /usr/share/opensearch-dashboards/config/{{ $path }}
+          {{- range $path, $config := .Values.config }}
+          - name: config
+            mountPath: /usr/share/dashboards/config/{{ $path }}
             subPath: {{ $path }}
           {{- end -}}
       {{- if .Values.extraContainers }}
