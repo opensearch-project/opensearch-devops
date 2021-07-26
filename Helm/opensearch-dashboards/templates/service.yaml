@@ -27,7 +27,7 @@ spec:
 {{- end }}
       protocol: TCP
       name: {{ .Values.service.httpPortName | default "http" }}
-      targetPort: {{ .Values.httpPort }}
+      targetPort: {{ .Values.service.port }}
   selector:
     app: {{ .Chart.Name }}
     release: {{ .Release.Name | quote }}

@@ -6,7 +6,7 @@ opensearchHosts: "https://opensearch-cluster-master:9200"
 replicaCount: 1
 
 image: "opensearchproject/opensearch-dashboards"
-imageTag: "latest"
+imageTag: "1.0.0"
 imagePullPolicy: "IfNotPresent"
 
 imagePullSecrets: []
@@ -29,9 +29,12 @@ rbac:
 
 podAnnotations: {}
 
-extraEnvs:
-  - name: "NODE_OPTIONS"
-    value: "--max-old-space-size=1800"
+extraEnvs: []
+#  - name: "NODE_OPTIONS"
+#    value: "--max-old-space-size=1800"
+
+extraContainers:
+  []
 
 podSecurityContext: {}
 
@@ -59,13 +62,11 @@ config:
 
 priorityClassName: ""
 
-httpPort: 5601
 
 opensearchAccount:
   secret: ""
   keyPassphrase:
     enabled: false
-
 
 labels: {}
 
@@ -79,16 +80,11 @@ serverHost: "0.0.0.0"
 
 service:
   type: ClusterIP
-  loadBalancerIP: ""
   port: 5601
+  loadBalancerIP: ""
   nodePort: ""
   labels: {}
   annotations: {}
-    # cloud.google.com/load-balancer-type: "Internal"
-    # service.beta.kubernetes.io/aws-load-balancer-internal: 0.0.0.0/0
-    # service.beta.kubernetes.io/azure-load-balancer-internal: "true"
-    # service.beta.kubernetes.io/openstack-internal-load-balancer: "true"
-  # service.beta.kubernetes.io/cce-load-balancer-internal-vpc: "true"
   loadBalancerSourceRanges: []
   # 0.0.0.0/0
   httpPortName: http

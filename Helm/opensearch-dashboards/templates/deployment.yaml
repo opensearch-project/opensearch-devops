@@ -2,9 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "opensearch-dashboards.fullname" . }}
-  labels: {{ include "opensearch-dashboards.labels" . | nindent 4 }}
+  labels: {{- include "opensearch-dashboards.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicas }}
+  replicas: {{ .Values.replicaCount }}
   strategy:
 {{ toYaml .Values.updateStrategy | indent 4 }}
   selector:
@@ -23,7 +23,7 @@ spec:
         {{- range $key, $value := .Values.podAnnotations }}
         {{ $key }}: {{ $value | quote }}
         {{- end }}
-        {{/* This forces a restart if the configmap has changed */}}
+        {{- /* This forces a restart if the configmap has changed */}}
         {{- if .Values.config }}
         configchecksum: {{ include (print .Template.BasePath "/configmap.yaml") . | sha256sum | trunc 63 }}
         {{- end }}
@@ -79,16 +79,16 @@ spec:
       - name: dashboards
         securityContext:
 {{ toYaml .Values.securityContext | indent 10 }}
-        image: "{{ .Values.image }}:{{ .Values.imageTag }}"
+        image: "{{ .Values.image }}:{{ .Values.imageTag | default .Chart.AppVersion }}"
         imagePullPolicy: "{{ .Values.imagePullPolicy }}"
         env:
-          {{- if .Values.opensearchURL }}
+        {{- if .Values.opensearchURL }}
           - name: OPENSEARCH_URL
             value: "{{ .Values.opensearchURL }}"
-          {{- else if .Values.opensearchHosts }}
+        {{- else if .Values.opensearchHosts }}
           - name: OPENSEARCH_HOSTS
             value: "{{ .Values.opensearchHosts }}"
-          {{- end }}
+        {{- end }}
           - name: SERVER_HOST
             value: "{{ .Values.serverHost }}"
             {{- if .Values.opensearchAccount.secret }}
@@ -124,7 +124,7 @@ spec:
 {{ toYaml .Values.envFrom | indent 10 }}
 {{- end }}
         ports:
-        - containerPort: {{ .Values.httpPort }}
+        - containerPort: {{ .Values.service.port }}
 {{- if .Values.lifecycle }}
         lifecycle:
 {{ toYaml .Values.lifecycle | indent 10 }}
@@ -143,14 +143,14 @@ spec:
           - name: config
             mountPath: /usr/share/dashboards/config/{{ $path }}
             subPath: {{ $path }}
-          {{- end -}}
-      {{- if .Values.extraContainers }}
-      # Currently some extra blocks accept strings
-      # to continue with backwards compatibility this is being kept
-      # whilst also allowing for yaml to be specified too.
-      {{- if eq "string" (printf "%T" .Values.extraContainers) }}
+          {{- end }}
+        {{- if .Values.extraContainers }}
+# Currently some extra blocks accept strings
+# to continue with backwards compatibility this is being kept
+# whilst also allowing for yaml to be specified too.
+        {{- if eq "string" (printf "%T" .Values.extraContainers) }}
 {{ tpl .Values.extraContainers . | indent 6 }}
-      {{- else }}
+        {{- else }}
 {{ toYaml .Values.extraContainers | indent 6 }}
-      {{- end }}
-      {{- end }}
+        {{- end }}
+        {{- end }}

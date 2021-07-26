@@ -1,4 +1,4 @@
-{{- if .Values.config }}
+{{- if .Values.config -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,5 +8,5 @@ data:
 {{- range $configName, $configYaml := .Values.config }}
   {{ $configName }}: |
     {{- toYaml $configYaml | nindent 4 }}
-{{- end -}}
+{{- end }}
 {{- end -}}
