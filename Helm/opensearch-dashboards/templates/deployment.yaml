@@ -144,13 +144,13 @@ spec:
             mountPath: /usr/share/dashboards/config/{{ $path }}
             subPath: {{ $path }}
           {{- end }}
-        {{- if .Values.extraContainers }}
-# Currently some extra blocks accept strings
-# to continue with backwards compatibility this is being kept
-# whilst also allowing for yaml to be specified too.
-        {{- if eq "string" (printf "%T" .Values.extraContainers) }}
+      {{- if .Values.extraContainers }}
+      # Currently some extra blocks accept strings
+      # to continue with backwards compatibility this is being kept
+      # whilst also allowing for yaml to be specified too.
+      {{- if eq "string" (printf "%T" .Values.extraContainers) }}
 {{ tpl .Values.extraContainers . | indent 6 }}
-        {{- else }}
+      {{- else }}
 {{ toYaml .Values.extraContainers | indent 6 }}
-        {{- end }}
-        {{- end }}
+      {{- end }}
+      {{- end }}

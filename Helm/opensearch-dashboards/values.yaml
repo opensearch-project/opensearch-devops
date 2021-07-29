@@ -33,8 +33,11 @@ extraEnvs: []
 #  - name: "NODE_OPTIONS"
 #    value: "--max-old-space-size=1800"
 
-extraContainers:
-  []
+envFrom: []
+
+extraInitContainers: ""
+
+extraContainers: ""
 
 podSecurityContext: {}
 
