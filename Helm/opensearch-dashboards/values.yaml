@@ -58,7 +58,7 @@ config:
 
     ## Dashboards TLS Config
         ssl:
-          enabled: true
+          enabled: false
           key: /usr/share/dashboards/certs/dashboards-key.pem
           certificate: /usr/share/dashboards/certs/dashboards-crt.pem
     opensearch.ssl.certificateAuthorities: /usr/share/dashboards/certs/dashboards-root-ca.pem
