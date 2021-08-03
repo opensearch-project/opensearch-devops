@@ -1,6 +1,6 @@
 {{- if .Values.rbac.create -}}
-kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
 metadata:
   labels:
 {{ include "opensearch-dashboards.standard" . | indent 4 }}

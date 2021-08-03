@@ -83,38 +83,38 @@ spec:
         imagePullPolicy: "{{ .Values.imagePullPolicy }}"
         env:
         {{- if .Values.opensearchURL }}
-          - name: OPENSEARCH_URL
-            value: "{{ .Values.opensearchURL }}"
+        - name: OPENSEARCH_URL
+          value: "{{ .Values.opensearchURL }}"
         {{- else if .Values.opensearchHosts }}
-          - name: OPENSEARCH_HOSTS
-            value: "{{ .Values.opensearchHosts }}"
+        - name: OPENSEARCH_HOSTS
+          value: "{{ .Values.opensearchHosts }}"
         {{- end }}
-          - name: SERVER_HOST
-            value: "{{ .Values.serverHost }}"
-            {{- if .Values.opensearchAccount.secret }}
-            - name: OPENSEARCH_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.opensearchAccount.secret }}
-                  key: username
-            - name: OPENSEARCH_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.opensearchAccount.secret }}
-                  key: password
-            {{- if and .Values.opensearchAccount.keyPassphrase.enabled }}
-            - name: KEY_PASSPHRASE
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.opensearchAccount.secret }}
-                  key: keypassphrase
+        - name: SERVER_HOST
+          value: "{{ .Values.serverHost }}"
+        {{- if .Values.opensearchAccount.secret }}
+        - name: OPENSEARCH_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.opensearchAccount.secret }}
+              key: username
+        - name: OPENSEARCH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.opensearchAccount.secret }}
+              key: password
+        {{- if and .Values.opensearchAccount.keyPassphrase.enabled }}
+        - name: KEY_PASSPHRASE
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.opensearchAccount.secret }}
+              key: keypassphrase
             # 32-character random string to be used as cookie password by security plugin
-            {{- end }}
-            - name: COOKIE_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.opensearchAccount.secret }}
-                  key: cookie
+        {{- end }}
+        - name: COOKIE_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.opensearchAccount.secret }}
+              key: cookie
             {{- end }}
 {{- if .Values.extraEnvs }}
 {{ toYaml .Values.extraEnvs | indent 10 }}
