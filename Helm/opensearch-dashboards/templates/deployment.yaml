@@ -125,6 +125,8 @@ spec:
 {{- end }}
         ports:
         - containerPort: {{ .Values.service.port }}
+          name: {{ .Values.service.httpPortName | default "http" }}
+          protocol: TCP
 {{- if .Values.lifecycle }}
         lifecycle:
 {{ toYaml .Values.lifecycle | indent 10 }}
