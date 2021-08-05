@@ -1,7 +1,7 @@
 ---
 name: Feature request
 about: Suggest an idea for this project
-title: '[Enhancement]'
+title: '[Enhancement][Component Name]'
 labels: 'enhancement, untriaged'
 assignees: ''
 ---
