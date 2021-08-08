@@ -132,6 +132,41 @@ spec:
             defaultMode: {{ .defaultMode }}
             {{- end }}
         {{- end }}
+        {{- if and .Values.securityConfig.config.securityConfigSecret .Values.securityConfig.config.data }}
+        - name: security-config
+          secret:
+            secretName: {{ .Values.securityConfig.config.securityConfigSecret }}
+        {{- end }}
+        {{- if .Values.securityConfig.actionGroupsSecret }}
+        - name: action-groups
+          secret:
+            secretName: {{ .Values.securityConfig.actionGroupsSecret }}
+        {{- end }}
+        {{- if .Values.securityConfig.configSecret }}
+        - name: security-config
+          secret:
+            secretName: {{ .Values.securityConfig.configSecret }}
+        {{- end }}
+        {{- if .Values.securityConfig.internalUsersSecret }}
+        - name: internal-users-config
+          secret:
+            secretName: {{ .Values.securityConfig.internalUsersSecret }}
+        {{- end }}
+        {{- if .Values.securityConfig.rolesSecret }}
+        - name: roles
+          secret:
+            secretName: {{ .Values.securityConfig.rolesSecret }}
+        {{- end }}
+        {{- if .Values.securityConfig.rolesMappingSecret }}
+        - name: role-mapping
+          secret:
+            secretName: {{ .Values.securityConfig.rolesMappingSecret }}
+        {{- end -}}
+        {{- if .Values.securityConfig.tenantsSecret }}
+        - name: tenants
+          secret:
+            secretName: {{ .Values.securityConfig.tenantsSecret }}
+        {{- end }}
         {{- if .Values.config }}
         - name: config
           configMap:
@@ -144,17 +179,17 @@ spec:
         - name: keystore-{{ .secretName }}
           secret: {{ toYaml . | nindent 12 }}
         {{- end }}
-{{ end }}
-      {{- if .Values.extraVolumes }}
-      # Currently some extra blocks accept strings
-      # to continue with backwards compatibility this is being kept
-      # whilst also allowing for yaml to be specified too.
-      {{- if eq "string" (printf "%T" .Values.extraVolumes) }}
+{{- end }}
+        {{- if .Values.extraVolumes }}
+        # Currently some extra blocks accept strings
+        # to continue with backwards compatibility this is being kept
+        # whilst also allowing for yaml to be specified too.
+        {{- if eq "string" (printf "%T" .Values.extraVolumes) }}
 {{ tpl .Values.extraVolumes . | indent 8 }}
-      {{- else }}
+        {{- else }}
 {{ toYaml .Values.extraVolumes | indent 8 }}
-      {{- end }}
-      {{- end }}
+        {{- end }}
+        {{- end }}
       {{- if .Values.imagePullSecrets }}
       imagePullSecrets:
 {{ toYaml .Values.imagePullSecrets | indent 8 }}
@@ -257,42 +292,6 @@ spec:
           - name: node.{{ $role }}
             value: "{{ $enabled }}"
           {{- end }}
-          {{- if .Values.securityConfig.enabled }}
-          {{- if .Values.securityConfig.actionGroupsSecret }}
-          - mountPath: {{ .Values.securityConfig.path }}/action_groups.yml
-              name: action-groups
-              subPath: action_groups.yml
-          {{- end }}
-          {{- if .Values.securityConfig.configSecret }}
-            - mountPath: {{ .Values.securityConfig.path }}/config.yml
-            name: security-config
-            subPath: config.yml
-          {{- end }}
-          {{- if .Values.securityConfig.internalUsersSecret }}
-          - mountPath: {{ .Values.securityConfig.path }}/internal_users.yml
-            name: internal-users-config
-            subPath: internal_users.yml
-          {{- end }}
-          {{- if .Values.securityConfig.rolesSecret }}
-          - mountPath: {{ .Values.securityConfig.path }}/roles.yml
-            name: roles
-            subPath: roles.yml
-          {{- end }}
-          {{- if .Values.securityConfig.rolesMappingSecret }}
-          - mountPath: {{ .Values.securityConfig.path }}/roles_mapping.yml
-            name: role-mapping
-            subPath: roles_mapping.yml
-          {{- end }}
-          {{- if .Values.securityConfig.tenantsSecret }}
-          - mountPath: {{ .Values.securityConfig.path }}/tenants.yml
-            name: tenants
-            subPath: tenants.yml
-          {{- end }}
-          {{- if and .Values.securityConfig.config.securityConfigSecret .Values.securityConfig.config.data  }}
-          - mountPath: {{ .Values.securityConfig.path }}
-            name: security-config
-        {{- end }}
-        {{- end }}
 {{- if .Values.extraEnvs }}
 {{ toYaml .Values.extraEnvs | indent 10 }}
 {{- end }}
@@ -322,6 +321,42 @@ spec:
             mountPath: /usr/share/opensearch/config/{{ $path }}
             subPath: {{ $path }}
           {{- end -}}
+          {{- if .Values.securityConfig.enabled }}
+          {{- if .Values.securityConfig.actionGroupsSecret }}
+          - mountPath: {{ .Values.securityConfig.path }}/action_groups.yml
+            name: action-groups
+            subPath: action_groups.yml
+          {{- end }}
+          {{- if .Values.securityConfig.configSecret }}
+          - mountPath: {{ .Values.securityConfig.path }}/config.yml
+            name: security-config
+            subPath: config.yml
+          {{- end }}
+          {{- if .Values.securityConfig.internalUsersSecret }}
+          - mountPath: {{ .Values.securityConfig.path }}/internal_users.yml
+            name: internal-users-config
+            subPath: internal_users.yml
+          {{- end }}
+          {{- if .Values.securityConfig.rolesSecret }}
+          - mountPath: {{ .Values.securityConfig.path }}/roles.yml
+            name: roles
+            subPath: roles.yml
+          {{- end }}
+          {{- if .Values.securityConfig.rolesMappingSecret }}
+          - mountPath: {{ .Values.securityConfig.path }}/roles_mapping.yml
+            name: role-mapping
+            subPath: roles_mapping.yml
+          {{- end }}
+          {{- if .Values.securityConfig.tenantsSecret }}
+          - mountPath: {{ .Values.securityConfig.path }}/tenants.yml
+            name: tenants
+            subPath: tenants.yml
+          {{- end }}
+          {{- if and .Values.securityConfig.config.securityConfigSecret .Values.securityConfig.config.data  }}
+          - mountPath: {{ .Values.securityConfig.path }}
+            name: security-config
+          {{- end }}
+          {{- end }}
         {{- if .Values.extraVolumeMounts }}
         # Currently some extra blocks accept strings
         # to continue with backwards compatibility this is being kept
