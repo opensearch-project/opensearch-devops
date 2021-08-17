@@ -67,9 +67,9 @@ config:
       ## Dashboards TLS Config
       ssl:
         enabled: false
-        key: /usr/share/dashboards/certs/dashboards-key.pem
-        certificate: /usr/share/dashboards/certs/dashboards-crt.pem
-    opensearch.ssl.certificateAuthorities: /usr/share/dashboards/certs/dashboards-root-ca.pem
+        key: /usr/share/opensearch-dashboards/certs/dashboards-key.pem
+        certificate: /usr/share/opensearch-dashboards/certs/dashboards-crt.pem
+    opensearch.ssl.certificateAuthorities: /usr/share/opensearch-dashboards/certs/dashboards-root-ca.pem
 
 priorityClassName: ""
 
