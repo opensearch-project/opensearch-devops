@@ -137,6 +137,43 @@ spec:
       {{- end }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriod }}
       volumes:
+        {{- if .Values.securityConfig.enabled }}
+        {{- if .Values.securityConfig.actionGroupsSecret }}
+        - name: action-groups
+          secret:
+            secretName: {{ .Values.securityConfig.actionGroupsSecret }}
+        {{- end }}
+        {{- if .Values.securityConfig.configSecret }}
+        - name: security-config
+          secret:
+            secretName: {{ .Values.securityConfig.configSecret }}
+        {{- end }}
+        {{- if .Values.securityConfig.internalUsersSecret }}
+        - name: internal-users-config
+          secret:
+            secretName: {{ .Values.securityConfig.internalUsersSecret }}
+        {{- end }}
+        {{- if .Values.securityConfig.rolesSecret }}
+        - name: roles
+          secret:
+            secretName: {{ .Values.securityConfig.rolesSecret }}
+        {{- end }}
+        {{- if .Values.securityConfig.rolesMappingSecret }}
+        - name: role-mapping
+          secret:
+            secretName: {{ .Values.securityConfig.rolesMappingSecret }}
+        {{- end }}
+        {{- if .Values.securityConfig.tenantsSecret }}
+        - name: tenants
+          secret:
+            secretName: {{ .Values.securityConfig.tenantsSecret }}
+        {{- end }}
+        {{- if and .Values.securityConfig.config.securityConfigSecret .Values.securityConfig.config.data  }}
+        - name: security-config
+          secret:
+            secretName: {{ .Values.securityConfig.config.securityConfigSecret }}
+        {{- end }}
+        {{- end }}
         {{- range .Values.secretMounts }}
         - name: {{ .name }}
           secret:
