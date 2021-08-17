@@ -19,7 +19,6 @@ minimumMasterNodes: 1
 
 majorVersion: ""
 
-
 # Allows you to add any config files in /usr/share/opensearch/config/
 # such as opensearch.yml and log4j2.properties
 config:
@@ -63,9 +62,21 @@ config:
           roles_enabled: ["all_access", "security_rest_api_access"]
         system_indices:
           enabled: true
-          indices: [".opendistro-alerting-config", ".opendistro-alerting-alert*", ".opendistro-anomaly-results*", ".opendistro-anomaly-detector*", ".opendistro-anomaly-checkpoints", ".opendistro-anomaly-detection-state", ".opendistro-reports-*", ".opendistro-notifications-*", ".opendistro-notebooks", ".opendistro-asynchronous-search-response*"]
+          indices:
+            [
+              ".opendistro-alerting-config",
+              ".opendistro-alerting-alert*",
+              ".opendistro-anomaly-results*",
+              ".opendistro-anomaly-detector*",
+              ".opendistro-anomaly-checkpoints",
+              ".opendistro-anomaly-detection-state",
+              ".opendistro-reports-*",
+              ".opendistro-notifications-*",
+              ".opendistro-notebooks",
+              ".opendistro-asynchronous-search-response*",
+            ]
     ######## End OpenSearch Security Demo Configuration ########
-  # log4j2.properties: 
+  # log4j2.properties:
 
 # Extra environment variables to append to this nodeGroup
 # This will be appended to the current 'env:' key. You can use any of the kubernetes env
@@ -86,7 +97,6 @@ envFrom: []
 # the X-Pack license
 secretMounts: []
 
-
 hostAliases: []
 #- ip: "127.0.0.1"
 #  hostnames:
@@ -98,7 +108,8 @@ image: "opensearchproject/opensearch"
 imageTag: ""
 imagePullPolicy: "IfNotPresent"
 
-podAnnotations: {}
+podAnnotations:
+  {}
   # iam.amazonaws.com/role: es-cluster
 
 # additionals labels
@@ -111,7 +122,8 @@ resources:
     cpu: "1000m"
     memory: "100Mi"
 
-initResources: {}
+initResources:
+  {}
   # limits:
   #   cpu: "25m"
   #   # memory: "128Mi"
@@ -119,7 +131,8 @@ initResources: {}
   #   cpu: "25m"
   #   memory: "128Mi"
 
-sidecarResources: {}
+sidecarResources:
+  {}
   # limits:
   #   cpu: "25m"
   #   # memory: "128Mi"
@@ -171,21 +184,25 @@ persistence:
   size: 8Gi
   annotations: {}
 
-extraVolumes: []
+extraVolumes:
+  []
   # - name: extras
   #   emptyDir: {}
 
-extraVolumeMounts: []
+extraVolumeMounts:
+  []
   # - name: extras
   #   mountPath: /usr/share/extras
   #   readOnly: true
 
-extraContainers: []
+extraContainers:
+  []
   # - name: do-something
   #   image: busybox
   #   command: ['do', 'something']
 
-extraInitContainers: []
+extraInitContainers:
+  []
   # - name: do-somethings
   #   image: busybox
   #   command: ['do', 'something']
@@ -245,14 +262,14 @@ podSecurityContext:
 securityContext:
   capabilities:
     drop:
-    - ALL
+      - ALL
   # readOnlyRootFilesystem: true
   runAsNonRoot: true
   runAsUser: 1000
 
 securityConfig:
   enabled: true
-  path: "/usr/share/elasticsearch/plugins/opendistro_security/securityconfig"
+  path: "/usr/share/opensearch/plugins/opensearch-security/securityconfig"
   actionGroupsSecret:
   configSecret:
   internalUsersSecret:
@@ -263,7 +280,8 @@ securityConfig:
   #Note that this is an alternative to the above secrets and shouldn't be used if the above secrets are used
   config:
     securityConfigSecret:
-    data: {}
+    data:
+      {}
       # config.yml: |-
       # internal_users.yml: |-
       # roles.yml: |-
@@ -295,7 +313,8 @@ tolerations: []
 # Only enable this if you have security enabled on your cluster
 ingress:
   enabled: false
-  annotations: {}
+  annotations:
+    {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   path: /
@@ -311,7 +330,8 @@ fullnameOverride: ""
 
 masterTerminationFix: false
 
-lifecycle: {}
+lifecycle:
+  {}
   # preStop:
   #   exec:
   #     command: ["/bin/sh", "-c", "echo Hello from the postStart handler > /usr/share/message"]
@@ -330,7 +350,6 @@ lifecycle: {}
   #         ES_URL=http://localhost:9200
   #         while [[ "$(curl -s -o /dev/null -w '%{http_code}\n' $ES_URL)" != "200" ]]; do sleep 1; done
   #         curl -XPUT "$ES_URL/_template/$TEMPLATE_NAME" -H 'Content-Type: application/json' -d'{"index_patterns":['\""$INDEX_PATTERN"\"'],"settings":{"number_of_shards":'$SHARD_COUNT',"number_of_replicas":'$REPLICA_COUNT'}}'
-
 
 keystore: []
 
