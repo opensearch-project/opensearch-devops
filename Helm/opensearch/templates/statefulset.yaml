@@ -246,7 +246,7 @@ spec:
             command:
             - sh
             - -c
-            - 'curl -u $READINESS_USERNAME:$READINESS_PASSWORD http://localhost:9200/_cluster/health | grep "(yellow|green)"'
+            - 'curl --fail --silent -u $READINESS_USERNAME:$READINESS_PASSWORD http://localhost:9200/_cat/health'
           initialDelaySeconds: 5
           periodSeconds: 10
         {{- else if and .Values.probes.readiness.enabled .Values.probes.readiness.custom -}}
