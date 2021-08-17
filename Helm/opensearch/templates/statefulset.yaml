@@ -75,6 +75,9 @@ spec:
         {{- if .Values.config }}
         configchecksum: {{ include (print .Template.BasePath "/configmap.yaml") . | sha256sum | trunc 63 }}
         {{- end }}
+        {{- if and .Values.probes.readiness.enabled .Values.probes.readiness.username .Values.probes.readiness.password }}
+        lifecyclesecretchecksum: {{ include (print .Template.BasePath "/lifecycle-secret.yaml") . | sha256sum | trunc 63 }}
+        {{- end }}
     spec:
       {{- if .Values.schedulerName }}
       schedulerName: "{{ .Values.schedulerName }}"
@@ -237,6 +240,39 @@ spec:
           containerPort: {{ .Values.httpPort }}
         - name: transport
           containerPort: {{ .Values.transportPort }}
+        {{- if and .Values.probes.readiness.enabled .Values.probes.readiness.username .Values.probes.readiness.password }}
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - 'curl -u $READINESS_USERNAME:$READINESS_PASSWORD http://localhost:9200/_cluster/health | grep "(yellow|green)"'
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        {{- else if and .Values.probes.readiness.enabled .Values.probes.readiness.custom -}}
+        readinessProbe:
+{{ .Values.probes.readiness.custom | toYaml | indent 10}}
+        {{- end }}
+        {{- if and .Values.probes.liveness.enabled .Values.probes.liveness.custom }}
+        livenessProbe:
+{{ .Values.probes.liveness.custom | toYaml | indent 10}}
+        {{- else if .Values.probes.liveness.enabled }}
+        livenessProbe:
+          tcpSocket:
+            port: transport
+          periodSeconds: 15
+        {{- end }}
+        {{- if and .Values.probes.startup.enabled .Values.probes.startup.custom }}
+        startupProbe:
+{{ .Values.probes.startup.custom | toYaml | indent 10 }}
+        {{- else if .Values.probes.startup.enabled }}
+        startupProbe:
+          tcpSocket:
+            port: transport
+          failureThreshold: 30
+          periodSeconds: 5
+        {{- end }}
+
         resources:
 {{ toYaml .Values.resources | indent 10 }}
         env:
@@ -311,6 +347,10 @@ spec:
 {{- end }}
 {{- if .Values.envFrom }}
         envFrom:
+        {{- if and .Values.probes.readiness.enabled .Values.probes.readiness.username .Values.probes.readiness.password }}
+        - secretRef:
+          name:  {{ template "opensearch.uname" . }}-probes
+        {{- end }}
 {{ toYaml .Values.envFrom | indent 10 }}
 {{- end }}
         volumeMounts:
