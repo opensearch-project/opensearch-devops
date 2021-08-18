@@ -333,16 +333,24 @@ masterTerminationFix: false
 probes:
   startup:
     enabled: true
+    interval: 5
+    delay: 15
   # Enabled by default, utilizes tcpSocket to check the transport port of the pod
   liveness:
     enabled: true
+    interval: 10
   # ensure the username and password used for READINESS_USERNAME and READINESS_PASSWORD has permissions to access /_cat/health otherwise the pod will never start
   readiness:
     enabled: false
+    interval: 10
+    delay: 30
     # Default utilizes READINESS_USERNAME and READINESS_PASSWORD to query _cat/health for status
     default: true
     username: admin
     password: admin
+    # This adjusts the readiness check to require certain statuses, you may want this on your data nodes to ensure nodes are only restarted when they are fully healed
+    acceptable_statuses: []
+    # acceptable_statuses: ["green", "yellow"]
     # A custom check can be passed in below, if username and password are set then can be used as described in default
     # custom:
     #   exec:
