@@ -281,8 +281,8 @@ spec:
             command:
             - sh
             - -c
-            {{- if .Values.probes.readiness.acceptable_statuses }}
-            - 'curl --fail --silent -u $READINESS_USERNAME:$READINESS_PASSWORD http://localhost:9200/_cat/health | grep -P "({{ join "|" .Values.probes.readiness.acceptable_statuses }})"'
+            {{- if .Values.probes.readiness.acceptableStatuses }}
+            - 'curl --fail --silent -u $READINESS_USERNAME:$READINESS_PASSWORD http://localhost:9200/_cat/health | grep -P "({{ join "|" .Values.probes.readiness.acceptableStatuses }})"'
             {{- else }}
             - 'curl --fail --silent -u $READINESS_USERNAME:$READINESS_PASSWORD http://localhost:9200/_cat/health'
             {{- end }}
