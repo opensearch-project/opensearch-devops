@@ -108,8 +108,7 @@ image: "opensearchproject/opensearch"
 imageTag: ""
 imagePullPolicy: "IfNotPresent"
 
-podAnnotations:
-  {}
+podAnnotations: {}
   # iam.amazonaws.com/role: es-cluster
 
 # additionals labels
@@ -122,8 +121,7 @@ resources:
     cpu: "1000m"
     memory: "100Mi"
 
-initResources:
-  {}
+initResources: {}
   # limits:
   #   cpu: "25m"
   #   # memory: "128Mi"
@@ -131,8 +129,7 @@ initResources:
   #   cpu: "25m"
   #   memory: "128Mi"
 
-sidecarResources:
-  {}
+sidecarResources: {}
   # limits:
   #   cpu: "25m"
   #   # memory: "128Mi"
@@ -184,25 +181,21 @@ persistence:
   size: 8Gi
   annotations: {}
 
-extraVolumes:
-  []
+extraVolumes: []
   # - name: extras
   #   emptyDir: {}
 
-extraVolumeMounts:
-  []
+extraVolumeMounts: []
   # - name: extras
   #   mountPath: /usr/share/extras
   #   readOnly: true
 
-extraContainers:
-  []
+extraContainers: []
   # - name: do-something
   #   image: busybox
   #   command: ['do', 'something']
 
-extraInitContainers:
-  []
+extraInitContainers: []
   # - name: do-somethings
   #   image: busybox
   #   command: ['do', 'something']
@@ -280,8 +273,7 @@ securityConfig:
   #Note that this is an alternative to the above secrets and shouldn't be used if the above secrets are used
   config:
     securityConfigSecret:
-    data:
-      {}
+    data: {}
       # config.yml: |-
       # internal_users.yml: |-
       # roles.yml: |-
@@ -313,8 +305,7 @@ tolerations: []
 # Only enable this if you have security enabled on your cluster
 ingress:
   enabled: false
-  annotations:
-    {}
+  annotations: {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   path: /
@@ -361,8 +352,7 @@ probes:
     #   initialDelaySeconds: 5
     #   periodSeconds: 5
 
-lifecycle:
-  {}
+lifecycle: {}
   # preStop:
   #   exec:
   #     command: ["/bin/sh", "-c", "echo Hello from the postStart handler > /usr/share/message"]
