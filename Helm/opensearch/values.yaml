@@ -108,8 +108,7 @@ image: "opensearchproject/opensearch"
 imageTag: ""
 imagePullPolicy: "IfNotPresent"
 
-podAnnotations:
-  {}
+podAnnotations: {}
   # iam.amazonaws.com/role: es-cluster
 
 # additionals labels
@@ -122,8 +121,7 @@ resources:
     cpu: "1000m"
     memory: "100Mi"
 
-initResources:
-  {}
+initResources: {}
   # limits:
   #   cpu: "25m"
   #   # memory: "128Mi"
@@ -131,8 +129,7 @@ initResources:
   #   cpu: "25m"
   #   memory: "128Mi"
 
-sidecarResources:
-  {}
+sidecarResources: {}
   # limits:
   #   cpu: "25m"
   #   # memory: "128Mi"
@@ -184,25 +181,21 @@ persistence:
   size: 8Gi
   annotations: {}
 
-extraVolumes:
-  []
+extraVolumes: []
   # - name: extras
   #   emptyDir: {}
 
-extraVolumeMounts:
-  []
+extraVolumeMounts: []
   # - name: extras
   #   mountPath: /usr/share/extras
   #   readOnly: true
 
-extraContainers:
-  []
+extraContainers: []
   # - name: do-something
   #   image: busybox
   #   command: ['do', 'something']
 
-extraInitContainers:
-  []
+extraInitContainers: []
   # - name: do-somethings
   #   image: busybox
   #   command: ['do', 'something']
@@ -330,8 +323,7 @@ fullnameOverride: ""
 
 masterTerminationFix: false
 
-lifecycle:
-  {}
+lifecycle: {}
   # preStop:
   #   exec:
   #     command: ["/bin/sh", "-c", "echo Hello from the postStart handler > /usr/share/message"]
