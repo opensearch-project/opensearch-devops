@@ -203,7 +203,7 @@ spec:
             echo "$PASSWORD" | opensearch-keystore add -x bootstrap.password
           fi
 
-          cp -a /usr/share/opensearch/config/opensearch.keystore /tmp/keystore/
+          cp -a {{ .Values.opensearchHome }}/config/opensearch.keystore /tmp/keystore/
         env: {{ toYaml .Values.extraEnvs | nindent 10 }}
         envFrom: {{ toYaml .Values.envFrom | nindent 10 }}
         resources: {{ toYaml .Values.initResources | nindent 10 }}
@@ -280,11 +280,11 @@ spec:
         volumeMounts:
           {{- if .Values.persistence.enabled }}
           - name: "{{ template "opensearch.uname" . }}"
-            mountPath: /usr/share/opensearch/data
+            mountPath: {{ .Values.opensearchHome }}/data
           {{- end }}
           {{- if .Values.keystore }}
           - name: keystore
-            mountPath: /usr/share/opensearch/config/opensearch.keystore
+            mountPath: {{ .Values.opensearchHome }}/config/opensearch.keystore
             subPath: opensearch.keystore
           {{- end }}
           {{- if .Values.securityConfig.enabled }}
@@ -333,7 +333,7 @@ spec:
           {{- end }}
           {{- range $path, $config := .Values.config }}
           - name: config
-            mountPath: /usr/share/opensearch/config/{{ $path }}
+            mountPath: {{ .Values.opensearchHome }}/config/{{ $path }}
             subPath: {{ $path }}
           {{- end -}}
         {{- if .Values.extraVolumeMounts }}
