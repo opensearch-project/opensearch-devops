@@ -59,7 +59,7 @@ securityContext:
   runAsUser: 1000
 
 config:
-  dashboards.yml:
+  opensearch_dashboards.yml:
     server:
       name: dashboards
       host: 0.0.0.0
@@ -67,11 +67,9 @@ config:
       ## Dashboards TLS Config
       ssl:
         enabled: false
-        key: /usr/share/dashboards/certs/dashboards-key.pem
-        certificate: /usr/share/dashboards/certs/dashboards-crt.pem
-    opensearch.ssl.certificateAuthorities: /usr/share/dashboards/certs/dashboards-root-ca.pem
-
-priorityClassName: ""
+        key: /usr/share/opensearch-dashboards/certs/dashboards-key.pem
+        certificate: /usr/share/opensearch-dashboards/certs/dashboards-crt.pem
+    opensearch.ssl.certificateAuthorities: /usr/share/opensearch-dashboards/certs/dashboards-root-ca.pem
 
 probes:
   readiness:
@@ -84,6 +82,8 @@ probes:
     enabled: true
   startup:
     enabled: true
+
+priorityClassName: ""
 
 opensearchAccount:
   secret: ""
