@@ -19,7 +19,8 @@ minimumMasterNodes: 1
 
 majorVersion: ""
 
-# Allows you to add any config files in /usr/share/opensearch/config/
+# Allows you to add any config files in {{ .Values.configPath }}/config
+opensearchHome: /usr/share/opensearch
 # such as opensearch.yml and log4j2.properties
 config:
   opensearch.yml:
