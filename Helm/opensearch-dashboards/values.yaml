@@ -64,12 +64,16 @@ config:
       name: dashboards
       host: 0.0.0.0
 
-      ## Dashboards TLS Config
       ssl:
         enabled: false
-        key: /usr/share/opensearch-dashboards/certs/dashboards-key.pem
-        certificate: /usr/share/opensearch-dashboards/certs/dashboards-crt.pem
-    opensearch.ssl.certificateAuthorities: /usr/share/opensearch-dashboards/certs/dashboards-root-ca.pem
+    opensearch.ssl.verificationMode: none
+
+      ## Dashboards TLS Config (if providing TLS Certs uncomment below, and ensure files are present in container)
+    #   ssl:
+    #     enabled: true
+    #     key: /usr/share/opensearch-dashboards/certs/dashboards-key.pem
+    #     certificate: /usr/share/opensearch-dashboards/certs/dashboards-crt.pem
+    # opensearch.ssl.certificateAuthorities: /usr/share/opensearch-dashboards/certs/dashboards-root-ca.pem
 
 priorityClassName: ""
 
