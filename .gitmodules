@@ -1,0 +1,4 @@
+
+[submodule "helm-charts"]
+	path = helm-charts
+	url = https://github.com/opensearch-project/helm-charts
