@@ -1,4 +1,4 @@
-name: Developer Certificate of Origin Check
+name: Developer Certificate of Origin Check 
 
 on: [pull_request]
 
