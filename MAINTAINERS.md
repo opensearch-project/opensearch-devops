@@ -8,7 +8,7 @@ This document contains a list of maintainers in this repo. See [opensearch-proje
 |-------------------| --------------------------------------------------- | ----------- |
 | Barani Bikshandi  | [bbarani](https://github.com/bbarani)               | Amazon      |
 | Peter Zhu         | [peterzhuamazon](https://github.com/peterzhuamazon) | Amazon      |
-| Prudhvi Godithi   | [peternied](https://github.com/prudhvigodithi)           | Amazon      |
+| Prudhvi Godithi   | [prudhvigodithi](https://github.com/prudhvigodithi)           | Amazon      |
 | Sayali Gaikawad   | [gaiksaya](https://github.com/gaiksaya)             | Amazon      |
 | Dhiraj Kumar Jain | [TheAlgo](https://github.com/TheAlgo)               | Amazon      |
 | Aaron Layfield    | [DandyDeveloper](https://github.com/DandyDeveloper) | Community   |
