@@ -1,9 +1,6 @@
 name: Nightly Playground Build and Test
 
 on:
-  push:
-    paths:
-      - nightly-playground/**
   pull_request:
     paths:
       - nightly-playground/**
