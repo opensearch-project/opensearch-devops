@@ -1,0 +1,32 @@
+name: Nightly Playground Build and Test
+
+on:
+  pull_request:
+    paths:
+      - nightly-playground/**
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nightly-playground
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 16.x
+  
+      - name: Run CDK Build and Test
+        run: |
+          npm install
+          npm run build
+
+      - name: Run test coverage
+        run: |
+          npm test -- --coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
