@@ -27,6 +27,10 @@ export class NightlyPlaygroundStack {
       throw new Error('dashboardsUrl parameter cannot be empty! Please provide the OpenSearch-Dashboards distribution URL');
     }
 
+    const securtityConfig = '{ "resources/security-config/config.yml" : "opensearch/config/opensearch-security/config.yml", '
+    + '"resources/security-config/roles_mapping.yml" : "opensearch/config/opensearch-security/roles_mapping.yml", '
+    + '"resources/security-config/roles.yml" : "opensearch/config/opensearch-security/roles.yml"}';
+
     // @ts-ignore
     const networkStack = new NetworkStack(scope, `networkStack-${id}`, {
       ...props,
@@ -49,6 +53,8 @@ export class NightlyPlaygroundStack {
       distributionUrl,
       singleNodeCluster: false,
       dashboardsUrl,
+      customConfigFiles: securtityConfig,
+      additionalOsdConfig: '{"opensearch_security.auth.anonymous_auth_enabled": "true"}',
     });
     this.stacks.push(infraStack);
 
