@@ -1,0 +1,15 @@
+{
+  "networkStack-2x": {
+    "ExportsOutputFnGetAttosSecurityGroupAB2F5DAAGroupId041C3634": "sg-0d56823ff8f016202",
+    "ExportsOutputRefopensearchClusterVpcprivatesubnetSubnet1Subnet08921191D00342AE": "subnet-06b3b0789ea628a63",
+    "ExportsOutputRefopensearchClusterVpcprivatesubnetSubnet2SubnetA18BC36C61978858": "subnet-0f748ec22e9641110",
+    "ExportsOutputRefopensearchClusterVpcB9B8026BDD949D35": "vpc-02c703ee24b4ea88b",
+    "ExportsOutputRefopensearchClusterVpcpublicsubnetSubnet1Subnet298067B0BE6144C6": "subnet-0b783ce33b8c65fd0",
+    "ExportsOutputRefopensearchClusterVpcpublicsubnetSubnet3Subnet4C080F15EE93362F": "subnet-08199c58050d517cd",
+    "ExportsOutputRefopensearchClusterVpcprivatesubnetSubnet3Subnet4FFF7B1399D431FD": "subnet-051b69122d9a7fb72",
+    "ExportsOutputRefopensearchClusterVpcpublicsubnetSubnet2SubnetA33C9C42CD0DD3CE": "subnet-09a352dfa6503a54f"
+  },
+  "infraStack-2x": {
+    "loadbalancerurl": "infraS-clust-OP5miMmOIPOo-1a20d45272583cf1.elb.us-west-2.amazonaws.com"
+  }
+}

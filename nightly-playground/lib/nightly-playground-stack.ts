@@ -41,8 +41,8 @@ export class NightlyPlaygroundStack {
     // @ts-ignore
     const networkStack = new NetworkStack(scope, `networkStack-${id}`, {
       ...props,
-      serverAccessType: 'prefixList',
-      restrictServerAccessTo: 'pl-f8a64391',
+      serverAccessType: 'ipv4',
+      restrictServerAccessTo: '0.0.0.0/0',
     });
 
     this.stacks.push(networkStack);

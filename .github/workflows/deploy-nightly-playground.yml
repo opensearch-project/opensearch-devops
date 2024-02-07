@@ -1,0 +1,106 @@
+name: Nightly Playground Validate and Deploy
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron:  '0 0 * * *'
+
+
+env:
+  DIST_VERSION: 2.11.0
+
+jobs:
+  set-os-osd-urls:
+    runs-on: ubuntu-latest
+    outputs:
+      OPENSEARCH_URL: ${{ steps.set-env.outputs.OPENSEARCH_URL }}
+      OPENSEARCH_DASHBOARDS_URL: ${{ steps.set-env.outputs.OPENSEARCH_DASHBOARDS_URL }}
+      OPENSEARCH_BUILD_ID: ${{ steps.set-env.outputs.OPENSEARCH_BUILD_ID }}
+      OPENSEARCH_DASHBOARDS_BUILD_ID: ${{ steps.set-env.outputs.OPENSEARCH_DASHBOARD_BUILD_ID }}
+      OPENSEARCH_DIST_MANIFEST_URL: ${{ steps.set-env.outputs.OPENSEARCH_DIST_MANIFEST_URL }}
+      OPENSEARCH_DASHBOARDS_DIST_MANIFEST_URL: ${{ steps.set-env.outputs.OPENSEARCH_DASHBOARDS_DIST_MANIFEST_URL }}
+    steps:
+      - name: Set Env variables
+        id: set-env
+        run: |
+          opensearch_url_latest=https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${DIST_VERSION}/latest/linux/x64/tar/dist/opensearch/opensearch-${DIST_VERSION}-linux-x64.tar.gz
+          opensearch_dashboards_url_latest=https://ci.opensearch.org/ci/dbc/distribution-build-opensearch-dashboards/${DIST_VERSION}/latest/linux/x64/tar/dist/opensearch-dashboards/opensearch-dashboards-${DIST_VERSION}-linux-x64.tar.gz
+          
+          wget https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${DIST_VERSION}/latest/linux/x64/tar/dist/opensearch/manifest.yml -O opensearch.yml
+          wget https://ci.opensearch.org/ci/dbc/distribution-build-opensearch-dashboards/${DIST_VERSION}/latest/linux/x64/tar/dist/opensearch-dashboards/manifest.yml -O dashboards.yml
+
+          opensearch_build_id=$(yq .build.id opensearch.yml)
+          dashboards_build_id=$(yq .build.id dashboards.yml)
+
+          echo "OPENSEARCH_BUILD_ID=${opensearch_build_id}" >> "$GITHUB_OUTPUT"
+          echo "OPENSEARCH_DASHBOARD_BUILD_ID=${dashboard_build_id}" >> "$GITHUB_OUTPUT"
+
+          echo "OPENSEARCH_URL=https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${DIST_VERSION}/$opensearch_build_id/linux/x64/tar/dist/opensearch/opensearch-${DIST_VERSION}-linux-x64.tar.gz" >> "$GITHUB_OUTPUT"
+          echo "OPENSEARCH_DASHBOARDS_URL=https://ci.opensearch.org/ci/dbc/distribution-build-opensearch-dashboards/${DIST_VERSION}/$dashboards_build_id/linux/x64/tar/dist/opensearch-dashboards/opensearch-dashboards-${DIST_VERSION}-linux-x64.tar.gz" >> "$GITHUB_OUTPUT"
+
+          echo "OPENSEARCH_DIST_MANIFEST_URL=https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${DIST_VERSION}/$opensearch_build_id/linux/x64/tar/dist/opensearch/manifest.yml" >> "$GITHUB_OUTPUT"
+          echo "OPENSEARCH_DASHBOARDS_DIST_MANIFEST_URL=https://ci.opensearch.org/ci/dbc/distribution-build-opensearch-dashboards/${DIST_VERSION}/$dashboards_build_id/linux/x64/tar/dist/opensearch-dashboards/manifest.yml" >> "$GITHUB_OUTPUT"
+
+  validate-and-deploy:
+    outputs:
+      ENDPOINT: ${{ steps.deploy.outputs.ENDPOINT }}
+    permissions:
+      id-token: write
+      contents: read
+    needs: set-os-osd-urls
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: 'opensearch-project/opensearch-build'
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.9
+
+      - name: Install Pipenv and Dependencies
+        run: |
+          python -m pip install --upgrade pipenv wheel
+          pipenv install --deploy --dev
+
+      - name: Validate OS and OSD
+        run: ./validation.sh --file-path opensearch=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} opensearch-dashboards=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}}
+
+      - uses: actions/checkout@v3
+
+      - uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ secrets.DEPLOY_NIGHTLY_PLAYGROUND_ROLE }}
+          aws-region: us-west-2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 16.x
+
+      - name: Deploy nightly playground
+        id: deploy
+        working-directory: nightly-playground
+        run: |
+          npm install
+          npm run cdk bootstrap -- -c distVersion=${DIST_VERSION} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }}
+          npm run cdk deploy "*" -- -c distVersion=${DIST_VERSION} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} --require-approval never --outputs-file output.json
+
+          yq e '.. | select(has("loadbalancerurl")) | .loadbalancerurl' output.json
+          echo "ENDPOINT=$(aws cloudformation --region us-west-2 describe-stacks --stack-name infraStack-2x --query 'Stacks[0].Outputs[0].OutputValue' --output text)" >> "$GITHUB_OUTPUT"
+
+  index-dist-manifests:
+    needs: 
+      - set-os-osd-urls
+      - validate-and-deploy
+    uses: gaiksaya/opensearch-devops/.github/workflows/index-data.yml@add-GHA
+    with:
+      endpoint: ${{ needs.validate-and-deploy.outputs.ENDPOINT }}
+      opensearch-manifest-url: ${{ needs.set-os-osd-urls.outputs.OPENSEARCH_DIST_MANIFEST_URL }}
+      opensearch-dashboards-manifest-url: ${{ needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_DIST_MANIFEST_URL }}
+    secrets:
+      opensearch-user: ${{ secrets.OPENSEARCH_USER }}
+      opensearch-password: ${{ secrets.OPENSEARCH_PASSWORD }}
+
+
+
