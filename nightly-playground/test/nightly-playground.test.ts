@@ -27,7 +27,6 @@ test('Ensure security is always enabled with custom role mapping', () => {
   expect(nightlyStack.stacks).toHaveLength(2);
   const infraStack = nightlyStack.stacks.filter((s) => s.stackName === 'infraStack-2x')[0];
   const infraTemplate = Template.fromStack(infraStack);
-  console.log(infraTemplate);
 
   infraTemplate.hasResourceProperties('AWS::ElasticLoadBalancingV2::Listener', {
     Port: 443,
