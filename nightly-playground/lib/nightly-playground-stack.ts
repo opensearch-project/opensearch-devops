@@ -30,8 +30,8 @@ export class NightlyPlaygroundStack {
     if (dashboardPassword === 'undefined') {
       throw new Error('dashboardPassword parameter cannot be empty! Please provide the OpenSearch-Dashboards customized password for kibanauser');
     }
-    
-    const additionalOsdConfigString = '{"opensearch_security.auth.anonymous_auth_enabled": "true", "opensearch.password": "'+ dashboardPassword+ '"}'
+
+    const additionalOsdConfigString = `{"opensearch_security.auth.anonymous_auth_enabled": "true", "opensearch.password": "${dashboardPassword}"}`;
 
     const securtityConfig = '{ "resources/security-config/config.yml" : "opensearch/config/opensearch-security/config.yml", '
     + '"resources/security-config/roles_mapping.yml" : "opensearch/config/opensearch-security/roles_mapping.yml", '

@@ -16,7 +16,7 @@ admin:
   description: "Admin user with customized password"
 
 kibanaserver:
-  hash: '\$2y\$12\$4Q3uDetKFv6gCKh1x/FPre2smgStmLKlFSMpOXMXYXDzkFJYdAUZq'
+  hash: '\$2y\$12\$t17cD/p.ZlsR2jOav7fYfuzk0sWrq1GXZihq3eWsbqXheSJk8Nr2O'
   reserved: true
   description: "OpenSearch Dashboards user with customized password"
 
