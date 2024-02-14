@@ -24,11 +24,6 @@ own_index:
     - "*"
   description: "Allow full access to an index named like the username"
 
-logstash:
-  reserved: false
-  backend_roles:
-    - "logstash"
-
 kibana_user:
   reserved: false
   backend_roles:
@@ -39,11 +34,6 @@ readall:
   reserved: false
   backend_roles:
     - "readall"
-
-manage_snapshots:
-  reserved: false
-  backend_roles:
-    - "snapshotrestore"
 
 kibana_server:
   reserved: true

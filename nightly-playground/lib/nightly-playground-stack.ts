@@ -26,10 +26,17 @@ export class NightlyPlaygroundStack {
     if (dashboardsUrl === 'undefined') {
       throw new Error('dashboardsUrl parameter cannot be empty! Please provide the OpenSearch-Dashboards distribution URL');
     }
+    const dashboardPassword = scope.node.tryGetContext('dashboardPassword');
+    if (dashboardPassword === 'undefined') {
+      throw new Error('dashboardPassword parameter cannot be empty! Please provide the OpenSearch-Dashboards customized password for kibanauser');
+    }
+
+    const additionalOsdConfigString = `{"opensearch_security.auth.anonymous_auth_enabled": "true", "opensearch.password": "${dashboardPassword}"}`;
 
     const securtityConfig = '{ "resources/security-config/config.yml" : "opensearch/config/opensearch-security/config.yml", '
     + '"resources/security-config/roles_mapping.yml" : "opensearch/config/opensearch-security/roles_mapping.yml", '
-    + '"resources/security-config/roles.yml" : "opensearch/config/opensearch-security/roles.yml"}';
+    + '"resources/security-config/roles.yml" : "opensearch/config/opensearch-security/roles.yml", '
+    + '"resources/security-config/internal_users.yml": "opensearch/config/opensearch-security/internal_users.yml"}';
 
     // @ts-ignore
     const networkStack = new NetworkStack(scope, `networkStack-${id}`, {
@@ -54,7 +61,7 @@ export class NightlyPlaygroundStack {
       singleNodeCluster: false,
       dashboardsUrl,
       customConfigFiles: securtityConfig,
-      additionalOsdConfig: '{"opensearch_security.auth.anonymous_auth_enabled": "true"}',
+      additionalOsdConfig: additionalOsdConfigString,
     });
     this.stacks.push(infraStack);
 
