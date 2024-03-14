@@ -24,7 +24,7 @@ test('Ensure security is always enabled with custom role mapping', () => {
   });
 
   // THEN
-  expect(nightlyStack.stacks).toHaveLength(2);
+  expect(nightlyStack.stacks).toHaveLength(3);
   const infraStack = nightlyStack.stacks.filter((s) => s.stackName === 'infraStack-2x')[0];
   const infraTemplate = Template.fromStack(infraStack);
 
@@ -91,4 +91,36 @@ test('Throw an error for missing distVersion', () => {
     // @ts-ignore
     expect(error.message).toEqual('distVersion parameter cannot be empty! Please provide the OpenSearch distribution version');
   }
+});
+
+test('Test commons stack resources', () => {
+  const app = new App({
+    context: {
+      distVersion: '2.3.0',
+      distributionUrl: 'someUrl',
+      dashboardsUrl: 'someUrl',
+    },
+  });
+
+  // WHEN
+  const nightlyStack = new NightlyPlaygroundStack(app, '2x', {
+    env: { account: 'test-account', region: 'us-east-1' },
+  });
+
+  // THEN
+  const commonsStack = nightlyStack.stacks.filter((s) => s.stackName === 'commonsStack')[0];
+  const commonsStackTemplate = Template.fromStack(commonsStack);
+
+  commonsStackTemplate.hasResourceProperties('AWS::Route53::HostedZone', {
+    Name: 'playground.nightly.opensearch.org.',
+  });
+  commonsStackTemplate.hasResourceProperties('AWS::CertificateManager::Certificate', {
+    DomainName: 'playground.nightly.opensearch.org',
+    DomainValidationOptions: [
+      {
+        DomainName: 'playground.nightly.opensearch.org',
+      },
+    ],
+    ValidationMethod: 'DNS',
+  });
 });

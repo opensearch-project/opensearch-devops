@@ -85,7 +85,7 @@ jobs:
     needs: 
       - set-os-osd-urls
       - validate-and-deploy
-    uses: gaiksaya/opensearch-devops/.github/workflows/index-data.yml@add-GHA
+    uses: opensearch-project/opensearch-devops/.github/workflows/index-data.yml@main
     with:
       endpoint: ${{ needs.validate-and-deploy.outputs.ENDPOINT }}
       opensearch-manifest-url: ${{ needs.set-os-osd-urls.outputs.OPENSEARCH_DIST_MANIFEST_URL }}

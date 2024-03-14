@@ -9,6 +9,7 @@ import { InfraStack } from '@opensearch-project/opensearch-cluster-cdk/lib/infra
 import { NetworkStack } from '@opensearch-project/opensearch-cluster-cdk/lib/networking/vpc-stack';
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
+import { CommonToolsStack } from './common-tools-stack';
 
 export class NightlyPlaygroundStack {
   public stacks: Stack[] = []; // only required for testing purpose
@@ -38,6 +39,11 @@ export class NightlyPlaygroundStack {
     + '"resources/security-config/roles.yml" : "opensearch/config/opensearch-security/roles.yml", '
     + '"resources/security-config/internal_users.yml": "opensearch/config/opensearch-security/internal_users.yml"}';
 
+    const commonToolsStack = new CommonToolsStack(scope, 'commonsStack', {
+      ...props,
+    });
+    this.stacks.push(commonToolsStack);
+
     // @ts-ignore
     const networkStack = new NetworkStack(scope, `networkStack-${id}`, {
       ...props,
@@ -46,6 +52,7 @@ export class NightlyPlaygroundStack {
     });
 
     this.stacks.push(networkStack);
+    networkStack.addDependency(commonToolsStack);
 
     // @ts-ignore
     const infraStack = new InfraStack(scope, `infraStack-${id}`, {
@@ -62,6 +69,9 @@ export class NightlyPlaygroundStack {
       dashboardsUrl,
       customConfigFiles: securtityConfig,
       additionalOsdConfig: additionalOsdConfigString,
+      certificateArn: commonToolsStack.certificateArn,
+      mapOpensearchPortTo: 8443,
+      mapOpensearchDashboardsPortTo: 443,
     });
     this.stacks.push(infraStack);
 
