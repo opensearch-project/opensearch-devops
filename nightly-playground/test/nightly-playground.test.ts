@@ -59,7 +59,7 @@ test('Ensure security is always enabled with custom role mapping', () => {
               ignoreErrors: false,
             },
             '017': {
-              command: "set -ex;cd opensearch-dashboards/config; echo \"opensearch_security.auth.anonymous_auth_enabled: 'true'\nopensearch.password: undefined\n\">additionalOsdConfig.yml; yq eval-all -i '. as $item ireduce ({}; . * $item)' opensearch_dashboards.yml additionalOsdConfig.yml -P",
+              command: "set -ex;cd opensearch-dashboards/config; echo \"opensearch_security.auth.anonymous_auth_enabled: 'true'\nopensearch.password: undefined\nopensearch_security.cookie.secure: 'true'\nopensearch_security.cookie.isSameSite: None\n\">additionalOsdConfig.yml; yq eval-all -i '. as $item ireduce ({}; . * $item)' opensearch_dashboards.yml additionalOsdConfig.yml -P",
               cwd: '/home/ec2-user',
               ignoreErrors: false,
             },
