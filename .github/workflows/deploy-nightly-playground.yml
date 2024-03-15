@@ -76,7 +76,7 @@ jobs:
         run: |
           npm install
           npm run cdk deploy "*" -- -c distVersion=${DIST_VERSION} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} -c adminPassword=${{ SECRETS.OPENSEARCH_PASSWORD }} --require-approval never --outputs-file output.json
-          
+
           yq e '.. | select(has("loadbalancerurl")) | .loadbalancerurl' output.json
           echo "ENDPOINT=$(aws cloudformation --region us-west-2 describe-stacks --stack-name infraStack-2x --query 'Stacks[0].Outputs[0].OutputValue' --output text)" >> "$GITHUB_OUTPUT"
 
