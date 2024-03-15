@@ -6,7 +6,7 @@ this file be licensed under the Apache-2.0 license or a
 compatible open source license. */
 
 import { App } from 'aws-cdk-lib';
-import { Template } from 'aws-cdk-lib/assertions';
+import { Match, Template } from 'aws-cdk-lib/assertions';
 import { NightlyPlaygroundStack } from '../lib/nightly-playground-stack';
 
 test('Ensure security is always enabled with custom role mapping', () => {
@@ -29,7 +29,7 @@ test('Ensure security is always enabled with custom role mapping', () => {
   const infraTemplate = Template.fromStack(infraStack);
 
   infraTemplate.hasResourceProperties('AWS::ElasticLoadBalancingV2::Listener', {
-    Port: 443,
+    Port: 8443,
     Protocol: 'TCP',
   });
   infraTemplate.hasResource('AWS::AutoScaling::AutoScalingGroup', {
@@ -122,5 +122,40 @@ test('Test commons stack resources', () => {
       },
     ],
     ValidationMethod: 'DNS',
+  });
+});
+
+test('Ensure port mapping', () => {
+  const app = new App({
+    context: {
+      distVersion: '2.3.0',
+      distributionUrl: 'someUrl',
+      dashboardsUrl: 'someUrl',
+    },
+  });
+
+  // WHEN
+  const nightlyStack = new NightlyPlaygroundStack(app, '2x', {
+    env: { account: 'test-account', region: 'us-east-1' },
+  });
+
+  expect(nightlyStack.stacks).toHaveLength(3);
+  const infraStack = nightlyStack.stacks.filter((s) => s.stackName === 'infraStack-2x')[0];
+  const infraTemplate = Template.fromStack(infraStack);
+
+  infraTemplate.hasResourceProperties('AWS::ElasticLoadBalancingV2::Listener', {
+    Port: 443,
+    Protocol: 'TLS',
+    Certificates: [
+      {
+        CertificateArn: {
+          'Fn::ImportValue': Match.anyValue(),
+        },
+      },
+    ],
+  });
+  infraTemplate.hasResourceProperties('AWS::ElasticLoadBalancingV2::Listener', {
+    Port: 8443,
+    Protocol: 'TCP',
   });
 });
