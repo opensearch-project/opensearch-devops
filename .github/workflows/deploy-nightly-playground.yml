@@ -75,7 +75,6 @@ jobs:
         working-directory: nightly-playground
         run: |
           npm install
-          npm run cdk bootstrap -- -c distVersion=${DIST_VERSION} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }}
           npm run cdk deploy "*" -- -c distVersion=${DIST_VERSION} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} -c adminPassword=${{ SECRETS.OPENSEARCH_PASSWORD }} --require-approval never --outputs-file output.json
 
           yq e '.. | select(has("loadbalancerurl")) | .loadbalancerurl' output.json
