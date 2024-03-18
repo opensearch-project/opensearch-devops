@@ -53,8 +53,6 @@ export class NightlyPlaygroundStack {
     });
 
     this.stacks.push(networkStack);
-    networkStack.addDependency(commonToolsStack);
-
     // @ts-ignore
     const infraStack = new InfraStack(scope, `infraStack-${id}`, {
       ...props,
@@ -77,5 +75,6 @@ export class NightlyPlaygroundStack {
     this.stacks.push(infraStack);
 
     infraStack.addDependency(networkStack);
+    infraStack.addDependency(commonToolsStack);
   }
 }
