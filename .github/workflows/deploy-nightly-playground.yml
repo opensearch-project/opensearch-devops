@@ -32,7 +32,7 @@ jobs:
           echo "OPENSEARCH_DIST_MANIFEST_URL=https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{inputs.dist_version}}/$opensearch_build_id/linux/x64/tar/dist/opensearch/manifest.yml" >> "$GITHUB_OUTPUT"
           echo "OPENSEARCH_DASHBOARDS_DIST_MANIFEST_URL=https://ci.opensearch.org/ci/dbc/distribution-build-opensearch-dashboards/${{inputs.dist_version}}/$dashboards_build_id/linux/x64/tar/dist/opensearch-dashboards/manifest.yml" >> "$GITHUB_OUTPUT"
 
-  validate:
+  validate-and-deploy:
     outputs:
       ENDPOINT: ${{ steps.deploy.outputs.ENDPOINT }}
     permissions:

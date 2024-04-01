@@ -1,4 +1,4 @@
-name: Index data to opensearch cluster
+name: Trigger nightly playground deployment
 
 on:
   workflow_dispatch:
