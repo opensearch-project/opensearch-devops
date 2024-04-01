@@ -1,13 +1,12 @@
 name: Nightly Playground Validate and Deploy
 
 on:
-  workflow_dispatch:
-  schedule:
-    - cron:  '0 0 * * *'
-
-
-env:
-  DIST_VERSION: 2.14.0
+  workflow_call:
+    inputs:
+      dist_version:
+        required: true
+        description: 'OpenSearch and Dashboards distribution version'
+        type: string
 
 jobs:
   set-os-osd-urls:
@@ -21,8 +20,8 @@ jobs:
       - name: Set Env variables
         id: set-env
         run: |
-          wget https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${DIST_VERSION}/latest/linux/x64/tar/dist/opensearch/manifest.yml -O opensearch.yml
-          wget https://ci.opensearch.org/ci/dbc/distribution-build-opensearch-dashboards/${DIST_VERSION}/latest/linux/x64/tar/dist/opensearch-dashboards/manifest.yml -O dashboards.yml
+          wget https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{inputs.dist_version}}/latest/linux/x64/tar/dist/opensearch/manifest.yml -O opensearch.yml
+          wget https://ci.opensearch.org/ci/dbc/distribution-build-opensearch-dashboards/${{inputs.dist_version}}/latest/linux/x64/tar/dist/opensearch-dashboards/manifest.yml -O dashboards.yml
 
           opensearch_build_id=$(yq .build.id opensearch.yml)
           dashboards_build_id=$(yq .build.id dashboards.yml)
@@ -30,10 +29,10 @@ jobs:
           echo "OPENSEARCH_URL=$(yq .build.location opensearch.yml)" >> "$GITHUB_OUTPUT"
           echo "OPENSEARCH_DASHBOARDS_URL=$(yq .build.location dashboards.yml)" >> "$GITHUB_OUTPUT"
 
-          echo "OPENSEARCH_DIST_MANIFEST_URL=https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${DIST_VERSION}/$opensearch_build_id/linux/x64/tar/dist/opensearch/manifest.yml" >> "$GITHUB_OUTPUT"
-          echo "OPENSEARCH_DASHBOARDS_DIST_MANIFEST_URL=https://ci.opensearch.org/ci/dbc/distribution-build-opensearch-dashboards/${DIST_VERSION}/$dashboards_build_id/linux/x64/tar/dist/opensearch-dashboards/manifest.yml" >> "$GITHUB_OUTPUT"
+          echo "OPENSEARCH_DIST_MANIFEST_URL=https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{inputs.dist_version}}/$opensearch_build_id/linux/x64/tar/dist/opensearch/manifest.yml" >> "$GITHUB_OUTPUT"
+          echo "OPENSEARCH_DASHBOARDS_DIST_MANIFEST_URL=https://ci.opensearch.org/ci/dbc/distribution-build-opensearch-dashboards/${{inputs.dist_version}}/$dashboards_build_id/linux/x64/tar/dist/opensearch-dashboards/manifest.yml" >> "$GITHUB_OUTPUT"
 
-  validate-and-deploy:
+  validate:
     outputs:
       ENDPOINT: ${{ steps.deploy.outputs.ENDPOINT }}
     permissions:
@@ -75,23 +74,26 @@ jobs:
         working-directory: nightly-playground
         run: |
           npm install
-          npm run cdk deploy "*" -- -c distVersion=${DIST_VERSION} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} -c adminPassword=${{ SECRETS.OPENSEARCH_PASSWORD }} --require-approval never --outputs-file output.json
+          playground_id=`echo ${{inputs.dist_version}} | cut -d. -f1`x
+          npm run cdk deploy "*" -- -c playgroundId=$playground_id -c distVersion=${{inputs.dist_version}} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} -c adminPassword=${{ SECRETS.OPENSEARCH_PASSWORD }} --require-approval never --outputs-file output.json
 
           yq e '.. | select(has("loadbalancerurl")) | .loadbalancerurl' output.json
-          echo "ENDPOINT=$(aws cloudformation --region us-west-2 describe-stacks --stack-name infraStack-2x --query 'Stacks[0].Outputs[0].OutputValue' --output text)" >> "$GITHUB_OUTPUT"
+          echo "ENDPOINT=$(aws cloudformation --region us-west-2 describe-stacks --stack-name infraStack-$playground_id --query 'Stacks[0].Outputs[0].OutputValue' --output text)" >> "$GITHUB_OUTPUT"
 
   index-dist-manifests:
     needs: 
       - set-os-osd-urls
       - validate-and-deploy
-    uses: opensearch-project/opensearch-devops/.github/workflows/index-data.yml@main
-    with:
-      endpoint: ${{ needs.validate-and-deploy.outputs.ENDPOINT }}
-      opensearch-manifest-url: ${{ needs.set-os-osd-urls.outputs.OPENSEARCH_DIST_MANIFEST_URL }}
-      opensearch-dashboards-manifest-url: ${{ needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_DIST_MANIFEST_URL }}
-    secrets:
-      opensearch-user: ${{ secrets.OPENSEARCH_USER }}
-      opensearch-password: ${{ secrets.OPENSEARCH_PASSWORD }}
+    steps:
+      run: |
+        wget ${{ needs.set-os-osd-urls.outputs.OPENSEARCH_DIST_MANIFEST_URL }} -O opensearch.yml
+        wget ${{ needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_DIST_MANIFEST_URL }} -O opensearch-dashboards.yml
+        yq -o=json '.' opensearch.yml > opensearch.json
+        yq -o=json '.' opensearch-dashboards.yml > dashboards.json
+
+        curl -X POST "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/opensearch/_doc/1" -H "Content-Type: application/json" -d @opensearch.json -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
+
+        curl -X POST "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/opensearch-dashboards/_doc/1" -H "Content-Type: application/json" -d @dashboards.json -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
 
 
 

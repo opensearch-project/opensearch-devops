@@ -15,11 +15,12 @@ test('Ensure security is always enabled with custom role mapping', () => {
       distVersion: '2.3.0',
       distributionUrl: 'someUrl',
       dashboardsUrl: 'someUrl',
+      playGroundId: '2x',
     },
   });
 
   // WHEN
-  const nightlyStack = new NightlyPlaygroundStack(app, '2x', {
+  const nightlyStack = new NightlyPlaygroundStack(app, {
     env: { account: 'test-account', region: 'us-east-1' },
   });
 
@@ -77,10 +78,8 @@ test('Throw an error for missing distVersion', () => {
       dashboardsUrl: 'someUrl',
     },
   });
-  // WHEN
   try {
-  // WHEN
-    const nightlyStack = new NightlyPlaygroundStack(app, '2x', {
+    const nightlyStack = new NightlyPlaygroundStack(app, {
       env: { account: 'test-account', region: 'us-east-1' },
     });
 
@@ -103,7 +102,7 @@ test('Test commons stack resources', () => {
   });
 
   // WHEN
-  const nightlyStack = new NightlyPlaygroundStack(app, '2x', {
+  const nightlyStack = new NightlyPlaygroundStack(app, {
     env: { account: 'test-account', region: 'us-east-1' },
   });
 
@@ -131,11 +130,12 @@ test('Ensure port mapping', () => {
       distVersion: '2.3.0',
       distributionUrl: 'someUrl',
       dashboardsUrl: 'someUrl',
+      playGroundId: '2x',
     },
   });
 
   // WHEN
-  const nightlyStack = new NightlyPlaygroundStack(app, '2x', {
+  const nightlyStack = new NightlyPlaygroundStack(app, {
     env: { account: 'test-account', region: 'us-east-1' },
   });
 

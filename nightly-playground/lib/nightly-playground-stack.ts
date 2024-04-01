@@ -14,11 +14,14 @@ import { CommonToolsStack } from './common-tools-stack';
 export class NightlyPlaygroundStack {
   public stacks: Stack[] = []; // only required for testing purpose
 
-  constructor(scope: Construct, id: string, props: StackProps) {
+  constructor(scope: Construct, props: StackProps) {
     const distVersion = scope.node.tryGetContext('distVersion');
     if (distVersion === 'undefined') {
       throw new Error('distVersion parameter cannot be empty! Please provide the OpenSearch distribution version');
     }
+    
+    const playGroundId = scope.node.tryGetContext('playGroundId');
+
     const distributionUrl = scope.node.tryGetContext('distributionUrl');
     if (distributionUrl === 'undefined') {
       throw new Error('distributionUrl parameter cannot be empty! Please provide the OpenSearch distribution URL');
@@ -46,7 +49,7 @@ export class NightlyPlaygroundStack {
     this.stacks.push(commonToolsStack);
 
     // @ts-ignore
-    const networkStack = new NetworkStack(scope, `networkStack-${id}`, {
+    const networkStack = new NetworkStack(scope, 'networkStack', {
       ...props,
       serverAccessType: 'ipv4',
       restrictServerAccessTo: '0.0.0.0/0',
@@ -56,7 +59,7 @@ export class NightlyPlaygroundStack {
     networkStack.addDependency(commonToolsStack);
 
     // @ts-ignore
-    const infraStack = new InfraStack(scope, `infraStack-${id}`, {
+    const infraStack = new InfraStack(scope, `infraStack-${playGroundId}`, {
       ...props,
       vpc: networkStack.vpc,
       securityGroup: networkStack.osSecurityGroup,
