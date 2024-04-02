@@ -16,22 +16,24 @@ export class NightlyPlaygroundStack {
 
   constructor(scope: Construct, props: StackProps) {
     const distVersion = scope.node.tryGetContext('distVersion');
-    if (distVersion === 'undefined') {
+    if (distVersion === undefined) {
       throw new Error('distVersion parameter cannot be empty! Please provide the OpenSearch distribution version');
     }
-    
     const playGroundId = scope.node.tryGetContext('playGroundId');
+    if (playGroundId === undefined) {
+      throw new Error('playGroundId parameter cannot be empty! Please provide one as it acts as infraStack indentifier.');
+    }
 
     const distributionUrl = scope.node.tryGetContext('distributionUrl');
-    if (distributionUrl === 'undefined') {
+    if (distributionUrl === undefined) {
       throw new Error('distributionUrl parameter cannot be empty! Please provide the OpenSearch distribution URL');
     }
     const dashboardsUrl = scope.node.tryGetContext('dashboardsUrl');
-    if (dashboardsUrl === 'undefined') {
+    if (dashboardsUrl === undefined) {
       throw new Error('dashboardsUrl parameter cannot be empty! Please provide the OpenSearch-Dashboards distribution URL');
     }
     const dashboardPassword = scope.node.tryGetContext('dashboardPassword');
-    if (dashboardPassword === 'undefined') {
+    if (dashboardPassword === undefined) {
       throw new Error('dashboardPassword parameter cannot be empty! Please provide the OpenSearch-Dashboards customized password for kibanauser');
     }
 

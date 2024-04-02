@@ -16,6 +16,7 @@ test('Ensure security is always enabled with custom role mapping', () => {
       distributionUrl: 'someUrl',
       dashboardsUrl: 'someUrl',
       playGroundId: '2x',
+      dashboardPassword: 'foo',
     },
   });
 
@@ -60,7 +61,7 @@ test('Ensure security is always enabled with custom role mapping', () => {
               ignoreErrors: false,
             },
             '017': {
-              command: "set -ex;cd opensearch-dashboards/config; echo \"opensearch_security.auth.anonymous_auth_enabled: 'true'\nopensearch.password: undefined\nopensearch_security.cookie.secure: 'true'\nopensearch_security.cookie.isSameSite: None\n\">additionalOsdConfig.yml; yq eval-all -i '. as $item ireduce ({}; . * $item)' opensearch_dashboards.yml additionalOsdConfig.yml -P",
+              command: "set -ex;cd opensearch-dashboards/config; echo \"opensearch_security.auth.anonymous_auth_enabled: 'true'\nopensearch.password: foo\nopensearch_security.cookie.secure: 'true'\nopensearch_security.cookie.isSameSite: None\n\">additionalOsdConfig.yml; yq eval-all -i '. as $item ireduce ({}; . * $item)' opensearch_dashboards.yml additionalOsdConfig.yml -P",
               cwd: '/home/ec2-user',
               ignoreErrors: false,
             },
@@ -92,12 +93,37 @@ test('Throw an error for missing distVersion', () => {
   }
 });
 
+test('Throw an error for missing playGroundId', () => {
+  const app = new App({
+    context: {
+      distVersion: '3.0.0',
+      distributionUrl: 'someUrl',
+      dashboardsUrl: 'someUrl',
+      dashboardPassword: 'bar',
+    },
+  });
+  try {
+    const nightlyStack = new NightlyPlaygroundStack(app, {
+      env: { account: 'test-account', region: 'us-east-1' },
+    });
+
+    // eslint-disable-next-line no-undef
+    fail('Expected an error to be thrown');
+  } catch (error) {
+    expect(error).toBeInstanceOf(Error);
+    // @ts-ignore
+    expect(error.message).toEqual('playGroundId parameter cannot be empty! Please provide one as it acts as infraStack indentifier.');
+  }
+});
+
 test('Test commons stack resources', () => {
   const app = new App({
     context: {
       distVersion: '2.3.0',
       distributionUrl: 'someUrl',
       dashboardsUrl: 'someUrl',
+      playGroundId: '2x',
+      dashboardPassword: 'bar',
     },
   });
 
@@ -131,6 +157,7 @@ test('Ensure port mapping', () => {
       distributionUrl: 'someUrl',
       dashboardsUrl: 'someUrl',
       playGroundId: '2x',
+      dashboardPassword: 'foo',
     },
   });
 
