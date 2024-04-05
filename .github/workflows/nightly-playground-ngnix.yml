@@ -1,0 +1,34 @@
+name: Deploy ngnix stack for nightly playground
+
+on:
+    workflow_call:
+      inputs:
+        endpoint_2x:
+          required: true
+          description: 'Nightly playground endpoint for 2x pipeline'
+          type: string
+        endpoint_3x:
+            required: true
+            description: 'Nightly playground endpoint for 3x pipeline'
+            type: string
+
+jobs:
+  update-ngnix-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ secrets.DEPLOY_NIGHTLY_PLAYGROUND_ROLE }}
+          aws-region: us-west-2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 16.x
+
+      - name: Deploy routing stack
+        working-directory: nightly-playground
+        run: |
+          npm install
+          npm run cdk deploy "ngnixBased*" -- -c playgroundId=someId -c distVersion="3.0.0" -c distributionUrl="someUrl" -c dashboardsUrl="someUrl" -c dashboardPassword="somePassword" -c adminPassword="somePassword" -c endpoint2x=${{inputs.endpoint_2x}} -c endpoint3x=${{inputs.endpoint_3x}} --require-approval never

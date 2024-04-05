@@ -14,6 +14,6 @@ const app = new App();
 const region = app.node.tryGetContext('region') ?? process.env.CDK_DEFAULT_REGION;
 const account = app.node.tryGetContext('account') ?? process.env.CDK_DEFAULT_ACCOUNT;
 
-new NightlyPlaygroundStack(app, {
+const nighlty = new NightlyPlaygroundStack(app, {
   env: { account, region },
 });

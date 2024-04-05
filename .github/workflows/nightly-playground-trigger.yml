@@ -1,0 +1,22 @@
+name: Trigger nightly playground deployment
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron:  '0 0 * * *'
+
+jobs:   
+  deploy-nightly-playground:
+    strategy:
+      matrix:
+        dist_version: ['2.14.0', '3.0.0']
+    uses: opensearch-project/opensearch-devops/.github/workflows/deploy-nightly-playground.yml@main
+    with:
+      dist_version: ${{ matrix.dist_version }}
+
+  update-ngnix-config:
+    needs: deploy-nightly-playground
+    uses: opensearch-project/opensearch-devops/.github/workflows/nightly-playground-ngnix.yml@main
+    with:
+      endpoint_2x: ${{ needs.deploy-nightly-playground.outputs.endpoint_2x }}
+      endpoint_3x: ${{ needs.deploy-nightly-playground.outputs.endpoint_3x }}

@@ -10,6 +10,7 @@ import { NetworkStack } from '@opensearch-project/opensearch-cluster-cdk/lib/net
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { CommonToolsStack } from './common-tools-stack';
+import { Routing } from './routing';
 
 export class NightlyPlaygroundStack {
   public stacks: Stack[] = []; // only required for testing purpose
@@ -37,10 +38,11 @@ export class NightlyPlaygroundStack {
       throw new Error('dashboardPassword parameter cannot be empty! Please provide the OpenSearch-Dashboards customized password for kibanauser');
     }
 
-    const additionalOsdConfigString = `{"opensearch_security.auth.anonymous_auth_enabled": "true", "opensearch.password": "${dashboardPassword}", `
-    + '"opensearch_security.cookie.secure": "true", "opensearch_security.cookie.isSameSite": "None"}';
+    const additionalOsdConfig = `{"opensearch_security.auth.anonymous_auth_enabled": "true", "opensearch.password": "${dashboardPassword}", `
+    + '"opensearch_security.cookie.secure": "true", "opensearch_security.cookie.isSameSite": "None",'
+    + `"server.basePath": "/${playGroundId}", "server.rewriteBasePath": "true"}`;
 
-    const securtityConfig = '{ "resources/security-config/config.yml" : "opensearch/config/opensearch-security/config.yml", '
+    const securityConfig = '{ "resources/security-config/config.yml" : "opensearch/config/opensearch-security/config.yml", '
     + '"resources/security-config/roles_mapping.yml" : "opensearch/config/opensearch-security/roles_mapping.yml", '
     + '"resources/security-config/roles.yml" : "opensearch/config/opensearch-security/roles.yml", '
     + '"resources/security-config/internal_users.yml": "opensearch/config/opensearch-security/internal_users.yml"}';
@@ -50,11 +52,10 @@ export class NightlyPlaygroundStack {
     });
     this.stacks.push(commonToolsStack);
 
-    // @ts-ignore
     const networkStack = new NetworkStack(scope, 'networkStack', {
       ...props,
-      serverAccessType: 'ipv4',
-      restrictServerAccessTo: '0.0.0.0/0',
+      serverAccessType: 'prefixList',
+      restrictServerAccessTo: 'pl-f8a64391',
     });
 
     this.stacks.push(networkStack);
@@ -73,8 +74,8 @@ export class NightlyPlaygroundStack {
       distributionUrl,
       singleNodeCluster: false,
       dashboardsUrl,
-      customConfigFiles: securtityConfig,
-      additionalOsdConfig: additionalOsdConfigString,
+      customConfigFiles: securityConfig,
+      additionalOsdConfig,
       certificateArn: commonToolsStack.certificateArn,
       mapOpensearchPortTo: 8443,
       mapOpensearchDashboardsPortTo: 443,
@@ -82,5 +83,22 @@ export class NightlyPlaygroundStack {
     this.stacks.push(infraStack);
 
     infraStack.addDependency(networkStack);
+
+    const endpoint2x = scope.node.tryGetContext('endpoint2x');
+    const endpoint3x = scope.node.tryGetContext('endpoint3x');
+
+    const routingStack = new Routing(scope, 'ngnixBasedRoutingSpecs', {
+      ...props,
+      vpc: networkStack.vpc,
+      securityGroup: networkStack.osSecurityGroup,
+      certificateArn: commonToolsStack.certificateArn,
+      endpoint2x,
+      endpoint3x,
+      domainName: commonToolsStack.zone,
+    });
+
+    this.stacks.push(routingStack);
+    routingStack.addDependency(networkStack);
+    routingStack.addDependency(commonToolsStack);
   }
 }

@@ -13,16 +13,17 @@ import { Construct } from 'constructs';
 export class CommonToolsStack extends Stack {
     readonly certificateArn: string
 
+    readonly zone = 'playground.nightly.opensearch.org'
+
     constructor(scope: Construct, id: string, props: StackProps) {
       super(scope, id, props);
-      const zone = 'playground.nightly.opensearch.org';
 
       const route53HostedZone = new HostedZone(this, 'nigghhtlyHostedZone', {
-        zoneName: zone,
+        zoneName: this.zone,
       });
 
       const certificate = new Certificate(this, 'cert', {
-        domainName: zone,
+        domainName: this.zone,
         validation: CertificateValidation.fromDns(route53HostedZone),
       });
       this.certificateArn = certificate.certificateArn;

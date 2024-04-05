@@ -7,6 +7,16 @@ on:
         required: true
         description: 'OpenSearch and Dashboards distribution version'
         type: string
+    outputs:
+      endpoint:
+        description: 'Cluster endpoint'
+        value: ${{ jobs.validate-and-deploy.outputs.ENDPOINT }}
+      endpoint_2x:
+        description: 'Cluster endpoint if dist version is 2x'
+        value: ${{ jobs.assign-ouput-values.outputs.endpoint_2x }}
+      endpoint_3x:
+        description: 'Cluster endpoint if dist version is 3x'
+        value: ${{ jobs.assign-ouput-values.outputs.endpoint_3x }}
 
 jobs:
   set-os-osd-urls:
@@ -84,16 +94,35 @@ jobs:
     needs: 
       - set-os-osd-urls
       - validate-and-deploy
+    runs-on: ubuntu-latest
     steps:
-      run: |
-        wget ${{ needs.set-os-osd-urls.outputs.OPENSEARCH_DIST_MANIFEST_URL }} -O opensearch.yml
-        wget ${{ needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_DIST_MANIFEST_URL }} -O opensearch-dashboards.yml
-        yq -o=json '.' opensearch.yml > opensearch.json
-        yq -o=json '.' opensearch-dashboards.yml > dashboards.json
+      - name: Index distribution manifests
+        run: |
+          wget ${{ needs.set-os-osd-urls.outputs.OPENSEARCH_DIST_MANIFEST_URL }} -O opensearch.yml
+          wget ${{ needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_DIST_MANIFEST_URL }} -O opensearch-dashboards.yml
+          yq -o=json '.' opensearch.yml > opensearch.json
+          yq -o=json '.' opensearch-dashboards.yml > dashboards.json
 
-        curl -X POST "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/opensearch/_doc/1" -H "Content-Type: application/json" -d @opensearch.json -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
+          curl -X POST "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/opensearch/_doc/1" -H "Content-Type: application/json" -d @opensearch.json -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
 
-        curl -X POST "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/opensearch-dashboards/_doc/1" -H "Content-Type: application/json" -d @dashboards.json -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
+          curl -X POST "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/opensearch-dashboards/_doc/1" -H "Content-Type: application/json" -d @dashboards.json -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
 
-
-
+  assign-ouput-values:
+    outputs:
+      endpoint_2x: ${{ steps.assign.outputs.endpoint2x }}
+      endpoint_3x: ${{ steps.assign.outputs.endpoint3x }}
+    needs: 
+      - validate-and-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Map endpoint values
+        id: assign
+        shell: bash
+        run: |
+          if [[ "${{inputs.dist_version}}" == 2.* ]]; then
+              echo "endpoint_2x=${{needs.validate-and-deploy.outputs.ENDPOINT}} >> "$GITHUB_OUTPUT""
+          elif [[ "${{inputs.dist_version}}" == 3.* ]]; then
+              echo "endpoint_3x=${{needs.validate-and-deploy.outputs.ENDPOINT}} >> "$GITHUB_OUTPUT""
+          else
+              echo "dist_version does not belong to 2x or 3x"
+          fi

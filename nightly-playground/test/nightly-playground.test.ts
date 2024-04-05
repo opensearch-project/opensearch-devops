@@ -26,7 +26,7 @@ test('Ensure security is always enabled with custom role mapping', () => {
   });
 
   // THEN
-  expect(nightlyStack.stacks).toHaveLength(3);
+  expect(nightlyStack.stacks).toHaveLength(4);
   const infraStack = nightlyStack.stacks.filter((s) => s.stackName === 'infraStack-2x')[0];
   const infraTemplate = Template.fromStack(infraStack);
 
@@ -61,7 +61,7 @@ test('Ensure security is always enabled with custom role mapping', () => {
               ignoreErrors: false,
             },
             '017': {
-              command: "set -ex;cd opensearch-dashboards/config; echo \"opensearch_security.auth.anonymous_auth_enabled: 'true'\nopensearch.password: foo\nopensearch_security.cookie.secure: 'true'\nopensearch_security.cookie.isSameSite: None\n\">additionalOsdConfig.yml; yq eval-all -i '. as $item ireduce ({}; . * $item)' opensearch_dashboards.yml additionalOsdConfig.yml -P",
+              command: "set -ex;cd opensearch-dashboards/config; echo \"opensearch_security.auth.anonymous_auth_enabled: 'true'\nopensearch.password: foo\nopensearch_security.cookie.secure: 'true'\nopensearch_security.cookie.isSameSite: None\nserver.basePath: /2x\nserver.rewriteBasePath: 'true'\n\">additionalOsdConfig.yml; yq eval-all -i '. as $item ireduce ({}; . * $item)' opensearch_dashboards.yml additionalOsdConfig.yml -P",
               cwd: '/home/ec2-user',
               ignoreErrors: false,
             },
@@ -166,7 +166,7 @@ test('Ensure port mapping', () => {
     env: { account: 'test-account', region: 'us-east-1' },
   });
 
-  expect(nightlyStack.stacks).toHaveLength(3);
+  expect(nightlyStack.stacks).toHaveLength(4);
   const infraStack = nightlyStack.stacks.filter((s) => s.stackName === 'infraStack-2x')[0];
   const infraTemplate = Template.fromStack(infraStack);
 
@@ -184,5 +184,76 @@ test('Ensure port mapping', () => {
   infraTemplate.hasResourceProperties('AWS::ElasticLoadBalancingV2::Listener', {
     Port: 8443,
     Protocol: 'TCP',
+  });
+});
+
+test('ngnix load balancer and ASG resources', () => {
+  const app = new App({
+    context: {
+      distVersion: '2.3.0',
+      distributionUrl: 'someUrl',
+      dashboardsUrl: 'someUrl',
+      playGroundId: '2x',
+      dashboardPassword: 'foo',
+      endpoint2x: 'some2xNLBendpoint',
+      endpoint3x: 'some3xNLBendpoint',
+    },
+  });
+
+  // WHEN
+  const nightlyStack = new NightlyPlaygroundStack(app, {
+    env: { account: 'test-account', region: 'us-east-1' },
+  });
+
+  expect(nightlyStack.stacks).toHaveLength(4);
+  const routingStack = nightlyStack.stacks.filter((s) => s.stackName === 'ngnixBasedRoutingSpecs')[0];
+  const routingStackTemplate = Template.fromStack(routingStack);
+
+  routingStackTemplate.resourceCountIs('AWS::AutoScaling::AutoScalingGroup', 1);
+  routingStackTemplate.resourceCountIs('AWS::ElasticLoadBalancingV2::LoadBalancer', 1);
+  routingStackTemplate.resourceCountIs('AWS::ElasticLoadBalancingV2::Listener', 1);
+  routingStackTemplate.resourceCountIs('AWS::ElasticLoadBalancingV2::TargetGroup', 1);
+  routingStackTemplate.hasResourceProperties('AWS::ElasticLoadBalancingV2::Listener', {
+    Port: 443,
+    Protocol: 'HTTPS',
+    Certificates: [
+      {
+        CertificateArn: {
+          'Fn::ImportValue': Match.anyValue(),
+        },
+      },
+    ],
+  });
+  routingStackTemplate.hasResource('AWS::AutoScaling::AutoScalingGroup', {
+    /* eslint-disable max-len */
+    Metadata: {
+      'AWS::CloudFormation::Init': {
+        config: {
+          files: {
+            '/etc/nginx/conf.d/opensearchdashboard.conf': {
+              content: 'resolver 10.0.0.2 ipv6=off;\n              \n              server {\n                  listen 443;\n                  server_name playground.nightly.opensearch.org;\n              \n                  ssl_certificate /etc/nginx/cert.crt;\n                  ssl_certificate_key /etc/nginx/cert.key;\n              \n                  ssl on;\n                  ssl_session_cache builtin:1000 shared:SSL:10m;\n                  ssl_protocols TLSv1 TLSv1.1 TLSv1.2;\n                  ssl_ciphers HIGH:!aNULL:!eNULL:!EXPORT:!CAMELLIA:!DES:!MD5:!PSK:!RC4;\n                  ssl_prefer_server_ciphers on;\n              \n                  location ^~ /2x {\n                      proxy_pass https://some2xNLBendpoint/2x;\n                      proxy_set_header X-Real-IP $remote_addr;  # Set the X-Real-IP header\n                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;  # Set the X-Forwarded-For header\n                      proxy_set_header X-Forwarded-Proto $scheme;  # Set the X-Forwarded-Proto header\n                  }\n                  location ^~ /3x {\n                    proxy_pass https://some3xNLBendpoint/3x;\n                    proxy_set_header X-Real-IP $remote_addr;  # Set the X-Real-IP header\n                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;  # Set the X-Forwarded-For header\n                    proxy_set_header X-Forwarded-Proto $scheme;  # Set the X-Forwarded-Proto header\n                }\n              }',
+              encoding: 'plain',
+              mode: '000644',
+              owner: 'root',
+              group: 'root',
+            },
+          },
+          commands: {
+            '000': {
+              command: 'amazon-linux-extras install nginx1.12 -y',
+            },
+            '001': {
+              command: "openssl req -x509 -nodes -newkey rsa:4096 -keyout /etc/nginx/cert.key -out /etc/nginx/cert.crt -days 365 -subj '/CN=SH'",
+            },
+            '002': {
+              command: 'sudo systemctl start nginx',
+            },
+            '003': {
+              command: 'sudo systemctl enable nginx',
+            },
+          },
+        },
+      },
+    },
   });
 });
