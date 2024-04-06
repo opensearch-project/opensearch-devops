@@ -120,9 +120,9 @@ jobs:
         shell: bash
         run: |
           if [[ "${{inputs.dist_version}}" == 2.* ]]; then
-              echo "endpoint_2x=${{needs.validate-and-deploy.outputs.ENDPOINT}} >> "$GITHUB_OUTPUT""
+              echo "endpoint_2x=${{needs.validate-and-deploy.outputs.ENDPOINT}}" >> $GITHUB_OUTPUT"
           elif [[ "${{inputs.dist_version}}" == 3.* ]]; then
-              echo "endpoint_3x=${{needs.validate-and-deploy.outputs.ENDPOINT}} >> "$GITHUB_OUTPUT""
+              echo "endpoint_3x=${{needs.validate-and-deploy.outputs.ENDPOINT}}" >> "$GITHUB_OUTPUT"
           else
               echo "dist_version does not belong to 2x or 3x"
           fi
