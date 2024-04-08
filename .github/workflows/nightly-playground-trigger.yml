@@ -9,7 +9,7 @@ jobs:
   deploy-nightly-playground:
     strategy:
       matrix:
-        dist_version: ['2.14.0', '3.0.0']
+        dist_version: ['2.13.0', '3.0.0']
     uses: opensearch-project/opensearch-devops/.github/workflows/deploy-nightly-playground.yml@main
     with:
       dist_version: ${{ matrix.dist_version }}
