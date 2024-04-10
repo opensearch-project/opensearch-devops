@@ -13,8 +13,7 @@ import { NightlyPlaygroundStack } from '../lib/nightly-playground-stack';
 const app = new App();
 const region = app.node.tryGetContext('region') ?? process.env.CDK_DEFAULT_REGION;
 const account = app.node.tryGetContext('account') ?? process.env.CDK_DEFAULT_ACCOUNT;
-const playgroundId = app.node.tryGetContext('playgroundId') ?? '2x';
 
-new NightlyPlaygroundStack(app, playgroundId, {
+new NightlyPlaygroundStack(app, {
   env: { account, region },
 });

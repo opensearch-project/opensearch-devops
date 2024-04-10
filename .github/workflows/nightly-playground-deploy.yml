@@ -1,0 +1,128 @@
+name: Nightly Playground Validate and Deploy
+
+on:
+  workflow_call:
+    inputs:
+      dist_version:
+        required: true
+        description: 'OpenSearch and Dashboards distribution version'
+        type: string
+    outputs:
+      endpoint:
+        description: 'Cluster endpoint'
+        value: ${{ jobs.validate-and-deploy.outputs.ENDPOINT }}
+      endpoint_2x:
+        description: 'Cluster endpoint if dist version is 2x'
+        value: ${{ jobs.assign-ouput-values.outputs.endpoint_2x }}
+      endpoint_3x:
+        description: 'Cluster endpoint if dist version is 3x'
+        value: ${{ jobs.assign-ouput-values.outputs.endpoint_3x }}
+
+jobs:
+  set-os-osd-urls:
+    runs-on: ubuntu-latest
+    outputs:
+      OPENSEARCH_URL: ${{ steps.set-env.outputs.OPENSEARCH_URL }}
+      OPENSEARCH_DASHBOARDS_URL: ${{ steps.set-env.outputs.OPENSEARCH_DASHBOARDS_URL }}
+      OPENSEARCH_DIST_MANIFEST_URL: ${{ steps.set-env.outputs.OPENSEARCH_DIST_MANIFEST_URL }}
+      OPENSEARCH_DASHBOARDS_DIST_MANIFEST_URL: ${{ steps.set-env.outputs.OPENSEARCH_DASHBOARDS_DIST_MANIFEST_URL }}
+    steps:
+      - name: Set Env variables
+        id: set-env
+        run: |
+          wget https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{inputs.dist_version}}/latest/linux/x64/tar/dist/opensearch/manifest.yml -O opensearch.yml
+          wget https://ci.opensearch.org/ci/dbc/distribution-build-opensearch-dashboards/${{inputs.dist_version}}/latest/linux/x64/tar/dist/opensearch-dashboards/manifest.yml -O dashboards.yml
+
+          opensearch_build_id=$(yq .build.id opensearch.yml)
+          dashboards_build_id=$(yq .build.id dashboards.yml)
+
+          echo "OPENSEARCH_URL=$(yq .build.location opensearch.yml)" >> "$GITHUB_OUTPUT"
+          echo "OPENSEARCH_DASHBOARDS_URL=$(yq .build.location dashboards.yml)" >> "$GITHUB_OUTPUT"
+
+          echo "OPENSEARCH_DIST_MANIFEST_URL=https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{inputs.dist_version}}/$opensearch_build_id/linux/x64/tar/dist/opensearch/manifest.yml" >> "$GITHUB_OUTPUT"
+          echo "OPENSEARCH_DASHBOARDS_DIST_MANIFEST_URL=https://ci.opensearch.org/ci/dbc/distribution-build-opensearch-dashboards/${{inputs.dist_version}}/$dashboards_build_id/linux/x64/tar/dist/opensearch-dashboards/manifest.yml" >> "$GITHUB_OUTPUT"
+
+  validate-and-deploy:
+    outputs:
+      ENDPOINT: ${{ steps.deploy.outputs.ENDPOINT }}
+    permissions:
+      id-token: write
+      contents: read
+    needs: set-os-osd-urls
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: 'opensearch-project/opensearch-build'
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.9
+
+      - name: Install Pipenv and Dependencies
+        run: |
+          python -m pip install --upgrade pipenv wheel
+          pipenv install --deploy --dev
+
+      - name: Validate OS and OSD
+        run: ./validation.sh --file-path opensearch=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} opensearch-dashboards=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}}
+
+      - uses: actions/checkout@v3
+
+      - uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ secrets.DEPLOY_NIGHTLY_PLAYGROUND_ROLE }}
+          aws-region: us-west-2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 16.x
+
+      - name: Deploy nightly playground
+        id: deploy
+        working-directory: nightly-playground
+        run: |
+          npm install
+          playground_id=`echo ${{inputs.dist_version}} | cut -d. -f1`x
+          npm run cdk deploy "infraStack*" -- -c playgroundId=$playground_id -c distVersion=${{inputs.dist_version}} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} -c adminPassword=${{ SECRETS.OPENSEARCH_PASSWORD }} --require-approval never --outputs-file output.json
+
+          yq e '.. | select(has("loadbalancerurl")) | .loadbalancerurl' output.json
+          echo "ENDPOINT=$(aws cloudformation --region us-west-2 describe-stacks --stack-name infraStack-$playground_id --query 'Stacks[0].Outputs[0].OutputValue' --output text)" >> "$GITHUB_OUTPUT"
+
+  index-dist-manifests:
+    needs: 
+      - set-os-osd-urls
+      - validate-and-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Index distribution manifests
+        run: |
+          wget ${{ needs.set-os-osd-urls.outputs.OPENSEARCH_DIST_MANIFEST_URL }} -O opensearch.yml
+          wget ${{ needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_DIST_MANIFEST_URL }} -O opensearch-dashboards.yml
+          yq -o=json '.' opensearch.yml > opensearch.json
+          yq -o=json '.' opensearch-dashboards.yml > dashboards.json
+
+          curl -X POST "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/opensearch/_doc/1" -H "Content-Type: application/json" -d @opensearch.json -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
+
+          curl -X POST "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/opensearch-dashboards/_doc/1" -H "Content-Type: application/json" -d @dashboards.json -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
+
+  assign-ouput-values:
+    outputs:
+      endpoint_2x: ${{ steps.assign.outputs.endpoint2x }}
+      endpoint_3x: ${{ steps.assign.outputs.endpoint3x }}
+    needs: 
+      - validate-and-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Map endpoint values
+        id: assign
+        shell: bash
+        run: |
+          if [[ "${{inputs.dist_version}}" == 2.* ]]; then
+              echo "endpoint_2x=${{needs.validate-and-deploy.outputs.ENDPOINT}}" >> $GITHUB_OUTPUT"
+          elif [[ "${{inputs.dist_version}}" == 3.* ]]; then
+              echo "endpoint_3x=${{needs.validate-and-deploy.outputs.ENDPOINT}}" >> "$GITHUB_OUTPUT"
+          else
+              echo "dist_version does not belong to 2x or 3x"
+          fi

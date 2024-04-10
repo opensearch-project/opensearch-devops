@@ -1,0 +1,36 @@
+name: Trigger nightly playground deployment
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron:  '0 0 * * *'
+
+jobs:   
+  deploy-nightly-playground:
+    strategy:
+      matrix:
+        dist_version: ['2.13.0', '3.0.0']
+    uses: opensearch-project/opensearch-devops/.github/workflows/deploy-nightly-playground.yml@main
+    with:
+      dist_version: ${{ matrix.dist_version }}
+
+  update-ngnix-config:
+    runs-on: ubuntu-latest
+    needs: deploy-nightly-playground
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ secrets.DEPLOY_NIGHTLY_PLAYGROUND_ROLE }}
+          aws-region: us-west-2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 16.x
+
+      - name: Deploy routing stack
+        working-directory: nightly-playground
+        run: |
+          npm install
+          npm run cdk deploy "ngnixBased*" -- -c playgroundId=3x -c distVersion="3.0.0" -c distributionUrl="someUrl" -c dashboardsUrl="someUrl" -c dashboardPassword="somePassword" -c adminPassword="somePassword" -c endpoint2x=${{needs.deploy-nightly-playground.outputs.endpoint_2x}} -c endpoint3x=${{needs.deploy-nightly-playground.outputs.endpoint_3x}} --require-approval never
