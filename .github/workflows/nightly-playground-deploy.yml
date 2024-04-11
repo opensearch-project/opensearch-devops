@@ -109,8 +109,8 @@ jobs:
 
   assign-ouput-values:
     outputs:
-      endpoint_2x: ${{ steps.assign.outputs.endpoint2x }}
-      endpoint_3x: ${{ steps.assign.outputs.endpoint3x }}
+      endpoint_2x: ${{ steps.assign.outputs.endpoint_2x }}
+      endpoint_3x: ${{ steps.assign.outputs.endpoint_3x }}
     needs: 
       - validate-and-deploy
     runs-on: ubuntu-latest
