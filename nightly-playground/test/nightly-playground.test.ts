@@ -206,7 +206,7 @@ test('ngnix load balancer and ASG resources', () => {
   });
 
   expect(nightlyStack.stacks).toHaveLength(4);
-  const routingStack = nightlyStack.stacks.filter((s) => s.stackName === 'ngnixBasedRoutingSpecs')[0];
+  const routingStack = nightlyStack.stacks.filter((s) => s.stackName === 'routingStack')[0];
   const routingStackTemplate = Template.fromStack(routingStack);
 
   routingStackTemplate.resourceCountIs('AWS::AutoScaling::AutoScalingGroup', 1);
@@ -255,5 +255,101 @@ test('ngnix load balancer and ASG resources', () => {
         },
       },
     },
+  });
+});
+
+test('WAF resources', () => {
+  const app = new App({
+    context: {
+      distVersion: '2.3.0',
+      distributionUrl: 'someUrl',
+      dashboardsUrl: 'someUrl',
+      playGroundId: '2x',
+      dashboardPassword: 'foo',
+      endpoint2x: 'some2xNLBendpoint',
+      endpoint3x: 'some3xNLBendpoint',
+    },
+  });
+
+  // WHEN
+  const nightlyStack = new NightlyPlaygroundStack(app, {
+    env: { account: 'test-account', region: 'us-east-1' },
+  });
+
+  expect(nightlyStack.stacks).toHaveLength(4);
+  const routingStack = nightlyStack.stacks.filter((s) => s.stackName === 'routingStack')[0];
+  const routingStackTemplate = Template.fromStack(routingStack);
+
+  routingStackTemplate.resourceCountIs('AWS::WAFv2::WebACL', 1);
+  routingStackTemplate.resourceCountIs('AWS::WAFv2::WebACLAssociation', 2);
+  routingStackTemplate.hasResourceProperties('AWS::WAFv2::WebACL', {
+    DefaultAction: {
+      Allow: {},
+    },
+    Scope: 'REGIONAL',
+    VisibilityConfig: {
+      CloudWatchMetricsEnabled: true,
+      MetricName: 'nightly-playground-WAF',
+      SampledRequestsEnabled: true,
+    },
+    Name: 'nightly-playground-WAF',
+    Rules: [
+      {
+        Name: 'AWS-AWSManagedRulesAmazonIpReputationList',
+        OverrideAction: {
+          None: {},
+        },
+        Priority: 0,
+        Statement: {
+          ManagedRuleGroupStatement: {
+            Name: 'AWSManagedRulesAmazonIpReputationList',
+            VendorName: 'AWS',
+          },
+        },
+        VisibilityConfig: {
+          CloudWatchMetricsEnabled: true,
+          MetricName: 'AWSManagedRulesAmazonIpReputationList',
+          SampledRequestsEnabled: true,
+        },
+      },
+      {
+        Name: 'AWS-AWSManagedRulesSQLiRuleSet',
+        OverrideAction: {
+          None: {},
+        },
+        Priority: 1,
+        Statement: {
+          ManagedRuleGroupStatement: {
+            ExcludedRules: [],
+            Name: 'AWSManagedRulesSQLiRuleSet',
+            VendorName: 'AWS',
+          },
+        },
+        VisibilityConfig: {
+          CloudWatchMetricsEnabled: true,
+          MetricName: 'AWS-AWSManagedRulesSQLiRuleSet',
+          SampledRequestsEnabled: true,
+        },
+      },
+      {
+        Name: 'AWS-AWSManagedRulesWordPressRuleSet',
+        OverrideAction: {
+          None: {},
+        },
+        Priority: 2,
+        Statement: {
+          ManagedRuleGroupStatement: {
+            ExcludedRules: [],
+            Name: 'AWSManagedRulesWordPressRuleSet',
+            VendorName: 'AWS',
+          },
+        },
+        VisibilityConfig: {
+          CloudWatchMetricsEnabled: true,
+          MetricName: 'AWS-AWSManagedRulesWordPressRuleSet',
+          SampledRequestsEnabled: true,
+        },
+      },
+    ],
   });
 });
