@@ -37,4 +37,4 @@ jobs:
         working-directory: nightly-playground
         run: |
           npm install
-          npm run cdk deploy "routing*" -- -c playGroundId=3x -c distVersion="3.0.0" -c distributionUrl="someUrl" -c dashboardsUrl="someUrl" -c dashboardPassword="somePassword" -c adminPassword="somePassword" -c endpoint2x=${{needs.deploy-nightly-playground.outputs.endpoint_2x}} -c endpoint3x=${{needs.deploy-nightly-playground.outputs.endpoint_3x}} --require-approval never
+          npm run cdk deploy "routing*" -- ${{needs.deploy-nightly-playground.outputs.cdk_vars}} -c endpoint2x=${{needs.deploy-nightly-playground.outputs.endpoint_2x}} -c endpoint3x=${{needs.deploy-nightly-playground.outputs.endpoint_3x}} --require-approval never
