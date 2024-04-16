@@ -87,7 +87,7 @@ export class NightlyPlaygroundStack {
     const endpoint2x = scope.node.tryGetContext('endpoint2x');
     const endpoint3x = scope.node.tryGetContext('endpoint3x');
 
-    const routingStack = new Routing(scope, 'ngnixBasedRoutingSpecs', {
+    const routingStack = new Routing(scope, 'routingStack', {
       ...props,
       vpc: networkStack.vpc,
       securityGroup: networkStack.osSecurityGroup,
@@ -95,10 +95,10 @@ export class NightlyPlaygroundStack {
       endpoint2x,
       endpoint3x,
       domainName: commonToolsStack.zone,
+      infraStackNLB: infraStack.nlb,
     });
 
     this.stacks.push(routingStack);
-    routingStack.addDependency(networkStack);
-    routingStack.addDependency(commonToolsStack);
+    routingStack.addDependency(infraStack);
   }
 }

@@ -17,6 +17,9 @@ on:
       endpoint_3x:
         description: 'Cluster endpoint if dist version is 3x'
         value: ${{ jobs.assign-ouput-values.outputs.endpoint_3x }}
+      cdk_vars:
+        description: 'Exact cdk context variables to be used'
+        value: ${{ jobs.validate-and-deploy.outputs.cdk_vars }}
 
 jobs:
   set-os-osd-urls:
@@ -45,6 +48,7 @@ jobs:
   validate-and-deploy:
     outputs:
       ENDPOINT: ${{ steps.deploy.outputs.ENDPOINT }}
+      cdk_vars: ${{steps.deploy.outputs.cdk_vars}}
     permissions:
       id-token: write
       contents: read
@@ -89,6 +93,7 @@ jobs:
 
           yq e '.. | select(has("loadbalancerurl")) | .loadbalancerurl' output.json
           echo "ENDPOINT=$(aws cloudformation --region us-west-2 describe-stacks --stack-name infraStack-$playground_id --query 'Stacks[0].Outputs[0].OutputValue' --output text)" >> "$GITHUB_OUTPUT"
+          echo "cdk_vars=`-c playGroundId=$playground_id -c distVersion=${{inputs.dist_version}} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} -c adminPassword=${{ SECRETS.OPENSEARCH_PASSWORD }}`" >> "GITHUB_OUTPUT"
 
   index-dist-manifests:
     needs: 

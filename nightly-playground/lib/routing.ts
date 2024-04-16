@@ -16,9 +16,12 @@ import {
   InstanceType, MachineImage, SubnetType,
 } from 'aws-cdk-lib/aws-ec2';
 import {
-  ApplicationLoadBalancer, ApplicationProtocol, ListenerCertificate, SslPolicy,
+  ApplicationLoadBalancer, ApplicationProtocol, ListenerCertificate,
+  NetworkLoadBalancer,
+  SslPolicy,
 } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { Construct } from 'constructs';
+import { NightlyPlaygroundWAF } from './security';
 
 export interface RoutingProps extends StackProps {
     readonly vpc: IVpc;
@@ -27,19 +30,22 @@ export interface RoutingProps extends StackProps {
     readonly endpoint2x : string
     readonly endpoint3x: string
     readonly domainName: string
+    readonly infraStackNLB: NetworkLoadBalancer
 }
 
 export class Routing extends Stack {
+  readonly alb: ApplicationLoadBalancer
+
   constructor(scope: Construct, id: string, props: RoutingProps) {
     super(scope, id, props);
 
-    const alb = new ApplicationLoadBalancer(this, 'alb', {
+    this.alb = new ApplicationLoadBalancer(this, 'alb', {
       vpc: props.vpc,
       internetFacing: true,
       securityGroup: props.securityGroup,
     });
 
-    const listener = alb.addListener('NginxProxyAlbListener', {
+    const listener = this.alb.addListener('NginxProxyAlbListener', {
       port: 443,
       protocol: ApplicationProtocol.HTTPS,
       sslPolicy: SslPolicy.RECOMMENDED_TLS,
@@ -76,6 +82,13 @@ export class Routing extends Stack {
         path: '/',
       },
       targets: [ngnix],
+    });
+
+    // Add WAF to all the LoadBalancers
+    const waf = new NightlyPlaygroundWAF(this, {
+      ...props,
+      ngnixLoadBalancer: this.alb,
+      infraStackLoadBalancer: props.infraStackNLB,
     });
   }
 
