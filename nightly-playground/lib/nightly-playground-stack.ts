@@ -79,9 +79,9 @@ export class NightlyPlaygroundStack {
       certificateArn: commonToolsStack.certificateArn,
       mapOpensearchPortTo: 8443,
       mapOpensearchDashboardsPortTo: 443,
+      customRoleArn: commonToolsStack.customRole.roleArn,
     });
     this.stacks.push(infraStack);
-
     infraStack.addDependency(networkStack);
 
     const endpoint2x = scope.node.tryGetContext('endpoint2x');
