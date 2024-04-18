@@ -140,8 +140,59 @@ test('Test commons stack resources', () => {
     Name: 'playground.nightly.opensearch.org.',
   });
   commonsStackTemplate.resourceCountIs('AWS::S3::Bucket', 1);
+  commonsStackTemplate.resourceCountIs('AWS::IAM::Role', 1);
+  commonsStackTemplate.resourceCountIs('AWS::IAM::Policy', 1);
   commonsStackTemplate.hasResourceProperties('AWS::S3::Bucket', {
     BucketName: 'nightly-playgrounds-snapshots-bucket',
+  });
+  commonsStackTemplate.hasResourceProperties('AWS::IAM::Policy', {
+    PolicyDocument: {
+      Statement: [
+        {
+          Action: [
+            's3:ListBucket',
+            's3:GetBucketLocation',
+            's3:ListBucketMultipartUploads',
+            's3:ListBucketVersions',
+            's3:GetObject',
+            's3:PutObject',
+            's3:DeleteObject',
+            's3:AbortMultipartUpload',
+            's3:ListMultipartUploadParts',
+          ],
+          Effect: 'Allow',
+          Resource: [
+            {
+              'Fn::GetAtt': [
+                'snapshotS3Bucket9CDAA6D3',
+                'Arn',
+              ],
+            },
+            {
+              'Fn::Join': [
+                '',
+                [
+                  {
+                    'Fn::GetAtt': [
+                      'snapshotS3Bucket9CDAA6D3',
+                      'Arn',
+                    ],
+                  },
+                  '/*',
+                ],
+              ],
+            },
+          ],
+        },
+      ],
+      Version: '2012-10-17',
+    },
+    PolicyName: 'customInstanceRoleDefaultPolicy5AD458B6',
+    Roles: [
+      {
+        Ref: 'customInstanceRole001450EE',
+      },
+    ],
   });
   commonsStackTemplate.hasResourceProperties('AWS::CertificateManager::Certificate', {
     DomainName: 'playground.nightly.opensearch.org',
