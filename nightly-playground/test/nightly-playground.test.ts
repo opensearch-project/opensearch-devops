@@ -139,6 +139,10 @@ test('Test commons stack resources', () => {
   commonsStackTemplate.hasResourceProperties('AWS::Route53::HostedZone', {
     Name: 'playground.nightly.opensearch.org.',
   });
+  commonsStackTemplate.resourceCountIs('AWS::S3::Bucket', 1);
+  commonsStackTemplate.hasResourceProperties('AWS::S3::Bucket', {
+    BucketName: 'nightly-playgrounds-snapshots-bucket',
+  });
   commonsStackTemplate.hasResourceProperties('AWS::CertificateManager::Certificate', {
     DomainName: 'playground.nightly.opensearch.org',
     DomainValidationOptions: [

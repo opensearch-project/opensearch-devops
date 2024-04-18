@@ -8,6 +8,7 @@ compatible open source license. */
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { Certificate, CertificateValidation } from 'aws-cdk-lib/aws-certificatemanager';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
+import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
 export class CommonToolsStack extends Stack {
@@ -27,5 +28,9 @@ export class CommonToolsStack extends Stack {
         validation: CertificateValidation.fromDns(route53HostedZone),
       });
       this.certificateArn = certificate.certificateArn;
+
+      const snapshotS3Bucket = new Bucket(this, 'snapshotS3Bucket', {
+        bucketName: 'nightly-playgrounds-snapshots-bucket',
+      });
     }
 }
