@@ -148,10 +148,10 @@ jobs:
               "base_path": "${{needs.validate-and-deploy.outputs.PLAYGROUND_ID}}"
             }
           }' -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
-      # - name: Restore altering configs
-      #   run: |
-      #     curl -XPOST "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/_snapshot/snapshots-repo/<replace_with_snapshot_id>/_restore" -H 'Content-Type: application/json' -d'
-      #     {
-      #       "indices": ".opendistro-alerting-config,.opensearch-notifications-config",
-      #       "ignore_unavailable": false,
-      #     }' -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
+      - name: Restore altering configs
+        run: |
+          curl -XPOST "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/_snapshot/snapshots-repo/alerts-config/_restore" -H 'Content-Type: application/json' -d'
+          {
+            "indices": ".opendistro-alerting-config,.opensearch-notifications-config",
+            "ignore_unavailable": false,
+          }' -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
