@@ -48,7 +48,8 @@ jobs:
   validate-and-deploy:
     outputs:
       ENDPOINT: ${{ steps.deploy.outputs.ENDPOINT }}
-      cdk_vars: ${{steps.deploy.outputs.cdk_vars}}
+      cdk_vars: ${{ steps.deploy.outputs.cdk_vars }}
+      PLAYGROUND_ID: ${{ steps.deploy.outputs.playground_id }}
     permissions:
       id-token: write
       contents: read
@@ -89,10 +90,11 @@ jobs:
         run: |
           npm install
           playground_id=`echo ${{inputs.dist_version}} | cut -d. -f1`x
+          echo "PLAYGROUND_ID=$playground_id" >> "$GITHUB_OUTPUT"
           npm run cdk deploy "infraStack*" -- -c playGroundId=$playground_id -c distVersion=${{inputs.dist_version}} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} -c adminPassword=${{ SECRETS.OPENSEARCH_PASSWORD }} --require-approval never
 
           echo "ENDPOINT=$(aws cloudformation --region us-west-2 describe-stacks --stack-name infraStack-$playground_id --query 'Stacks[0].Outputs[1].OutputValue' --output text)" >> "$GITHUB_OUTPUT"
-          echo "cdk_vars='-c playGroundId=$playground_id -c distVersion=${{inputs.dist_version}} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} -c adminPassword=${{ SECRETS.OPENSEARCH_PASSWORD }}'" >> "GITHUB_OUTPUT"
+          echo "cdk_vars='-c playGroundId=$playground_id -c distVersion=${{inputs.dist_version}} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} -c adminPassword=${{ SECRETS.OPENSEARCH_PASSWORD }}'" >> "$GITHUB_OUTPUT"
 
   index-dist-manifests:
     needs: 
@@ -107,9 +109,9 @@ jobs:
           yq -o=json '.' opensearch.yml > opensearch.json
           yq -o=json '.' opensearch-dashboards.yml > dashboards.json
 
-          curl -X POST "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/opensearch/_doc/1" -H "Content-Type: application/json" -d @opensearch.json -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
+          curl -XPOST -f "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/opensearch/_doc/1" -H "Content-Type: application/json" -d @opensearch.json -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
 
-          curl -X POST "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/opensearch-dashboards/_doc/1" -H "Content-Type: application/json" -d @dashboards.json -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
+          curl -XPOST -f "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/opensearch-dashboards/_doc/1" -H "Content-Type: application/json" -d @dashboards.json -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
 
   assign-ouput-values:
     outputs:
@@ -130,3 +132,26 @@ jobs:
           else
               echo "dist_version does not belong to 2x or 3x"
           fi
+
+  register-snapshot-repo-enable-alerts:
+    needs: validate-and-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Register snapshot repo
+        run : |
+          curl -XPUT -f "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/_snapshot/snapshots-repo" -H 'Content-Type: application/json' -d'
+          {
+            "type": "s3",
+            "settings": {
+              "bucket": "nightly-playgrounds-snapshots-bucket",
+              "region": "us-west-2",
+              "base_path": "${{needs.validate-and-deploy.outputs.PLAYGROUND_ID}}"
+            }
+          }' -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
+      # - name: Restore altering configs
+      #   run: |
+      #     curl -XPOST "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/_snapshot/snapshots-repo/<replace_with_snapshot_id>/_restore" -H 'Content-Type: application/json' -d'
+      #     {
+      #       "indices": ".opendistro-alerting-config,.opensearch-notifications-config",
+      #       "ignore_unavailable": false,
+      #     }' -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
