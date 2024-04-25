@@ -153,10 +153,19 @@ jobs:
                 }
               }
             }' -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
-            
+
       - name: Configure monitors
         run: |
           for config in `ls nightly-playground/resources/monitors-config/`;
           do curl -XPOST "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/_plugins/_alerting/monitors" -H 'Content-Type: application/json' -d @nightly-playground/resources/monitors-config/$config -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure;
           done
-          
+
+  add-sample-data:
+    needs: validate-and-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add sample data
+        run : |
+          curl -X POST -f 'https://${{needs.validate-and-deploy.outputs.ENDPOINT}}/${{needs.validate-and-deploy.outputs.PLAYGROUND_ID}}/api/sample_data/logs' -H 'securitytenant: global' -H 'Content-Type: application/json' -H 'osd-version: ${{inputs.dist_version}}' -H 'osd-xsrf: osd-fetch' -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
+          curl -X POST -f 'https://${{needs.validate-and-deploy.outputs.ENDPOINT}}/${{needs.validate-and-deploy.outputs.PLAYGROUND_ID}}/api/sample_data/flights' -H 'securitytenant: global' -H 'Content-Type: application/json' -H 'osd-version: ${{inputs.dist_version}}' -H 'osd-xsrf: osd-fetch' -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
+          curl -X POST -f 'https://${{needs.validate-and-deploy.outputs.ENDPOINT}}/${{needs.validate-and-deploy.outputs.PLAYGROUND_ID}}/api/sample_data/ecommerce' -H 'securitytenant: global' -H 'Content-Type: application/json' -H 'osd-version: ${{inputs.dist_version}}' -H 'osd-xsrf: osd-fetch' -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
