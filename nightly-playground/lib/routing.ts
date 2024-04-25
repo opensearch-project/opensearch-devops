@@ -21,7 +21,7 @@ import {
   SslPolicy,
 } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { Construct } from 'constructs';
-import * as path from 'path';
+import { join } from 'path';
 import { NightlyPlaygroundWAF } from './security';
 
 export interface RoutingProps extends StackProps {
@@ -126,7 +126,7 @@ export class Routing extends Stack {
                     proxy_set_header X-Forwarded-Proto $scheme;  # Set the X-Forwarded-Proto header
                 }
               }`),
-      InitFile.fromFileInline('/usr/share/nginx/html/index.html', path.join(__dirname, '../resources/assets/ngnix-index.html')),
+      InitFile.fromFileInline('/usr/share/nginx/html/index.html', join(__dirname, '../resources/assets/ngnix-index.html')),
       InitCommand.shellCommand('sudo systemctl start nginx'),
       InitCommand.shellCommand('sudo systemctl enable nginx'),
     ];
