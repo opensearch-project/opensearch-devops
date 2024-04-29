@@ -11,6 +11,7 @@ import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { CommonToolsStack } from './common-tools-stack';
 import { Routing } from './routing';
+import { NightlyPlaygroundWAF } from './waf';
 
 export class NightlyPlaygroundStack {
   public stacks: Stack[] = []; // only required for testing purpose
@@ -95,10 +96,20 @@ export class NightlyPlaygroundStack {
       endpoint2x,
       endpoint3x,
       domainName: commonToolsStack.zone,
-      infraStackNLB: infraStack.nlb,
     });
 
     this.stacks.push(routingStack);
-    routingStack.addDependency(infraStack);
+    routingStack.addDependency(networkStack);
+
+    const wafStack = new NightlyPlaygroundWAF(scope, 'wafStack', {
+      ...props,
+      playgroundId: playGroundId,
+      ngnixLoadBalancer: routingStack.alb,
+      infraStackLoadBalancer: infraStack.nlb,
+    });
+
+    this.stacks.push(wafStack);
+    wafStack.addDependency(infraStack);
+    wafStack.addDependency(routingStack);
   }
 }

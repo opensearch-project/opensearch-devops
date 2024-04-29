@@ -26,7 +26,7 @@ test('Ensure security is always enabled with custom role mapping', () => {
   });
 
   // THEN
-  expect(nightlyStack.stacks).toHaveLength(4);
+  expect(nightlyStack.stacks).toHaveLength(5);
   const infraStack = nightlyStack.stacks.filter((s) => s.stackName === 'infraStack-2x')[0];
   const infraTemplate = Template.fromStack(infraStack);
 
@@ -221,7 +221,7 @@ test('Ensure port mapping', () => {
     env: { account: 'test-account', region: 'us-east-1' },
   });
 
-  expect(nightlyStack.stacks).toHaveLength(4);
+  expect(nightlyStack.stacks).toHaveLength(5);
   const infraStack = nightlyStack.stacks.filter((s) => s.stackName === 'infraStack-2x')[0];
   const infraTemplate = Template.fromStack(infraStack);
 
@@ -260,7 +260,7 @@ test('ngnix load balancer and ASG resources', () => {
     env: { account: 'test-account', region: 'us-east-1' },
   });
 
-  expect(nightlyStack.stacks).toHaveLength(4);
+  expect(nightlyStack.stacks).toHaveLength(5);
   const routingStack = nightlyStack.stacks.filter((s) => s.stackName === 'routingStack')[0];
   const routingStackTemplate = Template.fromStack(routingStack);
 
@@ -331,13 +331,13 @@ test('WAF resources', () => {
     env: { account: 'test-account', region: 'us-east-1' },
   });
 
-  expect(nightlyStack.stacks).toHaveLength(4);
-  const routingStack = nightlyStack.stacks.filter((s) => s.stackName === 'routingStack')[0];
-  const routingStackTemplate = Template.fromStack(routingStack);
+  expect(nightlyStack.stacks).toHaveLength(5);
+  const wafStack = nightlyStack.stacks.filter((s) => s.stackName === 'wafStack')[0];
+  const wafStackTemplate = Template.fromStack(wafStack);
 
-  routingStackTemplate.resourceCountIs('AWS::WAFv2::WebACL', 1);
-  routingStackTemplate.resourceCountIs('AWS::WAFv2::WebACLAssociation', 2);
-  routingStackTemplate.hasResourceProperties('AWS::WAFv2::WebACL', {
+  wafStackTemplate.resourceCountIs('AWS::WAFv2::WebACL', 1);
+  wafStackTemplate.resourceCountIs('AWS::WAFv2::WebACLAssociation', 2);
+  wafStackTemplate.hasResourceProperties('AWS::WAFv2::WebACL', {
     DefaultAction: {
       Allow: {},
     },

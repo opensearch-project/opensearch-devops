@@ -34,8 +34,8 @@ jobs:
         with:
           node-version: 16.x
 
-      - name: Deploy routing stack
+      - name: Deploy routing and waf stack
         working-directory: nightly-playground
         run: |
           npm install
-          npm run cdk deploy "routing*" -- ${{needs.deploy-nightly-playground.outputs.cdk_vars}} -c endpoint2x=${{needs.deploy-nightly-playground.outputs.endpoint_2x}} -c endpoint3x=${{needs.deploy-nightly-playground.outputs.endpoint_3x}} --require-approval never
+          npm run cdk deploy "wafStack" -- ${{needs.deploy-nightly-playground.outputs.cdk_vars}} -c endpoint2x=${{needs.deploy-nightly-playground.outputs.endpoint_2x}} -c endpoint3x=${{needs.deploy-nightly-playground.outputs.endpoint_3x}} --require-approval never

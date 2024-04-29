@@ -17,12 +17,9 @@ import {
 } from 'aws-cdk-lib/aws-ec2';
 import {
   ApplicationLoadBalancer, ApplicationProtocol, ListenerCertificate,
-  NetworkLoadBalancer,
   SslPolicy,
 } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { Construct } from 'constructs';
-import { join } from 'path';
-import { NightlyPlaygroundWAF } from './security';
 
 export interface RoutingProps extends StackProps {
     readonly vpc: IVpc;
@@ -31,7 +28,6 @@ export interface RoutingProps extends StackProps {
     readonly endpoint2x : string
     readonly endpoint3x: string
     readonly domainName: string
-    readonly infraStackNLB: NetworkLoadBalancer
 }
 
 export class Routing extends Stack {
@@ -83,13 +79,6 @@ export class Routing extends Stack {
         path: '/',
       },
       targets: [ngnix],
-    });
-
-    // Add WAF to all the LoadBalancers
-    const waf = new NightlyPlaygroundWAF(this, {
-      ...props,
-      ngnixLoadBalancer: this.alb,
-      infraStackLoadBalancer: props.infraStackNLB,
     });
   }
 
