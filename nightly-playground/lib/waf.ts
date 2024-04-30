@@ -1,5 +1,5 @@
 import { Stack, StackProps } from 'aws-cdk-lib';
-import { ApplicationLoadBalancer, NetworkLoadBalancer } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import { ApplicationLoadBalancer } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { CfnWebACL, CfnWebACLAssociation, CfnWebACLAssociationProps } from 'aws-cdk-lib/aws-wafv2';
 import { Construct } from 'constructs';
 
@@ -105,8 +105,6 @@ export class WebACLAssociation extends CfnWebACLAssociation {
 }
 
 export interface WafProps extends StackProps{
-    playgroundId : string;
-    infraStackLoadBalancer: NetworkLoadBalancer;
     ngnixLoadBalancer: ApplicationLoadBalancer;
 }
 
@@ -115,10 +113,6 @@ export class NightlyPlaygroundWAF extends Stack {
     super(scope, id, props);
     const waf = new WAF(this, 'WAFv2');
     // Create an association with the alb
-    new WebACLAssociation(this, `wafALBassociation-${props.playgroundId}`, {
-      resourceArn: props.infraStackLoadBalancer.loadBalancerArn,
-      webAclArn: waf.attrArn,
-    });
     new WebACLAssociation(this, 'wafALBassociation-ngnix', {
       resourceArn: props.ngnixLoadBalancer.loadBalancerArn,
       webAclArn: waf.attrArn,

@@ -103,13 +103,10 @@ export class NightlyPlaygroundStack {
 
     const wafStack = new NightlyPlaygroundWAF(scope, 'wafStack', {
       ...props,
-      playgroundId: playGroundId,
       ngnixLoadBalancer: routingStack.alb,
-      infraStackLoadBalancer: infraStack.nlb,
     });
 
     this.stacks.push(wafStack);
-    wafStack.addDependency(infraStack);
     wafStack.addDependency(routingStack);
   }
 }
