@@ -7,19 +7,6 @@ on:
         required: true
         description: 'OpenSearch and Dashboards distribution version'
         type: string
-    outputs:
-      endpoint:
-        description: 'Cluster endpoint'
-        value: ${{ jobs.validate-and-deploy.outputs.ENDPOINT }}
-      endpoint_2x:
-        description: 'Cluster endpoint if dist version is 2x'
-        value: ${{ jobs.assign-ouput-values.outputs.endpoint_2x }}
-      endpoint_3x:
-        description: 'Cluster endpoint if dist version is 3x'
-        value: ${{ jobs.assign-ouput-values.outputs.endpoint_3x }}
-      cdk_vars:
-        description: 'Exact cdk context variables to be used'
-        value: ${{ jobs.validate-and-deploy.outputs.cdk_vars }}
 
 jobs:
   set-os-osd-urls:
@@ -91,10 +78,9 @@ jobs:
           npm install
           playground_id=`echo ${{inputs.dist_version}} | cut -d. -f1`x
           echo "PLAYGROUND_ID=$playground_id" >> "$GITHUB_OUTPUT"
-          npm run cdk deploy "infraStack*" -- -c playGroundId=$playground_id -c distVersion=${{inputs.dist_version}} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} -c adminPassword=${{ SECRETS.OPENSEARCH_PASSWORD }} --require-approval never
+          npm run cdk deploy "*" -- -c playGroundId=$playground_id -c distVersion=${{inputs.dist_version}} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} -c adminPassword=${{ SECRETS.OPENSEARCH_PASSWORD }} -c endpoint2x=${{secrets.endpoint_2x}} -c endpoint3x=${{secrets.endpoint_3x}} --require-approval never
 
           echo "ENDPOINT=$(aws cloudformation --region us-west-2 describe-stacks --stack-name infraStack-$playground_id --query 'Stacks[0].Outputs[1].OutputValue' --output text)" >> "$GITHUB_OUTPUT"
-          echo "cdk_vars='-c playGroundId=$playground_id -c distVersion=${{inputs.dist_version}} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} -c adminPassword=${{ SECRETS.OPENSEARCH_PASSWORD }}'" >> "$GITHUB_OUTPUT"
 
   index-dist-manifests:
     needs: 
@@ -112,26 +98,6 @@ jobs:
           curl -XPOST -f "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/opensearch/_doc/1" -H "Content-Type: application/json" -d @opensearch.json -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
 
           curl -XPOST -f "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/opensearch-dashboards/_doc/1" -H "Content-Type: application/json" -d @dashboards.json -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
-
-  assign-ouput-values:
-    outputs:
-      endpoint_2x: ${{ steps.assign.outputs.endpoint_2x }}
-      endpoint_3x: ${{ steps.assign.outputs.endpoint_3x }}
-    needs: 
-      - validate-and-deploy
-    runs-on: ubuntu-latest
-    steps:
-      - name: Map endpoint values
-        id: assign
-        shell: bash
-        run: |
-          if [[ "${{inputs.dist_version}}" == 2.* ]]; then
-              echo "endpoint_2x=${{needs.validate-and-deploy.outputs.ENDPOINT}}" >> "$GITHUB_OUTPUT"
-          elif [[ "${{inputs.dist_version}}" == 3.* ]]; then
-              echo "endpoint_3x=${{needs.validate-and-deploy.outputs.ENDPOINT}}" >> "$GITHUB_OUTPUT"
-          else
-              echo "dist_version does not belong to 2x or 3x"
-          fi
 
   configure-alerts-notifications:
     needs: validate-and-deploy

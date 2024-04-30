@@ -105,19 +105,21 @@ export class WebACLAssociation extends CfnWebACLAssociation {
 }
 
 export interface WafProps extends StackProps{
-    infraStackLoadBalancer: NetworkLoadBalancer
-    ngnixLoadBalancer: ApplicationLoadBalancer
+    playgroundId : string;
+    infraStackLoadBalancer: NetworkLoadBalancer;
+    ngnixLoadBalancer: ApplicationLoadBalancer;
 }
 
-export class NightlyPlaygroundWAF {
-  constructor(scope: Stack, props: WafProps) {
-    const waf = new WAF(scope, 'WAFv2');
+export class NightlyPlaygroundWAF extends Stack {
+  constructor(scope: Construct, id: string, props: WafProps) {
+    super(scope, id, props);
+    const waf = new WAF(this, 'WAFv2');
     // Create an association with the alb
-    new WebACLAssociation(scope, 'wafALBassociation-infra', {
+    new WebACLAssociation(this, `wafALBassociation-${props.playgroundId}`, {
       resourceArn: props.infraStackLoadBalancer.loadBalancerArn,
       webAclArn: waf.attrArn,
     });
-    new WebACLAssociation(scope, 'wafALBassociation-ngnix', {
+    new WebACLAssociation(this, 'wafALBassociation-ngnix', {
       resourceArn: props.ngnixLoadBalancer.loadBalancerArn,
       webAclArn: waf.attrArn,
     });
