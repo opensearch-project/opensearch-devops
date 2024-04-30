@@ -336,7 +336,7 @@ test('WAF resources', () => {
   const wafStackTemplate = Template.fromStack(wafStack);
 
   wafStackTemplate.resourceCountIs('AWS::WAFv2::WebACL', 1);
-  wafStackTemplate.resourceCountIs('AWS::WAFv2::WebACLAssociation', 2);
+  wafStackTemplate.resourceCountIs('AWS::WAFv2::WebACLAssociation', 1);
   wafStackTemplate.hasResourceProperties('AWS::WAFv2::WebACL', {
     DefaultAction: {
       Allow: {},
