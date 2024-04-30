@@ -20,6 +20,7 @@ import {
   SslPolicy,
 } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { Construct } from 'constructs';
+import { join } from 'path';
 
 export interface RoutingProps extends StackProps {
     readonly vpc: IVpc;
