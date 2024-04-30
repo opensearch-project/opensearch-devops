@@ -1,0 +1,54 @@
+{
+    "name": "High JVM Monitor",
+    "type": "monitor",
+    "monitor_type": "cluster_metrics_monitor",
+    "enabled": true,
+    "schedule": {
+       "period": {
+          "unit": "MINUTES",
+          "interval": 10
+       }
+    },
+    "inputs": [
+       {
+          "uri": {
+             "api_type": "CLUSTER_STATS",
+             "path": "_cluster/stats",
+             "path_params": "",
+             "url": "http://localhost:9200/_cluster/stats",
+             "clusters": []
+          }
+       }
+    ],
+    "triggers": [
+       {
+          "query_level_trigger": {
+             "id": "5A2d-I4Bqk6CvEFkp7X5",
+             "name": "High JVM",
+             "severity": "2",
+             "condition": {
+                "script": {
+                   "source": "ctx.results[0].nodes.jvm.mem.heap_used_in_bytes / ctx.results[0].nodes.jvm.mem.heap_max_in_bytes >= 0.75",
+                   "lang": "painless"
+                }
+             },
+             "actions": [
+                {
+                   "id": "notification431267",
+                   "name": "High JVM Action",
+                   "destination_id": "slack-notification-channel",
+                   "message_template": {
+                      "source": "{\"Content\": \"\n:alert: {{ctx.monitor.name}} just entered alert status. Please investigate the issue.\n  - Trigger: {{ctx.trigger.name}}\n  - Severity: {{ctx.trigger.severity}}\n  - Period start: {{ctx.periodStart}}\n  - Period end: {{ctx.periodEnd}}\n  - OpenSearch Version: {{ctx.results.0.nodes.versions.0}}\n  - JVM used in bytes: {{ctx.results.0.nodes.jvm.mem.heap_used_in_bytes}}\n  - Max JVM available in bytes: {{ctx.results.0.nodes.jvm.mem.heap_max_in_bytes}} \n\"}",
+                      "lang": "mustache"
+                   },
+                   "throttle_enabled": false,
+                   "subject_template": {
+                      "source": "Alerting Notification action",
+                      "lang": "mustache"
+                   }
+                }
+             ]
+          }
+       }
+    ]
+ }

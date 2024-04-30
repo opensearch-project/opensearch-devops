@@ -1,0 +1,54 @@
+{
+    "name": "Node Monitor",
+    "type": "monitor",
+    "monitor_type": "cluster_metrics_monitor",
+    "enabled": true,
+    "schedule": {
+       "period": {
+          "unit": "MINUTES",
+          "interval": 5
+       }
+    },
+    "inputs": [
+       {
+          "uri": {
+             "api_type": "CLUSTER_HEALTH",
+             "path": "_cluster/health",
+             "path_params": "",
+             "url": "http://localhost:9200/_cluster/health",
+             "clusters": []
+          }
+       }
+    ],
+    "triggers": [
+       {
+          "query_level_trigger": {
+             "id": "1w2c-I4Bqk6CvEFke7VB",
+             "name": "Node Drop",
+             "severity": "2",
+             "condition": {
+                "script": {
+                   "source": "ctx.results[0].number_of_nodes < 5",
+                   "lang": "painless"
+                }
+             },
+             "actions": [
+                {
+                   "id": "notification149870",
+                   "name": "Node Drop Action",
+                   "destination_id": "slack-notification-channel",
+                   "message_template": {
+                      "source": "{\"Content\": \"\n:alert: {{ctx.monitor.name}} just entered alert status. Please investigate the issue.\n  - Trigger: {{ctx.trigger.name}}\n  - Severity: {{ctx.trigger.severity}}\n  - Period start: {{ctx.periodStart}}\n  - Period end: {{ctx.periodEnd}}\n  - Cluster Name: {{ctx.results.0.cluster_name}}\n  - Number of Nodes expected: 5\n  - Number of Nodes currently: {{ctx.results.0.number_of_nodes}}\n\"}",
+                      "lang": "mustache"
+                   },
+                   "throttle_enabled": false,
+                   "subject_template": {
+                      "source": "Alerting Notification action",
+                      "lang": "mustache"
+                   }
+                }
+             ]
+          }
+       }
+    ]
+ }

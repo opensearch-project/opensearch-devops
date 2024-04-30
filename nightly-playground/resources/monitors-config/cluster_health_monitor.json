@@ -1,0 +1,54 @@
+{
+   "name": "Cluster Health Monitor",
+   "type": "monitor",
+   "monitor_type": "cluster_metrics_monitor",
+   "enabled": true,
+   "schedule": {
+      "period": {
+         "unit": "MINUTES",
+         "interval": 5
+      }
+   },
+   "inputs": [
+      {
+         "uri": {
+            "api_type": "CLUSTER_HEALTH",
+            "path": "_cluster/health",
+            "path_params": "",
+            "url": "http://localhost:9200/_cluster/health",
+            "clusters": []
+         }
+      }
+   ],
+   "triggers": [
+      {
+         "query_level_trigger": {
+            "id": "bK6a-I4BP-Tswg_on_U_",
+            "name": "Red Cluster",
+            "severity": "1",
+            "condition": {
+               "script": {
+                  "source": "ctx.results[0].status != \"green\"",
+                  "lang": "painless"
+               }
+            },
+            "actions": [
+               {
+                  "id": "notification415896",
+                  "name": "Red Cluster",
+                  "destination_id": "slack-notification-channel",
+                  "message_template": {
+                     "source": "{\"Content\": \"\n:alert: Monitor {{ctx.monitor.name}} just entered alert status. Please investigate the issue.\n  - Trigger: {{ctx.trigger.name}}\n  - Severity: {{ctx.trigger.severity}}\n  - Period start: {{ctx.periodStart}}\n  - Period end: {{ctx.periodEnd}}\n  - Cluster name: {{ctx.results.0.cluster_name}}\n\"}",
+                     "lang": "mustache"
+                  },
+                  "throttle_enabled": false,
+                  "subject_template": {
+                     "source": "Alerting Notification action",
+                     "lang": "mustache"
+                  }
+               }
+            ]
+         }
+      }
+   ]
+}
