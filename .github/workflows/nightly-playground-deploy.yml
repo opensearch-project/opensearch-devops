@@ -78,7 +78,7 @@ jobs:
           npm install
           playground_id=`echo ${{inputs.dist_version}} | cut -d. -f1`x
           echo "PLAYGROUND_ID=$playground_id" >> "$GITHUB_OUTPUT"
-          npm run cdk deploy "*" -- -c playGroundId=$playground_id -c distVersion=${{inputs.dist_version}} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} -c adminPassword=${{ SECRETS.OPENSEARCH_PASSWORD }} -c endpoint2x=${{secrets.endpoint_2x}} -c endpoint3x=${{secrets.endpoint_3x}} --require-approval never
+          npm run cdk deploy "infra*" -- -c playGroundId=$playground_id -c distVersion=${{inputs.dist_version}} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} -c adminPassword=${{ SECRETS.OPENSEARCH_PASSWORD }} -c endpoint2x=${{secrets.endpoint_2x}} -c endpoint3x=${{secrets.endpoint_3x}} --require-approval never
 
           echo "ENDPOINT=$(aws cloudformation --region us-west-2 describe-stacks --stack-name infraStack-$playground_id --query 'Stacks[0].Outputs[1].OutputValue' --output text)" >> "$GITHUB_OUTPUT"
 
@@ -102,6 +102,7 @@ jobs:
   configure-alerts-notifications:
     needs: validate-and-deploy
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - name: Create notification channel
         run : |
@@ -123,7 +124,7 @@ jobs:
       - name: Configure monitors
         run: |
           for config in `ls nightly-playground/resources/monitors-config/`;
-          do curl -XPOST "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/_plugins/_alerting/monitors" -H 'Content-Type: application/json' -d @nightly-playground/resources/monitors-config/$config -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure;
+          do curl -XPOST -f "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/_plugins/_alerting/monitors" -H 'Content-Type: application/json' -d @nightly-playground/resources/monitors-config/$config -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure;
           done
 
   add-sample-data:
