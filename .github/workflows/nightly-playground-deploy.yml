@@ -109,7 +109,7 @@ jobs:
         run: |
           status_code=$(curl -XGET -s -o /dev/null -w "%{http_code}" "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/_plugins/_notifications/configs/slack-notification-channel" -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure)
 
-          if [ $status_code != 200 ]; then
+          if [ "$status_code" != "200" ]; then
             curl -XPOST -f "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443/_plugins/_notifications/configs" -H 'Content-Type: application/json' -d'
             {
               "config_id": "slack-notification-channel",
