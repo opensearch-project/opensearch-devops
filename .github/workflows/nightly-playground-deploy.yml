@@ -80,7 +80,7 @@ jobs:
           echo "PLAYGROUND_ID=$playground_id" >> "$GITHUB_OUTPUT"
           npm run cdk deploy "infra*" -- -c playGroundId=$playground_id -c distVersion=${{inputs.dist_version}} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} -c adminPassword=${{ SECRETS.OPENSEARCH_PASSWORD }} -c endpoint2x=${{secrets.endpoint_2x}} -c endpoint3x=${{secrets.endpoint_3x}} --require-approval never
 
-          echo "ENDPOINT=$(aws cloudformation --region us-west-2 describe-stacks --stack-name infraStack-$playground_id --query 'Stacks[0].Outputs[1].OutputValue' --output text)" >> "$GITHUB_OUTPUT"
+          echo "ENDPOINT=$(aws cloudformation --region us-west-2 describe-stacks --stack-name infraStack-$playground_id --query 'Stacks[0].Outputs[0].OutputValue' --output text)" >> "$GITHUB_OUTPUT"
 
   index-dist-manifests:
     needs: 
