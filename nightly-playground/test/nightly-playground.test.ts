@@ -301,9 +301,12 @@ test('ngnix load balancer and ASG resources', () => {
               command: "openssl req -x509 -nodes -newkey rsa:4096 -keyout /etc/nginx/cert.key -out /etc/nginx/cert.crt -days 365 -subj '/CN=SH'",
             },
             '002': {
-              command: 'sudo systemctl start nginx',
+              command: 'cp /usr/share/nginx/html/index_nightly.html /usr/share/nginx/html/index.html',
             },
             '003': {
+              command: 'sudo systemctl start nginx',
+            },
+            '004': {
               command: 'sudo systemctl enable nginx',
             },
           },
