@@ -116,7 +116,8 @@ export class Routing extends Stack {
                     proxy_set_header X-Forwarded-Proto $scheme;  # Set the X-Forwarded-Proto header
                 }
               }`),
-      InitFile.fromFileInline('/usr/share/nginx/html/index.html', join(__dirname, '../resources/assets/ngnix-index.html')),
+      InitFile.fromFileInline('/usr/share/nginx/html/index_nightly.html', join(__dirname, '../resources/assets/ngnix-index.html')),
+      InitCommand.shellCommand('cp /usr/share/nginx/html/index_nightly.html /usr/share/nginx/html/index.html'),
       InitCommand.shellCommand('sudo systemctl start nginx'),
       InitCommand.shellCommand('sudo systemctl enable nginx'),
     ];
