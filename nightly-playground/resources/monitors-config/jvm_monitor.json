@@ -25,7 +25,7 @@
           "query_level_trigger": {
              "id": "5A2d-I4Bqk6CvEFkp7X5",
              "name": "High JVM",
-             "severity": "2",
+             "severity": "3",
              "condition": {
                 "script": {
                    "source": "ctx.results[0].nodes.jvm.mem.heap_used_in_bytes / ctx.results[0].nodes.jvm.mem.heap_max_in_bytes >= 0.75",

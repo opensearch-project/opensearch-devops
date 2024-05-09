@@ -25,7 +25,7 @@
           "query_level_trigger": {
              "id": "1w2c-I4Bqk6CvEFke7VB",
              "name": "Node Drop",
-             "severity": "2",
+             "severity": "3",
              "condition": {
                 "script": {
                    "source": "ctx.results[0].number_of_nodes < 5",

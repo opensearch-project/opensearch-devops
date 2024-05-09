@@ -6,7 +6,7 @@
    "schedule": {
       "period": {
          "unit": "MINUTES",
-         "interval": 5
+         "interval": 10
       }
    },
    "inputs": [
@@ -25,7 +25,7 @@
          "query_level_trigger": {
             "id": "bK6a-I4BP-Tswg_on_U_",
             "name": "Red Cluster",
-            "severity": "1",
+            "severity": "2",
             "condition": {
                "script": {
                   "source": "ctx.results[0].status != \"green\"",
