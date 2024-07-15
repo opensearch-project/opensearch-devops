@@ -1,0 +1,40 @@
+{
+  "name": "keycloak",
+  "version": "0.1.0",
+  "bin": {
+    "keycloak": "bin/keycloak.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "postbuild": "eslint --fix \"bin/**/*.ts\" \"lib/**/*.ts\" \"test/**/*.ts\" --ignore-pattern \"**/*.d.ts\" && jest",
+    "cdk": "cdk"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.130",
+    "@types/jest": "^26.0.10",
+    "@types/js-yaml": "^4.0.5",
+    "@types/node": "10.17.27",
+    "aws-cdk-lib": "2.134.0",
+    "constructs": "10.1.67",
+    "jest": "^26.4.2",
+    "ts-jest": "^26.2.0",
+    "ts-node": "^9.0.0",
+    "typescript": "~3.9.7"
+  },
+  "dependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.31.1",
+    "@typescript-eslint/parser": "^4.31.1",
+    "aws-cdk-lib": "2.134.0",
+    "aws-lambda": "^1.0.7",
+    "constructs": "10.1.67",
+    "esbuild": "^0.14.43",
+    "eslint": "^7.32.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.24.2",
+    "js-yaml": "^4.1.0",
+    "npm-check-updates": "^16.3.4",
+    "set-value": ">=4.0.1",
+    "source-map-support": "^0.5.16"
+  }
+}
