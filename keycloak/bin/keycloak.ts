@@ -11,4 +11,4 @@ import 'source-map-support/register';
 import { AllStacks } from '../lib/all-stacks';
 
 const app = new App();
-new AllStacks(app, 'KeycloakStack', {});
+new AllStacks(app, 'KeycloakAllStacks', {});

@@ -14,8 +14,6 @@ import { RdsStack } from './stacks/rds';
 import { KeycloakStack } from './stacks/keycloak';
 
 export class AllStacks extends Stack {
-  public stacks: Stack[] = [];
-
   static readonly HOSTED_ZONE = 'keycloak.opensearch.org'
 
   constructor(scope: Construct, id: string, props?: StackProps) {
