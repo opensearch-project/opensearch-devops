@@ -12,6 +12,7 @@ import { VpcStack } from './stacks/vpc';
 import { KeycloakUtils } from './stacks/utils';
 import { RdsStack } from './stacks/rds';
 import { KeycloakStack } from './stacks/keycloak';
+import { KeycloakWAF } from './waf';
 
 export class AllStacks extends Stack {
   static readonly HOSTED_ZONE = 'keycloak.opensearch.org'
@@ -33,10 +34,10 @@ export class AllStacks extends Stack {
       vpc: vpcStack.vpc,
       rdsDbSecurityGroup: vpcStack.rdsDbSecurityGroup,
     });
-    rdsDBStack.addDependency(vpcStack);
+    rdsDBStack.node.addDependency(vpcStack);
 
     // Deploy and install KeyCloak on EC2
-    const keycloak = new KeycloakStack(app, 'Keycloak', {
+    const keycloakStack = new KeycloakStack(app, 'Keycloak', {
       vpc: vpcStack.vpc,
       keycloakSecurityGroup: vpcStack.keyCloaksecurityGroup,
       rdsInstanceEndpoint: rdsDBStack.rdsInstanceEndpoint,
@@ -50,5 +51,14 @@ export class AllStacks extends Stack {
         hostedZone: utilsStack,
       },
     });
+
+    keycloakStack.node.addDependency(vpcStack, rdsDBStack, utilsStack);
+
+    // Create WAF stack
+    const wafStack = new KeycloakWAF(app, 'KeycloakWAFstack', {
+      loadBalancerArn: keycloakStack.loadBalancerARN,
+    });
+
+    wafStack.node.addDependency(keycloakStack);
   }
 }

@@ -41,6 +41,8 @@ export interface KeyCloakProps extends StackProps {
 }
 
 export class KeycloakStack extends Stack {
+  readonly loadBalancerARN: string
+
   constructor(scope: Construct, id: string, props: KeyCloakProps) {
     super(scope, id, props);
 
@@ -79,6 +81,7 @@ export class KeycloakStack extends Stack {
       internetFacing: true,
       securityGroup: props.keycloakSecurityGroup,
     });
+    this.loadBalancerARN = alb.loadBalancerArn;
 
     const listenerCertificate = ListenerCertificate.fromArn(props.albProps.certificateArn);
 
