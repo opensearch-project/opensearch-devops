@@ -19,15 +19,21 @@ export interface KeycloakUtilsProps extends StackProps {
 
 export class KeycloakUtils extends Stack {
   readonly zone: HostedZone;
+
   readonly certificateArn: string;
+
   readonly keycloakDBpasswordSecretArn: string;
+
   readonly keycloakAdminUserSecretArn: string;
+
   readonly keycloakAdminPasswordSecretArn: string;
+
   readonly keycloakCertPemSecretArn: string;
+
   readonly keycloakCertKeySecretArn: string;
 
   constructor(scope: Construct, id: string, props: KeycloakUtilsProps) {
-    super(scope, id, props)
+    super(scope, id, props);
     // Generate Domain Name and Domain Cert
     this.zone = new HostedZone(this, 'keycloakHostedZone', {
       zoneName: props.hostedZone,
@@ -44,31 +50,31 @@ export class KeycloakUtils extends Stack {
       secretName: 'keycloak-database-password',
       description: 'RDS database password to be used with Keycloak',
     });
-    this.keycloakDBpasswordSecretArn = keycloakDBpassword.secretArn
+    this.keycloakDBpasswordSecretArn = keycloakDBpassword.secretArn;
 
     const keycloakAdminUser = new Secret(this, 'keycloakAdminUser', {
       secretName: 'keycloak-admin-user',
       description: 'Keycloak admin username',
     });
-    this.keycloakAdminUserSecretArn = keycloakAdminUser.secretArn
+    this.keycloakAdminUserSecretArn = keycloakAdminUser.secretArn;
 
     const keycloakAdminPassword = new Secret(this, 'keycloakAdminPassword', {
       secretName: 'keycloak-admin-password',
       description: 'Keycloak admin password',
     });
-    this.keycloakAdminPasswordSecretArn = keycloakAdminPassword.secretArn
+    this.keycloakAdminPasswordSecretArn = keycloakAdminPassword.secretArn;
 
     const keycloakCertPem = new Secret(this, 'keycloakCertPem', {
-        secretName: 'keycloak-cert-pem',
-        description: 'Keycloak Certificate PEM file',
-      });
-    this.keycloakCertPemSecretArn = keycloakCertPem.secretArn
+      secretName: 'keycloak-cert-pem',
+      description: 'Keycloak Certificate PEM file',
+    });
+    this.keycloakCertPemSecretArn = keycloakCertPem.secretArn;
 
     const keycloakCertKey = new Secret(this, 'keycloakCertKey', {
-        secretName: 'keycloak-cert-key',
-        description: 'Keycloak Certificate Key file',
-      });
-    this.keycloakCertKeySecretArn = keycloakCertKey.secretArn
+      secretName: 'keycloak-cert-key',
+      description: 'Keycloak Certificate Key file',
+    });
+    this.keycloakCertKeySecretArn = keycloakCertKey.secretArn;
 
     // Generate a ROOT CA
     const ca = new CfnCertificateAuthority(this, 'CA', {
@@ -80,9 +86,9 @@ export class KeycloakUtils extends Stack {
         organization: 'OpenSearch',
         organizationalUnit: 'Engineering Effectiveness',
         state: 'Washington',
-        locality: 'Seattle'
+        locality: 'Seattle',
       },
-  })
+    });
 
     const caSignedCertificate = new CfnCertificate(this, 'CertificateCreation', {
       certificateAuthorityArn: ca.attrArn,
@@ -91,14 +97,14 @@ export class KeycloakUtils extends Stack {
       templateArn: 'arn:aws:acm-pca:::template/RootCACertificate/V1',
       validity: {
         type: 'YEARS',
-        value: 10
-      }
-    })
+        value: 10,
+      },
+    });
 
     new CfnCertificateAuthorityActivation(this, 'CAActivation', {
       certificate: caSignedCertificate.attrCertificate,
       certificateAuthorityArn: ca.attrArn,
-      status: 'ACTIVE'
-    })
+      status: 'ACTIVE',
+    });
   }
 }

@@ -7,34 +7,29 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
+    "test": "jest",
     "postbuild": "eslint --fix \"bin/**/*.ts\" \"lib/**/*.ts\" \"test/**/*.ts\" --ignore-pattern \"**/*.d.ts\" && jest",
     "cdk": "cdk"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.130",
-    "@types/jest": "^26.0.10",
-    "@types/js-yaml": "^4.0.5",
-    "@types/node": "10.17.27",
-    "aws-cdk-lib": "2.134.0",
-    "constructs": "10.1.67",
-    "jest": "^26.4.2",
-    "ts-jest": "^26.2.0",
-    "ts-node": "^9.0.0",
-    "typescript": "~3.9.7"
+    "@types/jest": "^27.5.2",
+    "@types/node": "^10.17.27",
+    "aws-cdk": "2.139.1",
+    "jest": "^27.5.1",
+    "ts-jest": "^27.1.4",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.3"
   },
   "dependencies": {
+    "@aws-cdk/assets": "^1.204.0",
+    "@aws-cdk/region-info": "^2.149.0",
     "@typescript-eslint/eslint-plugin": "^4.31.1",
     "@typescript-eslint/parser": "^4.31.1",
-    "aws-cdk-lib": "2.134.0",
-    "aws-lambda": "^1.0.7",
-    "constructs": "10.1.67",
-    "esbuild": "^0.14.43",
+    "aws-cdk-lib": "2.146.0",
+    "constructs": "^10.3.0",
     "eslint": "^7.32.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-plugin-import": "^2.24.2",
-    "js-yaml": "^4.1.0",
-    "npm-check-updates": "^16.3.4",
-    "set-value": ">=4.0.1",
-    "source-map-support": "^0.5.16"
+    "source-map-support": "^0.5.21"
   }
 }

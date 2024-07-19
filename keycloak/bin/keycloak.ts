@@ -6,9 +6,9 @@
  * compatible open source license.
  */
 
+import { App } from 'aws-cdk-lib';
 import 'source-map-support/register';
-import * as cdk from 'aws-cdk-lib';
-import { InfrastructureStack } from '../lib/infrastructure-stack';
+import { AllStacks } from '../lib/all-stacks';
 
-const app = new cdk.App();
-new InfrastructureStack(app, 'KeycloakStack', {});
+const app = new App();
+new AllStacks(app, 'KeycloakStack', {});

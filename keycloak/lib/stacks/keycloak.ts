@@ -7,15 +7,22 @@
  */
 
 import { Duration, Stack, StackProps } from 'aws-cdk-lib';
-import { AutoScalingGroup, BlockDeviceVolume, Monitoring, Signals } from 'aws-cdk-lib/aws-autoscaling';
-import { AmazonLinuxCpuType, CloudFormationInit, InitCommand, InitElement, InitFile, InitPackage, InstanceClass, InstanceSize, InstanceType, MachineImage, Peer, Port, SecurityGroup, SubnetType, Vpc } from 'aws-cdk-lib/aws-ec2';
-import { ApplicationLoadBalancer, ApplicationProtocol, ListenerCertificate, Protocol, SslPolicy } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import {
+  AutoScalingGroup, BlockDeviceVolume, Monitoring, Signals,
+} from 'aws-cdk-lib/aws-autoscaling';
+import {
+  AmazonLinuxCpuType, CloudFormationInit, InitCommand, InitElement, InitFile, InitPackage,
+  InstanceClass, InstanceSize, InstanceType, MachineImage, Peer, Port, SecurityGroup, SubnetType, Vpc,
+} from 'aws-cdk-lib/aws-ec2';
+import {
+  ApplicationLoadBalancer, ApplicationProtocol, ListenerCertificate, Protocol, SslPolicy,
+} from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { ManagedPolicy, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { ARecord, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { Construct } from 'constructs';
 import { join } from 'path';
-import { KeycloakUtils } from './utils';
 import { LoadBalancerTarget } from 'aws-cdk-lib/aws-route53-targets';
+import { KeycloakUtils } from './utils';
 
 export interface ALBprops {
   certificateArn: string;
@@ -35,7 +42,7 @@ export interface KeyCloakProps extends StackProps {
 
 export class KeycloakStack extends Stack {
   constructor(scope: Construct, id: string, props: KeyCloakProps) {
-    super(scope, id, props)
+    super(scope, id, props);
 
     const instanceRole = this.createInstanceRole();
 
@@ -58,7 +65,7 @@ export class KeycloakStack extends Stack {
       init: CloudFormationInit.fromElements(...KeycloakStack.getCfnInitConfig(this.region, props)),
       blockDevices: [{
         deviceName: '/dev/xvda',
-        volume: BlockDeviceVolume.ebs(100, {})
+        volume: BlockDeviceVolume.ebs(100, {}),
       }],
       signals: Signals.waitForAll({
         timeout: Duration.minutes(20),
@@ -70,8 +77,8 @@ export class KeycloakStack extends Stack {
     const alb = new ApplicationLoadBalancer(this, 'keycloakALB', {
       vpc: props.vpc,
       internetFacing: true,
-      securityGroup: props.keycloakSecurityGroup
-    })
+      securityGroup: props.keycloakSecurityGroup,
+    });
 
     const listenerCertificate = ListenerCertificate.fromArn(props.albProps.certificateArn);
 
@@ -79,18 +86,18 @@ export class KeycloakStack extends Stack {
       port: 443,
       protocol: ApplicationProtocol.HTTPS,
       sslPolicy: SslPolicy.RECOMMENDED_TLS,
-      certificates: [listenerCertificate]
+      certificates: [listenerCertificate],
     });
 
     listener.addTargets('keycloakALBTarget', {
       port: 443,
       protocol: ApplicationProtocol.HTTPS,
       healthCheck: {
-        port: '80',
+        port: '8443',
         path: '/',
-        protocol: Protocol.HTTP
+        protocol: Protocol.HTTP,
       },
-      targets: [keycloakNodeAsg]
+      targets: [keycloakNodeAsg],
     });
 
     const aRecord = new ARecord(this, 'keyCloakALB-record', {
@@ -98,22 +105,27 @@ export class KeycloakStack extends Stack {
       recordName: props.albProps.hostedZone.zone.zoneName,
       target: RecordTarget.fromAlias(new LoadBalancerTarget(alb)),
     });
-
   }
 
   private static getCfnInitConfig(region: string, props: KeyCloakProps): InitElement[] {
     return [
       InitPackage.yum('docker'),
-      InitCommand.shellCommand('sudo curl -L https://github.com/docker/compose/releases/download/v2.9.0/docker-compose-$(uname -s)-$(uname -m) -o /usr/bin/docker-compose && sudo chmod +x /usr/bin/docker-compose'),
+      InitCommand.shellCommand('sudo curl -L https://github.com/docker/compose/releases/download/v2.9.0/docker-compose-$(uname -s)-$(uname -m) '
+        + '-o /usr/bin/docker-compose && sudo chmod +x /usr/bin/docker-compose'),
       InitFile.fromFileInline('/docker-compose.yml', join(__dirname, '../../resources/docker-compose.yml')),
       InitCommand.shellCommand('touch /.env'),
-      InitCommand.shellCommand(`echo KC_DB_PASSWORD=$(aws --region ${region} secretsmanager get-secret-value --secret-id ${props.keycloakDBpasswordSecretArn} --query SecretString --output text) > /.env && `
-        + `echo KEYCLOAK_ADMIN_LOGIN=$(aws --region ${region} secretsmanager get-secret-value --secret-id ${props.keycloakAdminUserSecretArn} --query SecretString --output text) >> /.env && `
-        + `echo KEYCLOAK_ADMIN_PASSWORD=$(aws --region ${region} secretsmanager get-secret-value --secret-id ${props.keycloakAdminPasswordSecretArn} --query SecretString --output text) >> /.env && `
+      InitCommand.shellCommand(`echo KC_DB_PASSWORD=$(aws --region ${region} secretsmanager get-secret-value`
+        + ` --secret-id ${props.keycloakDBpasswordSecretArn} --query SecretString --output text) > /.env && `
+        + `echo KEYCLOAK_ADMIN_LOGIN=$(aws --region ${region} secretsmanager get-secret-value --secret-id ${props.keycloakAdminUserSecretArn}`
+        + ' --query SecretString --output text) >> /.env && '
+        + `echo KEYCLOAK_ADMIN_PASSWORD=$(aws --region ${region} secretsmanager get-secret-value`
+        + ` --secret-id ${props.keycloakAdminPasswordSecretArn} --query SecretString --output text) >> /.env && `
         + `echo RDS_HOSTNAME_WITH_PORT=${props.rdsInstanceEndpoint} >> /.env`),
-      InitCommand.shellCommand(`mkdir /certs && aws --region ${region} secretsmanager get-secret-value --secret-id ${props.keycloakCertPemSecretArn} --query SecretString --output text > /certs/keycloak.pem && aws --region ${region} secretsmanager get-secret-value --secret-id ${props.keycloakCertKeySecretArn} --query SecretString --output text > /certs/keycloak.key`),
+      InitCommand.shellCommand(`mkdir /certs && aws --region ${region} secretsmanager get-secret-value --secret-id`
+        + ` ${props.keycloakCertPemSecretArn} --query SecretString --output text > /certs/keycloak.pem && aws --region ${region}`
+        + ` secretsmanager get-secret-value --secret-id ${props.keycloakCertKeySecretArn} --query SecretString --output text > /certs/keycloak.key`),
       InitCommand.shellCommand('systemctl start docker && docker-compose up -d'),
-    ]
+    ];
   }
 
   private createInstanceRole(): Role {
@@ -121,8 +133,8 @@ export class KeycloakStack extends Stack {
       assumedBy: new ServicePrincipal('ec2.amazonaws.com'),
       managedPolicies: [
         ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'),
-        ManagedPolicy.fromAwsManagedPolicyName('SecretsManagerReadWrite')
-      ]
+        ManagedPolicy.fromAwsManagedPolicyName('SecretsManagerReadWrite'),
+      ],
     });
     return role;
   }
