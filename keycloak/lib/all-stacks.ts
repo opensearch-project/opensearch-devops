@@ -33,15 +33,16 @@ export class AllStacks extends Stack {
     const rdsDBStack = new RdsStack(app, 'KeycloakRDS', {
       vpc: vpcStack.vpc,
       rdsDbSecurityGroup: vpcStack.rdsDbSecurityGroup,
+      rdsAdminPassword: utilsStack.keycloakDBpassword,
     });
-    rdsDBStack.node.addDependency(vpcStack);
+    rdsDBStack.node.addDependency(vpcStack, utilsStack);
 
     // Deploy and install KeyCloak on EC2
     const keycloakStack = new KeycloakStack(app, 'Keycloak', {
       vpc: vpcStack.vpc,
       keycloakSecurityGroup: vpcStack.keyCloaksecurityGroup,
       rdsInstanceEndpoint: rdsDBStack.rdsInstanceEndpoint,
-      keycloakDBpasswordSecretArn: utilsStack.keycloakDBpasswordSecretArn,
+      keycloakDBpasswordSecretArn: utilsStack.keycloakDBpassword.secretFullArn,
       keycloakAdminUserSecretArn: utilsStack.keycloakAdminUserSecretArn,
       keycloakAdminPasswordSecretArn: utilsStack.keycloakAdminPasswordSecretArn,
       keycloakCertPemSecretArn: utilsStack.keycloakCertPemSecretArn,

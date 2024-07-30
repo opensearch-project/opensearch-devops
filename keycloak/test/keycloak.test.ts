@@ -16,12 +16,13 @@ import { KeycloakUtils } from '../lib/stacks/utils';
 test('Keycloak Installation Test', () => {
   const app = new App();
   const vpcStack = new VpcStack(app, 'KeycloakTestVPCstack', {});
+  const keycloakUtilsStack = new KeycloakUtils(app, 'KeycloakUtilsTestStack', {
+    hostedZone: 'keycloak.opensearch.org',
+  });
   const rdsStack = new RdsStack(app, 'RDSTestStack', {
     vpc: vpcStack.vpc,
     rdsDbSecurityGroup: vpcStack.rdsDbSecurityGroup,
-  });
-  const keycloakUtilsStack = new KeycloakUtils(app, 'KeycloakUtilsTestStack', {
-    hostedZone: 'keycloak.opensearch.org',
+    rdsAdminPassword: keycloakUtilsStack.keycloakDBpassword,
   });
   const keycloakStack = new KeycloakStack(app, 'KeycloakTestStack', {
     vpc: vpcStack.vpc,

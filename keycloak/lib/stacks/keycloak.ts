@@ -17,7 +17,9 @@ import {
 import {
   ApplicationLoadBalancer, ApplicationProtocol, ListenerCertificate, Protocol, SslPolicy,
 } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
-import { ManagedPolicy, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
+import {
+  ManagedPolicy, PolicyStatement, Role, ServicePrincipal,
+} from 'aws-cdk-lib/aws-iam';
 import { ARecord, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { Construct } from 'constructs';
 import { join } from 'path';
@@ -32,7 +34,7 @@ export interface KeyCloakProps extends StackProps {
   vpc: Vpc;
   keycloakSecurityGroup: SecurityGroup;
   rdsInstanceEndpoint: string;
-  keycloakDBpasswordSecretArn: string;
+  keycloakDBpasswordSecretArn?: string;
   keycloakAdminUserSecretArn: string;
   keycloakAdminPasswordSecretArn: string;
   keycloakCertPemSecretArn: string;
@@ -55,7 +57,7 @@ export class KeycloakStack extends Stack {
       }),
       role: instanceRole,
       initOptions: {
-        ignoreFailures: false,
+        ignoreFailures: true,
       },
       vpc: props.vpc,
       vpcSubnets: {
@@ -93,12 +95,12 @@ export class KeycloakStack extends Stack {
     });
 
     listener.addTargets('keycloakALBTarget', {
-      port: 443,
+      port: 8443,
       protocol: ApplicationProtocol.HTTPS,
       healthCheck: {
         port: '8443',
         path: '/',
-        protocol: Protocol.HTTP,
+        protocol: Protocol.HTTPS,
       },
       targets: [keycloakNodeAsg],
     });
@@ -139,6 +141,24 @@ export class KeycloakStack extends Stack {
         ManagedPolicy.fromAwsManagedPolicyName('SecretsManagerReadWrite'),
       ],
     });
+    role.addManagedPolicy(new ManagedPolicy(this, 'cloudwatchPolicy', {
+      description: 'Cloudwatch Agent Permissions',
+      statements: [new PolicyStatement({
+        actions: [
+          'logs:CreateLogStream',
+          'logs:CreateLogDelivery',
+          'logs:DeleteLogDelivery',
+          'logs:CreateLogGroup',
+        ],
+        resources: ['*'],
+        conditions: {
+          'ForAllValues:StringEquals': {
+            'aws:RequestedRegion': this.region,
+            'aws:PrincipalAccount': this.account,
+          },
+        },
+      })],
+    }));
     return role;
   }
 }

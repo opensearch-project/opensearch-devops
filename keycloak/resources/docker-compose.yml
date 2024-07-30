@@ -1,5 +1,8 @@
+version: '3.8'
 services:
   keycloak:
+    restart: on-failure
+    container_name: keycloak
     image: quay.io/keycloak/keycloak:24.0.4
     environment:
       KC_DB: postgres

@@ -17,7 +17,7 @@ test('Utils Stack Test', () => {
   });
   const utilsStackTemplate = Template.fromStack(utilsStack);
   utilsStackTemplate.resourceCountIs('AWS::Route53::HostedZone', 1);
-  utilsStackTemplate.resourceCountIs('AWS::CertificateManager::Certificate', 1);
+  utilsStackTemplate.resourceCountIs('AWS::CertificateManager::Certificate', 2);
   utilsStackTemplate.resourceCountIs('AWS::SecretsManager::Secret', 5);
   utilsStackTemplate.resourceCountIs('AWS::ACMPCA::CertificateAuthority', 1);
   utilsStackTemplate.resourceCountIs('AWS::ACMPCA::Certificate', 1);

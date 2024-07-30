@@ -10,13 +10,18 @@ import { App } from 'aws-cdk-lib';
 import { Template } from 'aws-cdk-lib/assertions';
 import { RdsStack } from '../lib/stacks/rds';
 import { VpcStack } from '../lib/stacks/vpc';
+import { KeycloakUtils } from '../lib/stacks/utils';
 
 test('RDS Stack Test', () => {
   const app = new App();
   const vpcStack = new VpcStack(app, 'KeycloakTestVPCstack', {});
+  const utilStack = new KeycloakUtils(app, 'KeycloakUtilsTestStack', {
+    hostedZone: 'dummy.org',
+  });
   const rdsTestStack = new RdsStack(app, 'KeycloakTestRDSstack', {
     vpc: vpcStack.vpc,
     rdsDbSecurityGroup: vpcStack.rdsDbSecurityGroup,
+    rdsAdminPassword: utilStack.keycloakDBpassword,
   });
   const rdsStackTemplate = Template.fromStack(rdsTestStack);
   rdsStackTemplate.resourceCountIs('AWS::RDS::DBInstance', 1);

@@ -7,8 +7,12 @@
  */
 
 import { Stack, StackProps } from 'aws-cdk-lib';
-import { CfnCertificate, CfnCertificateAuthority, CfnCertificateAuthorityActivation } from 'aws-cdk-lib/aws-acmpca';
-import { Certificate, CertificateValidation } from 'aws-cdk-lib/aws-certificatemanager';
+import {
+  CertificateAuthority, CfnCertificate, CfnCertificateAuthority, CfnCertificateAuthorityActivation,
+} from 'aws-cdk-lib/aws-acmpca';
+import {
+  Certificate, CertificateValidation, KeyAlgorithm, PrivateCertificate,
+} from 'aws-cdk-lib/aws-certificatemanager';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
@@ -22,7 +26,7 @@ export class KeycloakUtils extends Stack {
 
   readonly certificateArn: string;
 
-  readonly keycloakDBpasswordSecretArn: string;
+  readonly keycloakDBpassword: Secret;
 
   readonly keycloakAdminUserSecretArn: string;
 
@@ -46,11 +50,10 @@ export class KeycloakUtils extends Stack {
     this.certificateArn = certificate.certificateArn;
 
     // Generate secrets
-    const keycloakDBpassword = new Secret(this, 'keycloakDatabasePassword', {
+    this.keycloakDBpassword = new Secret(this, 'keycloakDatabasePassword', {
       secretName: 'keycloak-database-password',
       description: 'RDS database password to be used with Keycloak',
     });
-    this.keycloakDBpasswordSecretArn = keycloakDBpassword.secretArn;
 
     const keycloakAdminUser = new Secret(this, 'keycloakAdminUser', {
       secretName: 'keycloak-admin-user',
@@ -105,6 +108,13 @@ export class KeycloakUtils extends Stack {
       certificate: caSignedCertificate.attrCertificate,
       certificateAuthorityArn: ca.attrArn,
       status: 'ACTIVE',
+    });
+
+    // Generate Private cert
+    const privateACMcert = new PrivateCertificate(this, 'keycloakPrivateCert', {
+      domainName: props.hostedZone,
+      certificateAuthority: CertificateAuthority.fromCertificateAuthorityArn(this, 'CAAuthrority', ca.attrArn),
+      keyAlgorithm: KeyAlgorithm.RSA_2048,
     });
   }
 }
