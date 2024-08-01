@@ -18,13 +18,18 @@ import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
 export interface KeycloakUtilsProps extends StackProps {
-  readonly hostedZone: string,
+  readonly hostedZone: string;
+  readonly internalHostedZone: string;
 }
 
 export class KeycloakUtils extends Stack {
   readonly zone: HostedZone;
 
+  readonly internalZone: HostedZone;
+
   readonly certificateArn: string;
+
+  readonly internalCertificateArn: string;
 
   readonly keycloakDBpassword: Secret;
 
@@ -48,6 +53,16 @@ export class KeycloakUtils extends Stack {
       validation: CertificateValidation.fromDns(this.zone),
     });
     this.certificateArn = certificate.certificateArn;
+
+    this.internalZone = new HostedZone(this, 'internalKeycloakHostedZone', {
+      zoneName: props.internalHostedZone,
+    });
+
+    const internalCertificate = new Certificate(this, 'keyCloakInternalEndpointCert', {
+      domainName: props.internalHostedZone,
+      validation: CertificateValidation.fromDns(this.internalZone),
+    });
+    this.internalCertificateArn = internalCertificate.certificateArn;
 
     // Generate secrets
     this.keycloakDBpassword = new Secret(this, 'keycloakDatabasePassword', {
@@ -110,10 +125,16 @@ export class KeycloakUtils extends Stack {
       status: 'ACTIVE',
     });
 
-    // Generate Private cert
+    // Generate Private certs
     const privateACMcert = new PrivateCertificate(this, 'keycloakPrivateCert', {
       domainName: props.hostedZone,
       certificateAuthority: CertificateAuthority.fromCertificateAuthorityArn(this, 'CAAuthrority', ca.attrArn),
+      keyAlgorithm: KeyAlgorithm.RSA_2048,
+    });
+
+    const privateInternalACMcert = new PrivateCertificate(this, 'internalKeycloakPrivateCert', {
+      domainName: props.internalHostedZone,
+      certificateAuthority: CertificateAuthority.fromCertificateAuthorityArn(this, 'CAAuthrorityInternal', ca.attrArn),
       keyAlgorithm: KeyAlgorithm.RSA_2048,
     });
   }

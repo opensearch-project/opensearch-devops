@@ -6,10 +6,11 @@
  * compatible open source license.
  */
 
-import {
-  IpAddresses, Peer, Port, SecurityGroup, SelectedSubnets, SubnetType, Vpc,
-} from 'aws-cdk-lib/aws-ec2';
 import { Stack, StackProps } from 'aws-cdk-lib';
+import {
+  IpAddresses, Peer, Port, SecurityGroup,
+  Vpc,
+} from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 
 export class VpcStack extends Stack {
@@ -18,6 +19,8 @@ export class VpcStack extends Stack {
   public readonly keyCloaksecurityGroup: SecurityGroup
 
   public readonly rdsDbSecurityGroup: SecurityGroup
+
+  public readonly keycloakInternalSecurityGroup: SecurityGroup
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id);
@@ -31,9 +34,17 @@ export class VpcStack extends Stack {
     this.keyCloaksecurityGroup.addIngressRule(Peer.anyIpv4(), Port.tcp(443), 'Allow inbound HTTPS traffic');
     this.keyCloaksecurityGroup.addIngressRule(this.keyCloaksecurityGroup, Port.tcp(8443), 'Allow access to keycloak');
 
+    this.keycloakInternalSecurityGroup = new SecurityGroup(this, 'keycloakInternalSecurityGroup', {
+      vpc: this.vpc,
+    });
+    this.keycloakInternalSecurityGroup.addIngressRule(Peer.prefixList('pl-f8a64391'), Port.tcp(443), 'Restrict keycloak access to internal network');
+    this.keycloakInternalSecurityGroup.addIngressRule(this.keycloakInternalSecurityGroup, Port.tcp(8443), 'Allow access to keycloak');
+
     this.rdsDbSecurityGroup = new SecurityGroup(this, 'rdsSecurityGroup', {
       vpc: this.vpc,
     });
-    this.rdsDbSecurityGroup.addIngressRule(Peer.securityGroupId(this.keyCloaksecurityGroup.securityGroupId), Port.tcp(5432), 'RDS Database access');
+
+    this.rdsDbSecurityGroup.addIngressRule(Peer.ipv4(this.vpc.vpcCidrBlock), Port.tcp(5432),
+      'RDS Database access to resources within same VPC');
   }
 }

@@ -8,16 +8,18 @@
 
 import { App } from 'aws-cdk-lib';
 import { Template } from 'aws-cdk-lib/assertions';
+import { AllStacks } from '../lib/all-stacks';
 import { KeycloakUtils } from '../lib/stacks/utils';
 
 test('Utils Stack Test', () => {
   const app = new App();
   const utilsStack = new KeycloakUtils(app, 'KeycloakTestUtilsStack', {
-    hostedZone: 'keycloak.opensearch.org',
+    hostedZone: AllStacks.HOSTED_ZONE,
+    internalHostedZone: AllStacks.INTERNAL_HOSTED_ZONE,
   });
   const utilsStackTemplate = Template.fromStack(utilsStack);
-  utilsStackTemplate.resourceCountIs('AWS::Route53::HostedZone', 1);
-  utilsStackTemplate.resourceCountIs('AWS::CertificateManager::Certificate', 2);
+  utilsStackTemplate.resourceCountIs('AWS::Route53::HostedZone', 2);
+  utilsStackTemplate.resourceCountIs('AWS::CertificateManager::Certificate', 4);
   utilsStackTemplate.resourceCountIs('AWS::SecretsManager::Secret', 5);
   utilsStackTemplate.resourceCountIs('AWS::ACMPCA::CertificateAuthority', 1);
   utilsStackTemplate.resourceCountIs('AWS::ACMPCA::Certificate', 1);

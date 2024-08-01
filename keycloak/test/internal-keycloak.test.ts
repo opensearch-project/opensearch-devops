@@ -9,12 +9,12 @@
 import { App } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { AllStacks } from '../lib/all-stacks';
-import { KeycloakStack } from '../lib/stacks/keycloak';
+import { KeycloakInternalStack } from '../lib/stacks/internal-keycloak';
 import { RdsStack } from '../lib/stacks/rds';
 import { KeycloakUtils } from '../lib/stacks/utils';
 import { VpcStack } from '../lib/stacks/vpc';
 
-test('Keycloak Installation Test', () => {
+test('Internal Keycloak Installation Test', () => {
   const app = new App();
   const vpcStack = new VpcStack(app, 'KeycloakTestVPCstack', {});
   const keycloakUtilsStack = new KeycloakUtils(app, 'KeycloakUtilsTestStack', {
@@ -26,19 +26,21 @@ test('Keycloak Installation Test', () => {
     rdsDbSecurityGroup: vpcStack.rdsDbSecurityGroup,
     rdsAdminPassword: keycloakUtilsStack.keycloakDBpassword,
   });
-  const keycloakStack = new KeycloakStack(app, 'KeycloakTestStack', {
+  const keycloakInternalStack = new KeycloakInternalStack(app, 'KeycloakInternalTestStack', {
     vpc: vpcStack.vpc,
-    keycloakSecurityGroup: vpcStack.keyCloaksecurityGroup,
+    keycloakSecurityGroup: vpcStack.keycloakInternalSecurityGroup,
     rdsInstanceEndpoint: rdsStack.rdsInstanceEndpoint,
     keycloakDBpasswordSecretArn: 'some:arn',
+    keycloakAdminUserSecretArn: 'some:arn',
+    keycloakAdminPasswordSecretArn: 'some:arn',
     keycloakCertPemSecretArn: 'some:arn',
     keycloakCertKeySecretArn: 'some:arn',
     albProps: {
-      certificateArn: 'some:arn',
-      hostedZone: keycloakUtilsStack.zone,
+      certificateArn: keycloakUtilsStack.internalCertificateArn,
+      hostedZone: keycloakUtilsStack.internalZone,
     },
   });
-  const keycloakStackTemplate = Template.fromStack(keycloakStack);
+  const keycloakStackTemplate = Template.fromStack(keycloakInternalStack);
   keycloakStackTemplate.resourceCountIs('AWS::IAM::Role', 1);
   keycloakStackTemplate.resourceCountIs('AWS::AutoScaling::AutoScalingGroup', 1);
   keycloakStackTemplate.resourceCountIs('AWS::ElasticLoadBalancingV2::LoadBalancer', 1);
@@ -53,7 +55,7 @@ test('Keycloak Installation Test', () => {
       },
     ],
     LoadBalancerArn: {
-      Ref: 'keycloakALBF9567867',
+      Ref: Match.anyValue(),
     },
     Port: 443,
     Protocol: 'HTTPS',

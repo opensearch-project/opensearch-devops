@@ -16,27 +16,9 @@ test('VPC Stack Test', () => {
   const vpcStackTemplate = Template.fromStack(vpcStack);
   vpcStackTemplate.resourceCountIs('AWS::EC2::VPC', 1);
   vpcStackTemplate.resourceCountIs('AWS::EC2::Subnet', 4);
-  vpcStackTemplate.resourceCountIs('AWS::EC2::SecurityGroup', 2);
+  vpcStackTemplate.resourceCountIs('AWS::EC2::SecurityGroup', 3);
   vpcStackTemplate.hasResourceProperties('AWS::EC2::VPC', {
     CidrBlock: '172.31.0.0/16',
-  });
-  vpcStackTemplate.hasResourceProperties('AWS::EC2::SecurityGroupIngress', {
-    Description: 'Allow access to keycloak',
-    FromPort: 8443,
-    GroupId: {
-      'Fn::GetAtt': [
-        'keycloakSecurityGroupF4E0E54E',
-        'GroupId',
-      ],
-    },
-    IpProtocol: 'tcp',
-    SourceSecurityGroupId: {
-      'Fn::GetAtt': [
-        'keycloakSecurityGroupF4E0E54E',
-        'GroupId',
-      ],
-    },
-    ToPort: 8443,
   });
   vpcStackTemplate.hasResourceProperties('AWS::EC2::SecurityGroup', {
     SecurityGroupIngress: [
@@ -49,20 +31,35 @@ test('VPC Stack Test', () => {
       },
     ],
   });
+
   vpcStackTemplate.hasResourceProperties('AWS::EC2::SecurityGroup', {
     SecurityGroupIngress: [
       {
-        Description: 'RDS Database access',
-        FromPort: 5432,
-        IpProtocol: 'tcp',
-        SourceSecurityGroupId: {
+        CidrIp: {
           'Fn::GetAtt': [
-            'keycloakSecurityGroupF4E0E54E',
-            'GroupId',
+            'KeycloakVpc50CEFB13',
+            'CidrBlock',
           ],
         },
+        Description: 'RDS Database access to resources within same VPC',
+        FromPort: 5432,
+        IpProtocol: 'tcp',
         ToPort: 5432,
       },
     ],
+  });
+
+  vpcStackTemplate.hasResourceProperties('AWS::EC2::SecurityGroupIngress', {
+    Description: 'Restrict keycloak access to internal network',
+    FromPort: 443,
+    GroupId: {
+      'Fn::GetAtt': [
+        'keycloakInternalSecurityGroup77805540',
+        'GroupId',
+      ],
+    },
+    IpProtocol: 'tcp',
+    SourcePrefixListId: 'pl-f8a64391',
+    ToPort: 443,
   });
 });

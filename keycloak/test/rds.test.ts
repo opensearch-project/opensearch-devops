@@ -9,14 +9,15 @@
 import { App } from 'aws-cdk-lib';
 import { Template } from 'aws-cdk-lib/assertions';
 import { RdsStack } from '../lib/stacks/rds';
-import { VpcStack } from '../lib/stacks/vpc';
 import { KeycloakUtils } from '../lib/stacks/utils';
+import { VpcStack } from '../lib/stacks/vpc';
 
 test('RDS Stack Test', () => {
   const app = new App();
   const vpcStack = new VpcStack(app, 'KeycloakTestVPCstack', {});
   const utilStack = new KeycloakUtils(app, 'KeycloakUtilsTestStack', {
     hostedZone: 'dummy.org',
+    internalHostedZone: 'dummy.internal.org',
   });
   const rdsTestStack = new RdsStack(app, 'KeycloakTestRDSstack', {
     vpc: vpcStack.vpc,

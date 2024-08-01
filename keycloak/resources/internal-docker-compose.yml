@@ -2,7 +2,7 @@ version: '3.8'
 services:
   keycloak:
     restart: on-failure
-    container_name: keycloak
+    container_name: keycloakInternal
     image: quay.io/keycloak/keycloak:24.0.4
     environment:
       KC_DB: postgres
@@ -10,9 +10,10 @@ services:
       KC_DB_USERNAME: keycloak
       KC_HOSTNAME_STRICT: false
       KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_LOGIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_HTTPS_CERTIFICATE_FILE: /opt/certs/keycloak.pem
       KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/certs/keycloak.key
-      KC_FEATURES_DISABLED: 'admin-api,admin2'
     command: start
     volumes:
       - /certs:/opt/certs

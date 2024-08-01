@@ -11,8 +11,8 @@ import { CfnWebACL, CfnWebACLAssociation, CfnWebACLAssociationProps } from 'aws-
 import { Construct } from 'constructs';
 
 interface WafRule {
-    name: string;
-    rule: CfnWebACL.RuleProperty;
+  name: string;
+  rule: CfnWebACL.RuleProperty;
 }
 
 const awsManagedRules: WafRule[] = [
@@ -112,7 +112,8 @@ export class WebACLAssociation extends CfnWebACLAssociation {
 }
 
 export interface WafProps extends StackProps {
-    loadBalancerArn: string,
+  loadBalancerArn: string;
+  internalLoadBalancerArn: string;
 }
 
 export class KeycloakWAF extends Stack {
@@ -121,6 +122,10 @@ export class KeycloakWAF extends Stack {
     const waf = new WAF(this, 'waf');
     new WebACLAssociation(this, 'wafALBassociation', {
       resourceArn: props.loadBalancerArn,
+      webAclArn: waf.attrArn,
+    });
+    new WebACLAssociation(this, 'wafInternalALBassociation', {
+      resourceArn: props.internalLoadBalancerArn,
       webAclArn: waf.attrArn,
     });
   }
