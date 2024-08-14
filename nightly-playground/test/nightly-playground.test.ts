@@ -17,6 +17,7 @@ test('Ensure security is always enabled with custom role mapping', () => {
       dashboardsUrl: 'someUrl',
       playGroundId: '2x',
       dashboardPassword: 'foo',
+      dashboardOpenIDClientSecret: 'someSecret',
     },
   });
 
@@ -41,7 +42,7 @@ test('Ensure security is always enabled with custom role mapping', () => {
         config: {
           commands: {
             '010': {
-              command: 'set -ex; echo "_meta:\n  type: config\n  config_version: 2\nconfig:\n  dynamic:\n    http:\n      anonymous_auth_enabled: true\n      xff:\n        enabled: false\n        internalProxies: 192\\.168\\.0\\.10|192\\.168\\.0\\.11\n    authc:\n      kerberos_auth_domain:\n        http_enabled: false\n        transport_enabled: false\n        order: 6\n        http_authenticator:\n          type: kerberos\n          challenge: true\n          config:\n            krb_debug: false\n            strip_realm_from_principal: true\n        authentication_backend:\n          type: noop\n      basic_internal_auth_domain:\n        description: Authenticate via HTTP Basic against internal users database\n        http_enabled: true\n        transport_enabled: true\n        order: 4\n        http_authenticator:\n          type: basic\n          challenge: true\n        authentication_backend:\n          type: intern\n      proxy_auth_domain:\n        description: Authenticate via proxy\n        http_enabled: false\n        transport_enabled: false\n        order: 3\n        http_authenticator:\n          type: proxy\n          challenge: false\n          config:\n            user_header: x-proxy-user\n            roles_header: x-proxy-roles\n        authentication_backend:\n          type: noop\n      jwt_auth_domain:\n        description: Authenticate via Json Web Token\n        http_enabled: false\n        transport_enabled: false\n        order: 0\n        http_authenticator:\n          type: jwt\n          challenge: false\n          config:\n            signing_key: base64 encoded HMAC key or public RSA/ECDSA pem key\n            jwt_header: Authorization\n            jwt_url_parameter: null\n            jwt_clock_skew_tolerance_seconds: 30\n            roles_key: null\n            subject_key: null\n        authentication_backend:\n          type: noop\n      clientcert_auth_domain:\n        description: Authenticate via SSL client certificates\n        http_enabled: false\n        transport_enabled: false\n        order: 2\n        http_authenticator:\n          type: clientcert\n          config:\n            username_attribute: cn\n          challenge: false\n        authentication_backend:\n          type: noop\n      ldap:\n        description: Authenticate via LDAP or Active Directory\n        http_enabled: false\n        transport_enabled: false\n        order: 5\n        http_authenticator:\n          type: basic\n          challenge: false\n        authentication_backend:\n          type: ldap\n          config:\n            enable_ssl: false\n            enable_start_tls: false\n            enable_ssl_client_auth: false\n            verify_hostnames: true\n            hosts:\n              - localhost:8389\n            bind_dn: null\n            password: null\n            userbase: ou=people,dc=example,dc=com\n            usersearch: (sAMAccountName={0})\n            username_attribute: null\n    authz:\n      roles_from_myldap:\n        description: Authorize via LDAP or Active Directory\n        http_enabled: false\n        transport_enabled: false\n        authorization_backend:\n          type: ldap\n          config:\n            enable_ssl: false\n            enable_start_tls: false\n            enable_ssl_client_auth: false\n            verify_hostnames: true\n            hosts:\n              - localhost:8389\n            bind_dn: null\n            password: null\n            rolebase: ou=groups,dc=example,dc=com\n            rolesearch: (member={0})\n            userroleattribute: null\n            userrolename: disabled\n            rolename: cn\n            resolve_nested_roles: true\n            userbase: ou=people,dc=example,dc=com\n            usersearch: (uid={0})\n      roles_from_another_ldap:\n        description: Authorize via another Active Directory\n        http_enabled: false\n        transport_enabled: false\n        authorization_backend:\n          type: ldap\n" > opensearch/config/opensearch-security/config.yml',
+              command: 'set -ex; echo "_meta:\n  type: config\n  config_version: 2\nconfig:\n  dynamic:\n    http:\n      anonymous_auth_enabled: true\n      xff:\n        enabled: false\n        internalProxies: 192\\.168\\.0\\.10|192\\.168\\.0\\.11\n    authc:\n      basic_internal_auth_domain:\n        description: Authenticate via HTTP Basic against internal users database\n        http_enabled: true\n        transport_enabled: true\n        order: 0\n        http_authenticator:\n          type: basic\n          challenge: false\n        authentication_backend:\n          type: intern\n      openid_auth_domain:\n        http_enabled: true\n        transport_enabled: true\n        order: 1\n        http_authenticator:\n          type: openid\n          challenge: false\n          config:\n            openid_connect_idp:\n              enable_ssl: true\n              verify_hostnames: false\n              pemtrustedcas_content: |\n                -----BEGIN CERTIFICATE-----\n                MIIDQTCCAimgAwIBAgITBmyfz5m/jAo54vB4ikPmljZbyjANBgkqhkiG9w0BAQsF\n                ADA5MQswCQYDVQQGEwJVUzEPMA0GA1UEChMGQW1hem9uMRkwFwYDVQQDExBBbWF6\n                b24gUm9vdCBDQSAxMB4XDTE1MDUyNjAwMDAwMFoXDTM4MDExNzAwMDAwMFowOTEL\n                MAkGA1UEBhMCVVMxDzANBgNVBAoTBkFtYXpvbjEZMBcGA1UEAxMQQW1hem9uIFJv\n                b3QgQ0EgMTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALJ4gHHKeNXj\n                ca9HgFB0fW7Y14h29Jlo91ghYPl0hAEvrAIthtOgQ3pOsqTQNroBvo3bSMgHFzZM\n                9O6II8c+6zf1tRn4SWiw3te5djgdYZ6k/oI2peVKVuRF4fn9tBb6dNqcmzU5L/qw\n                IFAGbHrQgLKm+a/sRxmPUDgH3KKHOVj4utWp+UhnMJbulHheb4mjUcAwhmahRWa6\n                VOujw5H5SNz/0egwLX0tdHA114gk957EWW67c4cX8jJGKLhD+rcdqsq08p8kDi1L\n                93FcXmn/6pUCyziKrlA4b9v7LWIbxcceVOF34GfID5yHI9Y/QCB/IIDEgEw+OyQm\n                jgSubJrIqg0CAwEAAaNCMEAwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMC\n                AYYwHQYDVR0OBBYEFIQYzIU07LwMlJQuCFmcx7IQTgoIMA0GCSqGSIb3DQEBCwUA\n                A4IBAQCY8jdaQZChGsV2USggNiMOruYou6r4lK5IpDB/G/wkjUu0yKGX9rbxenDI\n                U5PMCCjjmCXPI6T53iHTfIUJrU6adTrCC2qJeHZERxhlbI1Bjjt/msv0tadQ1wUs\n                N+gDS63pYaACbvXy8MWy7Vu33PqUXHeeE6V/Uq2V8viTO96LXFvKWlJbYK8U90vv\n                o/ufQJVtMVT8QtPHRh8jrdkPSHCa2XV4cdFyQzR1bldZwgJcJmApzyMZFo6IQ6XU\n                5MsI+yMRQ+hDKXJioaldXgjUkK642M4UwtBV8ob2xJNDd2ZhwLnoQdeXeGADbkpy\n                rqXRfboQnoZsG4q5WTP468SQvvG5\n                -----END CERTIFICATE-----\n            subject_key: preferred_username\n            roles_key: roles\n            openid_connect_url: >-\n              https://keycloak.opensearch.org/realms/opensearch-nightly-playgrounds/.well-known/openid-configuration\n        authentication_backend:\n          type: noop\n" > opensearch/config/opensearch-security/config.yml',
               cwd: '/home/ec2-user',
               ignoreErrors: false,
             },
@@ -56,13 +57,12 @@ test('Ensure security is always enabled with custom role mapping', () => {
               ignoreErrors: false,
             },
             '013': {
-              command: 'set -ex; echo "_meta:\n  type: internalusers\n  config_version: 2\nadmin:\n  hash: \\$2y\\$12\\$fkypbXL0jRI5T25GNBJB3uhPnixWJVPGhFGIQoIaoWuUAQzzOfe3G\n  reserved: true\n  backend_roles:\n    - admin\n  description: Admin user with customized password\nkibanaserver:\n  hash: \\$2y\\$12\\$t17cD/p.ZlsR2jOav7fYfuzk0sWrq1GXZihq3eWsbqXheSJk8Nr2O\n  reserved: true\n  description: OpenSearch Dashboards user with customized password\nkibanaro:\n  hash: \\$2a\\$12\\$JJSXNfTowz7Uu5ttXfeYpeYE0arACvcwlPBStB1F.MI7f0U9Z4DGC\n  reserved: false\n  backend_roles:\n    - kibanauser\n    - readall\n  attributes:\n    attribute1: value1\n    attribute2: value2\n    attribute3: value3\n  description: Demo read-only user for OpenSearch dashboards\nreadall:\n  hash: \\$2a\\$12\\$ae4ycwzwvLtZxwZ82RmiEunBbIPiAmGZduBAjKN0TXdwQFtCwARz2\n  reserved: false\n  backend_roles:\n    - readall\n  description: Demo readall user\n" > opensearch/config/opensearch-security/internal_users.yml',
+              command: 'set -ex; echo "_meta:\n  type: internalusers\n  config_version: 2\nadmin:\n  hash: \\$2y\\$12\\$2lmllQPaWR9hQgvWfqUYPeknLL3vhwX.VtIa71KMVyXd1qMUZKNtm\n  reserved: true\n  backend_roles:\n    - admin\n  description: Admin user with customized password\nkibanaserver:\n  hash: \\$2y\\$12\\$t17cD/p.ZlsR2jOav7fYfuzk0sWrq1GXZihq3eWsbqXheSJk8Nr2O\n  reserved: true\n  description: OpenSearch Dashboards user with customized password\nkibanaro:\n  hash: \\$2a\\$12\\$JJSXNfTowz7Uu5ttXfeYpeYE0arACvcwlPBStB1F.MI7f0U9Z4DGC\n  reserved: false\n  backend_roles:\n    - kibanauser\n    - readall\n  attributes:\n    attribute1: value1\n    attribute2: value2\n    attribute3: value3\n  description: Demo read-only user for OpenSearch dashboards\nreadall:\n  hash: \\$2a\\$12\\$ae4ycwzwvLtZxwZ82RmiEunBbIPiAmGZduBAjKN0TXdwQFtCwARz2\n  reserved: false\n  backend_roles:\n    - readall\n  description: Demo readall user\n" > opensearch/config/opensearch-security/internal_users.yml',
               cwd: '/home/ec2-user',
               ignoreErrors: false,
             },
             '017': {
-              command: "set -ex;cd opensearch-dashboards/config; echo \"opensearch_security.auth.anonymous_auth_enabled: 'true'\nopensearch.password: foo\nopensearch_security.cookie.secure: 'true'\nopensearch_security.cookie.isSameSite: None\nserver.basePath: /2x\nserver.rewriteBasePath: 'true'\n\">additionalOsdConfig.yml; yq eval-all -i '. as $item ireduce ({}; . * $item)' opensearch_dashboards.yml additionalOsdConfig.yml -P",
-              cwd: '/home/ec2-user',
+              command: "set -ex;cd opensearch-dashboards/config; echo \"opensearch_security.auth.anonymous_auth_enabled: 'true'\nopensearch.password: foo\nopensearch_security.cookie.secure: 'true'\nopensearch_security.cookie.isSameSite: None\nserver.basePath: /2x\nserver.rewriteBasePath: 'true'\nopensearch.requestHeadersWhitelist:\n  - authorization\n  - securitytenant\nopensearch_security.auth.type:\n  - basicauth\n  - openid\nopensearch_security.auth.multiple_auth_enabled: 'true'\nopensearch_security.openid.connect_url: >-\n  https://keycloak.opensearch.org/realms/opensearch-nightly-playgrounds/.well-known/openid-configuration\nopensearch_security.openid.base_redirect_url: https://playground.nightly.opensearch.org/2x\nopensearch_security.openid.client_id: opensearch-dashboards-nightly-playgrounds\nopensearch_security.openid.client_secret: someSecret\nopensearch_security.openid.verify_hostnames: 'false'\n\">additionalOsdConfig.yml; yq eval-all -i '. as $item ireduce ({}; . * $item)' opensearch_dashboards.yml additionalOsdConfig.yml -P",
               ignoreErrors: false,
             },
           },
@@ -124,6 +124,7 @@ test('Test commons stack resources', () => {
       dashboardsUrl: 'someUrl',
       playGroundId: '2x',
       dashboardPassword: 'bar',
+      dashboardOpenIDClientSecret: 'someSecret',
     },
   });
 
@@ -213,6 +214,7 @@ test('Ensure port mapping', () => {
       dashboardsUrl: 'someUrl',
       playGroundId: '2x',
       dashboardPassword: 'foo',
+      dashboardOpenIDClientSecret: 'someSecret',
     },
   });
 
@@ -252,6 +254,7 @@ test('ngnix load balancer and ASG resources', () => {
       dashboardPassword: 'foo',
       endpoint2x: 'some2xNLBendpoint',
       endpoint3x: 'some3xNLBendpoint',
+      dashboardOpenIDClientSecret: 'someSecret',
     },
   });
 
@@ -326,6 +329,7 @@ test('WAF resources', () => {
       dashboardPassword: 'foo',
       endpoint2x: 'some2xNLBendpoint',
       endpoint3x: 'some3xNLBendpoint',
+      dashboardOpenIDClientSecret: 'someSecret',
     },
   });
 
