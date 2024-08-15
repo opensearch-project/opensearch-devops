@@ -31,7 +31,7 @@ export class KeycloakUtils extends Stack {
 
   readonly internalCertificateArn: string;
 
-  readonly keycloakDBpassword: Secret;
+  readonly keycloakDbPassword: Secret;
 
   readonly keycloakAdminUserSecretArn: string;
 
@@ -65,7 +65,7 @@ export class KeycloakUtils extends Stack {
     this.internalCertificateArn = internalCertificate.certificateArn;
 
     // Generate secrets
-    this.keycloakDBpassword = new Secret(this, 'keycloakDatabasePassword', {
+    this.keycloakDbPassword = new Secret(this, 'keycloakDatabasePassword', {
       secretName: 'keycloak-database-password',
       description: 'RDS database password to be used with Keycloak',
     });
@@ -95,7 +95,7 @@ export class KeycloakUtils extends Stack {
     this.keycloakCertKeySecretArn = keycloakCertKey.secretArn;
 
     // Generate a ROOT CA
-    const ca = new CfnCertificateAuthority(this, 'CA', {
+    const rootCa = new CfnCertificateAuthority(this, 'CA', {
       type: 'ROOT',
       keyAlgorithm: 'RSA_2048',
       signingAlgorithm: 'SHA256WITHRSA',
@@ -109,9 +109,9 @@ export class KeycloakUtils extends Stack {
     });
 
     const caSignedCertificate = new CfnCertificate(this, 'CertificateCreation', {
-      certificateAuthorityArn: ca.attrArn,
+      certificateAuthorityArn: rootCa.attrArn,
       signingAlgorithm: 'SHA256WITHRSA',
-      certificateSigningRequest: ca.attrCertificateSigningRequest,
+      certificateSigningRequest: rootCa.attrCertificateSigningRequest,
       templateArn: 'arn:aws:acm-pca:::template/RootCACertificate/V1',
       validity: {
         type: 'YEARS',
@@ -121,20 +121,20 @@ export class KeycloakUtils extends Stack {
 
     new CfnCertificateAuthorityActivation(this, 'CAActivation', {
       certificate: caSignedCertificate.attrCertificate,
-      certificateAuthorityArn: ca.attrArn,
+      certificateAuthorityArn: rootCa.attrArn,
       status: 'ACTIVE',
     });
 
     // Generate Private certs
-    const privateACMcert = new PrivateCertificate(this, 'keycloakPrivateCert', {
+    const privateAcmCert = new PrivateCertificate(this, 'keycloakPrivateCert', {
       domainName: props.hostedZone,
-      certificateAuthority: CertificateAuthority.fromCertificateAuthorityArn(this, 'CAAuthrority', ca.attrArn),
+      certificateAuthority: CertificateAuthority.fromCertificateAuthorityArn(this, 'CAAuthrority', rootCa.attrArn),
       keyAlgorithm: KeyAlgorithm.RSA_2048,
     });
 
-    const privateInternalACMcert = new PrivateCertificate(this, 'internalKeycloakPrivateCert', {
+    const privateInternalAcmCert = new PrivateCertificate(this, 'internalKeycloakPrivateCert', {
       domainName: props.internalHostedZone,
-      certificateAuthority: CertificateAuthority.fromCertificateAuthorityArn(this, 'CAAuthrorityInternal', ca.attrArn),
+      certificateAuthority: CertificateAuthority.fromCertificateAuthorityArn(this, 'CAAuthrorityInternal', rootCa.attrArn),
       keyAlgorithm: KeyAlgorithm.RSA_2048,
     });
   }

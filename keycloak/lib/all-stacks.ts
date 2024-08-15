@@ -6,7 +6,7 @@
  * compatible open source license.
  */
 
-import { App, Stack, StackProps } from 'aws-cdk-lib';
+import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { KeycloakInternalStack } from './stacks/internal-keycloak';
 import { KeycloakStack } from './stacks/keycloak';
@@ -22,31 +22,30 @@ export class AllStacks extends Stack {
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
-    const app = new App();
 
     // Create VPC
-    const vpcStack = new VpcStack(app, 'keycloakVPC', {});
+    const vpcStack = new VpcStack(this, 'keycloakVPC', {});
 
     // Create utilities required by different components of KeyCloak
-    const utilsStack = new KeycloakUtils(app, 'KeyCloakUtils', {
+    const utilsStack = new KeycloakUtils(this, 'KeyCloakUtils', {
       hostedZone: AllStacks.HOSTED_ZONE,
       internalHostedZone: AllStacks.INTERNAL_HOSTED_ZONE,
     });
 
     // Create RDS database
-    const rdsDBStack = new RdsStack(app, 'KeycloakRDS', {
+    const rdsDBStack = new RdsStack(this, 'KeycloakRDS', {
       vpc: vpcStack.vpc,
       rdsDbSecurityGroup: vpcStack.rdsDbSecurityGroup,
-      rdsAdminPassword: utilsStack.keycloakDBpassword,
+      rdsAdminPassword: utilsStack.keycloakDbPassword,
     });
     rdsDBStack.node.addDependency(vpcStack, utilsStack);
 
     // Deploy and install Public KeyCloak on EC2
-    const keycloakStack = new KeycloakStack(app, 'Keycloak', {
+    const keycloakStack = new KeycloakStack(this, 'Keycloak', {
       vpc: vpcStack.vpc,
       keycloakSecurityGroup: vpcStack.keyCloaksecurityGroup,
       rdsInstanceEndpoint: rdsDBStack.rdsInstanceEndpoint,
-      keycloakDBpasswordSecretArn: utilsStack.keycloakDBpassword.secretFullArn,
+      keycloakDBpasswordSecretArn: utilsStack.keycloakDbPassword.secretFullArn,
       keycloakCertPemSecretArn: utilsStack.keycloakCertPemSecretArn,
       keycloakCertKeySecretArn: utilsStack.keycloakCertKeySecretArn,
       albProps: {
@@ -58,11 +57,11 @@ export class AllStacks extends Stack {
     keycloakStack.node.addDependency(vpcStack, rdsDBStack, utilsStack);
 
     // Deploy and install Internal KeyCloak on EC2
-    const keycloakInternalStack = new KeycloakInternalStack(app, 'KeycloakInternal', {
+    const keycloakInternalStack = new KeycloakInternalStack(this, 'KeycloakInternal', {
       vpc: vpcStack.vpc,
       keycloakSecurityGroup: vpcStack.keycloakInternalSecurityGroup,
       rdsInstanceEndpoint: rdsDBStack.rdsInstanceEndpoint,
-      keycloakDBpasswordSecretArn: utilsStack.keycloakDBpassword.secretFullArn,
+      keycloakDBpasswordSecretArn: utilsStack.keycloakDbPassword.secretFullArn,
       keycloakAdminUserSecretArn: utilsStack.keycloakAdminUserSecretArn,
       keycloakAdminPasswordSecretArn: utilsStack.keycloakAdminPasswordSecretArn,
       keycloakCertPemSecretArn: utilsStack.keycloakCertPemSecretArn,
@@ -76,8 +75,8 @@ export class AllStacks extends Stack {
     keycloakInternalStack.node.addDependency(vpcStack, rdsDBStack, utilsStack);
 
     // Create WAF stack
-    const wafStack = new KeycloakWAF(app, 'KeycloakWAFstack', {
-      loadBalancerArn: keycloakStack.loadBalancerARN,
+    const wafStack = new KeycloakWAF(this, 'KeycloakWAFstack', {
+      loadBalancerArn: keycloakStack.loadBalancerArn,
       internalLoadBalancerArn: keycloakInternalStack.loadBalancerARN,
     });
 

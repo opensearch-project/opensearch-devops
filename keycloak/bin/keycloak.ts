@@ -11,4 +11,13 @@ import 'source-map-support/register';
 import { AllStacks } from '../lib/all-stacks';
 
 const app = new App();
-new AllStacks(app, 'KeycloakAllStacks', {});
+
+const region = app.node.tryGetContext('region') ?? process.env.CDK_DEFAULT_REGION;
+const account = app.node.tryGetContext('account') ?? process.env.CDK_DEFAULT_ACCOUNT;
+
+new AllStacks(app, 'KeycloakAllStacks', {
+  env: {
+    account,
+    region,
+  },
+});

@@ -26,7 +26,7 @@ export class VpcStack extends Stack {
     super(scope, id);
     this.vpc = new Vpc(this, 'KeycloakVpc', {
       ipAddresses: IpAddresses.cidr('172.31.0.0/16'),
-
+      maxAzs: 3,
     });
     this.keyCloaksecurityGroup = new SecurityGroup(this, 'keycloakSecurityGroup', {
       vpc: this.vpc,

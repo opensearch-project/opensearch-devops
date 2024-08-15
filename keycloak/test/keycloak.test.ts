@@ -24,7 +24,7 @@ test('Keycloak Installation Test', () => {
   const rdsStack = new RdsStack(app, 'RDSTestStack', {
     vpc: vpcStack.vpc,
     rdsDbSecurityGroup: vpcStack.rdsDbSecurityGroup,
-    rdsAdminPassword: keycloakUtilsStack.keycloakDBpassword,
+    rdsAdminPassword: keycloakUtilsStack.keycloakDbPassword,
   });
   const keycloakStack = new KeycloakStack(app, 'KeycloakTestStack', {
     vpc: vpcStack.vpc,

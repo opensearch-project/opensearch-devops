@@ -7,16 +7,17 @@
  */
 
 import {
-  RemovalPolicy, SecretValue, Stack, StackProps,
+  RemovalPolicy,
+  Stack, StackProps,
 } from 'aws-cdk-lib';
-import {
-  DatabaseInstance, DatabaseInstanceEngine, PostgresEngineVersion, StorageType,
-} from 'aws-cdk-lib/aws-rds';
-import { Construct } from 'constructs';
 import {
   InstanceClass, InstanceSize, InstanceType, SecurityGroup, Vpc,
 } from 'aws-cdk-lib/aws-ec2';
+import {
+  DatabaseInstance, DatabaseInstanceEngine, PostgresEngineVersion, StorageType,
+} from 'aws-cdk-lib/aws-rds';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
+import { Construct } from 'constructs';
 
 export interface RdsStackProps extends StackProps {
   readonly vpc: Vpc;
@@ -28,7 +29,7 @@ export class RdsStack extends Stack {
 
   constructor(scope: Construct, id: string, props: RdsStackProps) {
     super(scope, id);
-    const db = new DatabaseInstance(this, 'KeyloackDatabase', {
+    const keycloakDatabase = new DatabaseInstance(this, 'KeyloackDatabase', {
       engine: DatabaseInstanceEngine.postgres({ version: PostgresEngineVersion.VER_15_6 }),
       vpc: props.vpc,
       allocatedStorage: 400,
@@ -45,6 +46,6 @@ export class RdsStack extends Stack {
         password: props.rdsAdminPassword.secretValue,
       },
     });
-    this.rdsInstanceEndpoint = db.instanceEndpoint.socketAddress;
+    this.rdsInstanceEndpoint = keycloakDatabase.instanceEndpoint.socketAddress;
   }
 }

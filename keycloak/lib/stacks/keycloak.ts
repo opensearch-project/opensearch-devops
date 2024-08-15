@@ -43,7 +43,7 @@ export interface KeyCloakProps extends StackProps {
 }
 
 export class KeycloakStack extends Stack {
-  readonly loadBalancerARN: string
+  readonly loadBalancerArn: string
 
   constructor(scope: Construct, id: string, props: KeyCloakProps) {
     super(scope, id, props);
@@ -78,16 +78,16 @@ export class KeycloakStack extends Stack {
       instanceMonitoring: Monitoring.DETAILED,
     });
 
-    const alb = new ApplicationLoadBalancer(this, 'keycloakALB', {
+    const keycloakAlb = new ApplicationLoadBalancer(this, 'keycloakALB', {
       vpc: props.vpc,
       internetFacing: true,
       securityGroup: props.keycloakSecurityGroup,
     });
-    this.loadBalancerARN = alb.loadBalancerArn;
+    this.loadBalancerArn = keycloakAlb.loadBalancerArn;
 
     const listenerCertificate = ListenerCertificate.fromArn(props.albProps.certificateArn);
 
-    const listener = alb.addListener('keycloakListener', {
+    const listener = keycloakAlb.addListener('keycloakListener', {
       port: 443,
       protocol: ApplicationProtocol.HTTPS,
       sslPolicy: SslPolicy.RECOMMENDED_TLS,
@@ -108,7 +108,7 @@ export class KeycloakStack extends Stack {
     const aRecord = new ARecord(this, 'keyCloakALB-record', {
       zone: props.albProps.hostedZone,
       recordName: props.albProps.hostedZone.zoneName,
-      target: RecordTarget.fromAlias(new LoadBalancerTarget(alb)),
+      target: RecordTarget.fromAlias(new LoadBalancerTarget(keycloakAlb)),
     });
   }
 

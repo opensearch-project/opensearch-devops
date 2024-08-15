@@ -22,7 +22,7 @@ test('RDS Stack Test', () => {
   const rdsTestStack = new RdsStack(app, 'KeycloakTestRDSstack', {
     vpc: vpcStack.vpc,
     rdsDbSecurityGroup: vpcStack.rdsDbSecurityGroup,
-    rdsAdminPassword: utilStack.keycloakDBpassword,
+    rdsAdminPassword: utilStack.keycloakDbPassword,
   });
   const rdsStackTemplate = Template.fromStack(rdsTestStack);
   rdsStackTemplate.resourceCountIs('AWS::RDS::DBInstance', 1);
