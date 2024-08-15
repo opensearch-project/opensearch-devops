@@ -14,6 +14,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_HTTPS_CERTIFICATE_FILE: /opt/certs/keycloak.pem
       KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/certs/keycloak.key
+      KC_HEALTH_ENABLED: true
     command: start
     volumes:
       - /certs:/opt/certs

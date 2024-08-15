@@ -13,6 +13,7 @@ services:
       KC_HTTPS_CERTIFICATE_FILE: /opt/certs/keycloak.pem
       KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/certs/keycloak.key
       KC_FEATURES_DISABLED: 'admin-api,admin2'
+      KC_HEALTH_ENABLED: true
     command: start
     volumes:
       - /certs:/opt/certs

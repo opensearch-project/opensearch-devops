@@ -84,7 +84,7 @@ export class KeycloakInternalStack extends Stack {
       protocol: ApplicationProtocol.HTTPS,
       healthCheck: {
         port: '8443',
-        path: '/',
+        path: '/health',
         protocol: Protocol.HTTPS,
       },
       targets: [keycloakNodeAsg],
