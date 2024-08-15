@@ -54,6 +54,7 @@ export class NightlyPlaygroundStack {
       + `"opensearch_security.openid.base_redirect_url": "https://playground.nightly.opensearch.org/${playGroundId}",`
       + '"opensearch_security.openid.client_id": "opensearch-dashboards-nightly-playgrounds",'
       + `"opensearch_security.openid.client_secret": "${dashboardOpenIDClientSecret}",`
+      + '"opensearch_security.ui.openid.login.buttonname": "Log in with GitHub",'
       + '"opensearch_security.openid.verify_hostnames": "false" }';
 
     const securityConfig = '{ "resources/security-config/config.yml" : "opensearch/config/opensearch-security/config.yml", '
