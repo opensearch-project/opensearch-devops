@@ -6,7 +6,7 @@
  * compatible open source license.
  */
 
-import { Stack, StackProps } from 'aws-cdk-lib';
+import { App, Stack, StackProps } from 'aws-cdk-lib';
 import {
   InitCommand, InitElement, InitFile, InitPackage,
 } from 'aws-cdk-lib/aws-ec2';
@@ -25,18 +25,19 @@ export class AllStacks extends Stack {
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
+    const app = new App();
 
     // Create VPC
-    const vpcStack = new VpcStack(this, 'keycloakVPC', {});
+    const vpcStack = new VpcStack(app, 'keycloakVPC', {});
 
     // Create utilities required by different components of KeyCloak
-    const utilsStack = new KeycloakUtils(this, 'KeyCloakUtils', {
+    const utilsStack = new KeycloakUtils(app, 'KeyCloakUtils', {
       hostedZone: AllStacks.HOSTED_ZONE,
       internalHostedZone: AllStacks.INTERNAL_HOSTED_ZONE,
     });
 
     // Create RDS database
-    const rdsDBStack = new RdsStack(this, 'KeycloakRDS', {
+    const rdsDBStack = new RdsStack(app, 'KeycloakRDS', {
       vpc: vpcStack.vpc,
       rdsDbSecurityGroup: vpcStack.rdsDbSecurityGroup,
       rdsAdminPassword: utilsStack.keycloakDbPassword,
@@ -44,7 +45,7 @@ export class AllStacks extends Stack {
     rdsDBStack.node.addDependency(vpcStack, utilsStack);
 
     // Deploy and install Public KeyCloak on EC2
-    const keycloakStack = new KeycloakStack(this, 'public', {
+    const keycloakStack = new KeycloakStack(app, 'public', {
       vpc: vpcStack.vpc,
       keycloakSecurityGroup: vpcStack.keyCloaksecurityGroup,
       certificateArn: utilsStack.certificateArn,
@@ -60,7 +61,7 @@ export class AllStacks extends Stack {
     keycloakStack.node.addDependency(vpcStack, rdsDBStack, utilsStack);
 
     // Deploy and install Internal KeyCloak on EC2
-    const keycloakInternalStack = new KeycloakStack(this, 'internal', {
+    const keycloakInternalStack = new KeycloakStack(app, 'internal', {
       vpc: vpcStack.vpc,
       keycloakSecurityGroup: vpcStack.keycloakInternalSecurityGroup,
       certificateArn: utilsStack.internalCertificateArn,
@@ -78,7 +79,7 @@ export class AllStacks extends Stack {
     keycloakInternalStack.node.addDependency(vpcStack, rdsDBStack, utilsStack);
 
     // Create WAF stack
-    const wafStack = new KeycloakWAF(this, 'KeycloakWAFstack', {
+    const wafStack = new KeycloakWAF(app, 'KeycloakWAFstack', {
       loadBalancerArn: keycloakStack.loadBalancerArn,
       internalLoadBalancerArn: keycloakInternalStack.loadBalancerArn,
     });
