@@ -11,7 +11,8 @@ import {
   AutoScalingGroup, BlockDeviceVolume, Monitoring, Signals,
 } from 'aws-cdk-lib/aws-autoscaling';
 import {
-  AmazonLinuxCpuType, CloudFormationInit, InitCommand, InitElement, InitFile, InitPackage,
+  AmazonLinuxCpuType, CloudFormationInit,
+  InitElement,
   InstanceClass, InstanceSize, InstanceType, MachineImage,
   SecurityGroup, SubnetType, Vpc,
 } from 'aws-cdk-lib/aws-ec2';
@@ -24,22 +25,23 @@ import {
 import { ARecord, HostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { LoadBalancerTarget } from 'aws-cdk-lib/aws-route53-targets';
 import { Construct } from 'constructs';
-import { join } from 'path';
+import { KeycloakMonitoring } from './monitoring';
 
-export interface ALBprops {
-  certificateArn: string;
-  hostedZone: HostedZone;
-}
-export interface KeyCloakProps extends StackProps {
-  vpc: Vpc;
-  keycloakSecurityGroup: SecurityGroup;
+export interface InitProps {
   rdsInstanceEndpoint: string;
+  keycloakCertPemSecretArn: string;
+  keycloakCertKeySecretArn: string;
   keycloakDBpasswordSecretArn?: string;
   keycloakAdminUserSecretArn?: string;
   keycloakAdminPasswordSecretArn?: string;
-  keycloakCertPemSecretArn: string;
-  keycloakCertKeySecretArn: string;
-  albProps: ALBprops
+}
+
+export interface KeyCloakProps extends StackProps {
+  vpc: Vpc;
+  initConfig: InitElement[];
+  keycloakSecurityGroup: SecurityGroup;
+  certificateArn: string;
+  hostedZone: HostedZone;
 }
 
 export class KeycloakStack extends Stack {
@@ -48,9 +50,9 @@ export class KeycloakStack extends Stack {
   constructor(scope: Construct, id: string, props: KeyCloakProps) {
     super(scope, id, props);
 
-    const instanceRole = this.createInstanceRole();
+    const instanceRole = this.createInstanceRole(id);
 
-    const keycloakNodeAsg = new AutoScalingGroup(this, 'keycloakASG', {
+    const keycloakNodeAsg = new AutoScalingGroup(this, `${id}-keycloakASG`, {
       instanceType: InstanceType.of(InstanceClass.C5, InstanceSize.XLARGE9),
       machineImage: MachineImage.latestAmazonLinux2023({
         cpuType: AmazonLinuxCpuType.X86_64,
@@ -66,7 +68,7 @@ export class KeycloakStack extends Stack {
       minCapacity: 1,
       maxCapacity: 1,
       desiredCapacity: 1,
-      init: CloudFormationInit.fromElements(...KeycloakStack.getCfnInitConfig(this.region, props)),
+      init: CloudFormationInit.fromElements(...props.initConfig),
       blockDevices: [{
         deviceName: '/dev/xvda',
         volume: BlockDeviceVolume.ebs(100, {}),
@@ -78,23 +80,23 @@ export class KeycloakStack extends Stack {
       instanceMonitoring: Monitoring.DETAILED,
     });
 
-    const keycloakAlb = new ApplicationLoadBalancer(this, 'keycloakALB', {
+    const keycloakAlb = new ApplicationLoadBalancer(this, `${id}-keycloakALB`, {
       vpc: props.vpc,
       internetFacing: true,
       securityGroup: props.keycloakSecurityGroup,
     });
     this.loadBalancerArn = keycloakAlb.loadBalancerArn;
 
-    const listenerCertificate = ListenerCertificate.fromArn(props.albProps.certificateArn);
+    const listenerCertificate = ListenerCertificate.fromArn(props.certificateArn);
 
-    const listener = keycloakAlb.addListener('keycloakListener', {
+    const listener = keycloakAlb.addListener(`${id}-keycloakListener`, {
       port: 443,
       protocol: ApplicationProtocol.HTTPS,
       sslPolicy: SslPolicy.RECOMMENDED_TLS,
       certificates: [listenerCertificate],
     });
 
-    listener.addTargets('keycloakALBTarget', {
+    const keycloakTargetGroup = listener.addTargets(`${id}-keycloakALBTarget`, {
       port: 8443,
       protocol: ApplicationProtocol.HTTPS,
       healthCheck: {
@@ -105,32 +107,18 @@ export class KeycloakStack extends Stack {
       targets: [keycloakNodeAsg],
     });
 
-    const aRecord = new ARecord(this, 'keyCloakALB-record', {
-      zone: props.albProps.hostedZone,
-      recordName: props.albProps.hostedZone.zoneName,
+    const aRecord = new ARecord(this, `${id}-keyCloakALB-record`, {
+      zone: props.hostedZone,
+      recordName: props.hostedZone.zoneName,
       target: RecordTarget.fromAlias(new LoadBalancerTarget(keycloakAlb)),
     });
+
+    // Add monitoring
+    new KeycloakMonitoring(this, `${id}-monitoring`, keycloakTargetGroup, keycloakNodeAsg);
   }
 
-  private static getCfnInitConfig(region: string, props: KeyCloakProps): InitElement[] {
-    return [
-      InitPackage.yum('docker'),
-      InitCommand.shellCommand('sudo curl -L https://github.com/docker/compose/releases/download/v2.9.0/docker-compose-$(uname -s)-$(uname -m) '
-        + '-o /usr/bin/docker-compose && sudo chmod +x /usr/bin/docker-compose'),
-      InitFile.fromFileInline('/docker-compose.yml', join(__dirname, '../../resources/docker-compose.yml')),
-      InitCommand.shellCommand('touch /.env'),
-      InitCommand.shellCommand(`echo KC_DB_PASSWORD=$(aws --region ${region} secretsmanager get-secret-value`
-        + ` --secret-id ${props.keycloakDBpasswordSecretArn} --query SecretString --output text) > /.env && `
-        + `echo RDS_HOSTNAME_WITH_PORT=${props.rdsInstanceEndpoint} >> /.env`),
-      InitCommand.shellCommand(`mkdir /certs && aws --region ${region} secretsmanager get-secret-value --secret-id`
-        + ` ${props.keycloakCertPemSecretArn} --query SecretString --output text > /certs/keycloak.pem && aws --region ${region}`
-        + ` secretsmanager get-secret-value --secret-id ${props.keycloakCertKeySecretArn} --query SecretString --output text > /certs/keycloak.key`),
-      InitCommand.shellCommand('systemctl start docker && docker-compose up -d'),
-    ];
-  }
-
-  private createInstanceRole(): Role {
-    const role = new Role(this, 'keycloak-instance-role', {
+  private createInstanceRole(id: string): Role {
+    const role = new Role(this, `${id}-keycloak-instance-role`, {
       assumedBy: new ServicePrincipal('ec2.amazonaws.com'),
       managedPolicies: [
         ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'),

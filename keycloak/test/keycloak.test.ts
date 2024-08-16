@@ -8,6 +8,7 @@
 
 import { App } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
+import { InitCommand } from 'aws-cdk-lib/aws-ec2';
 import { AllStacks } from '../lib/all-stacks';
 import { KeycloakStack } from '../lib/stacks/keycloak';
 import { RdsStack } from '../lib/stacks/rds';
@@ -29,14 +30,9 @@ test('Keycloak Installation Test', () => {
   const keycloakStack = new KeycloakStack(app, 'KeycloakTestStack', {
     vpc: vpcStack.vpc,
     keycloakSecurityGroup: vpcStack.keyCloaksecurityGroup,
-    rdsInstanceEndpoint: rdsStack.rdsInstanceEndpoint,
-    keycloakDBpasswordSecretArn: 'some:arn',
-    keycloakCertPemSecretArn: 'some:arn',
-    keycloakCertKeySecretArn: 'some:arn',
-    albProps: {
-      certificateArn: 'some:arn',
-      hostedZone: keycloakUtilsStack.zone,
-    },
+    certificateArn: 'some:arn',
+    hostedZone: keycloakUtilsStack.zone,
+    initConfig: [InitCommand.shellCommand('something')],
   });
   const keycloakStackTemplate = Template.fromStack(keycloakStack);
   keycloakStackTemplate.resourceCountIs('AWS::IAM::Role', 1);
@@ -53,7 +49,7 @@ test('Keycloak Installation Test', () => {
       },
     ],
     LoadBalancerArn: {
-      Ref: 'keycloakALBF9567867',
+      Ref: Match.anyValue(),
     },
     Port: 443,
     Protocol: 'HTTPS',

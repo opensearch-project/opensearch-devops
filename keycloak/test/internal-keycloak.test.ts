@@ -8,8 +8,9 @@
 
 import { App } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
+import { InitCommand } from 'aws-cdk-lib/aws-ec2';
 import { AllStacks } from '../lib/all-stacks';
-import { KeycloakInternalStack } from '../lib/stacks/internal-keycloak';
+import { KeycloakStack } from '../lib/stacks/keycloak';
 import { RdsStack } from '../lib/stacks/rds';
 import { KeycloakUtils } from '../lib/stacks/utils';
 import { VpcStack } from '../lib/stacks/vpc';
@@ -26,19 +27,12 @@ test('Internal Keycloak Installation Test', () => {
     rdsDbSecurityGroup: vpcStack.rdsDbSecurityGroup,
     rdsAdminPassword: keycloakUtilsStack.keycloakDbPassword,
   });
-  const keycloakInternalStack = new KeycloakInternalStack(app, 'KeycloakInternalTestStack', {
+  const keycloakInternalStack = new KeycloakStack(app, 'KeycloakInternalTestStack', {
     vpc: vpcStack.vpc,
-    keycloakSecurityGroup: vpcStack.keycloakInternalSecurityGroup,
-    rdsInstanceEndpoint: rdsStack.rdsInstanceEndpoint,
-    keycloakDBpasswordSecretArn: 'some:arn',
-    keycloakAdminUserSecretArn: 'some:arn',
-    keycloakAdminPasswordSecretArn: 'some:arn',
-    keycloakCertPemSecretArn: 'some:arn',
-    keycloakCertKeySecretArn: 'some:arn',
-    albProps: {
-      certificateArn: keycloakUtilsStack.internalCertificateArn,
-      hostedZone: keycloakUtilsStack.internalZone,
-    },
+    keycloakSecurityGroup: vpcStack.keyCloaksecurityGroup,
+    certificateArn: 'some:arn',
+    hostedZone: keycloakUtilsStack.zone,
+    initConfig: [InitCommand.shellCommand('something')],
   });
   const keycloakStackTemplate = Template.fromStack(keycloakInternalStack);
   keycloakStackTemplate.resourceCountIs('AWS::IAM::Role', 1);

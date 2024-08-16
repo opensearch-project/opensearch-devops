@@ -7,9 +7,12 @@
  */
 
 import { Stack, StackProps } from 'aws-cdk-lib';
+import {
+  InitCommand, InitElement, InitFile, InitPackage,
+} from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
-import { KeycloakInternalStack } from './stacks/internal-keycloak';
-import { KeycloakStack } from './stacks/keycloak';
+import { join } from 'path';
+import { InitProps, KeycloakStack } from './stacks/keycloak';
 import { RdsStack } from './stacks/rds';
 import { KeycloakUtils } from './stacks/utils';
 import { VpcStack } from './stacks/vpc';
@@ -41,35 +44,35 @@ export class AllStacks extends Stack {
     rdsDBStack.node.addDependency(vpcStack, utilsStack);
 
     // Deploy and install Public KeyCloak on EC2
-    const keycloakStack = new KeycloakStack(this, 'Keycloak', {
+    const keycloakStack = new KeycloakStack(this, 'public', {
       vpc: vpcStack.vpc,
       keycloakSecurityGroup: vpcStack.keyCloaksecurityGroup,
-      rdsInstanceEndpoint: rdsDBStack.rdsInstanceEndpoint,
-      keycloakDBpasswordSecretArn: utilsStack.keycloakDbPassword.secretFullArn,
-      keycloakCertPemSecretArn: utilsStack.keycloakCertPemSecretArn,
-      keycloakCertKeySecretArn: utilsStack.keycloakCertKeySecretArn,
-      albProps: {
-        certificateArn: utilsStack.certificateArn,
-        hostedZone: utilsStack.zone,
-      },
+      certificateArn: utilsStack.certificateArn,
+      hostedZone: utilsStack.zone,
+      initConfig: AllStacks.getCfnInitConfigForPublicKeycloak(this.region, {
+        rdsInstanceEndpoint: rdsDBStack.rdsInstanceEndpoint,
+        keycloakDBpasswordSecretArn: utilsStack.keycloakDbPassword.secretFullArn,
+        keycloakCertPemSecretArn: utilsStack.keycloakCertPemSecretArn,
+        keycloakCertKeySecretArn: utilsStack.keycloakCertKeySecretArn,
+      }),
     });
 
     keycloakStack.node.addDependency(vpcStack, rdsDBStack, utilsStack);
 
     // Deploy and install Internal KeyCloak on EC2
-    const keycloakInternalStack = new KeycloakInternalStack(this, 'KeycloakInternal', {
+    const keycloakInternalStack = new KeycloakStack(this, 'internal', {
       vpc: vpcStack.vpc,
       keycloakSecurityGroup: vpcStack.keycloakInternalSecurityGroup,
-      rdsInstanceEndpoint: rdsDBStack.rdsInstanceEndpoint,
-      keycloakDBpasswordSecretArn: utilsStack.keycloakDbPassword.secretFullArn,
-      keycloakAdminUserSecretArn: utilsStack.keycloakAdminUserSecretArn,
-      keycloakAdminPasswordSecretArn: utilsStack.keycloakAdminPasswordSecretArn,
-      keycloakCertPemSecretArn: utilsStack.keycloakCertPemSecretArn,
-      keycloakCertKeySecretArn: utilsStack.keycloakCertKeySecretArn,
-      albProps: {
-        certificateArn: utilsStack.internalCertificateArn,
-        hostedZone: utilsStack.internalZone,
-      },
+      certificateArn: utilsStack.internalCertificateArn,
+      hostedZone: utilsStack.internalZone,
+      initConfig: AllStacks.getCfnInitConfigForInternalKeycloak(this.region, {
+        rdsInstanceEndpoint: rdsDBStack.rdsInstanceEndpoint,
+        keycloakDBpasswordSecretArn: utilsStack.keycloakDbPassword.secretFullArn,
+        keycloakAdminUserSecretArn: utilsStack.keycloakAdminUserSecretArn,
+        keycloakAdminPasswordSecretArn: utilsStack.keycloakAdminPasswordSecretArn,
+        keycloakCertPemSecretArn: utilsStack.keycloakCertPemSecretArn,
+        keycloakCertKeySecretArn: utilsStack.keycloakCertKeySecretArn,
+      }),
     });
 
     keycloakInternalStack.node.addDependency(vpcStack, rdsDBStack, utilsStack);
@@ -77,9 +80,47 @@ export class AllStacks extends Stack {
     // Create WAF stack
     const wafStack = new KeycloakWAF(this, 'KeycloakWAFstack', {
       loadBalancerArn: keycloakStack.loadBalancerArn,
-      internalLoadBalancerArn: keycloakInternalStack.loadBalancerARN,
+      internalLoadBalancerArn: keycloakInternalStack.loadBalancerArn,
     });
 
     wafStack.node.addDependency(keycloakStack);
+  }
+
+  private static getCfnInitConfigForPublicKeycloak(region: string, props: InitProps): InitElement[] {
+    return [
+      InitPackage.yum('docker'),
+      InitCommand.shellCommand('sudo curl -L https://github.com/docker/compose/releases/download/v2.9.0/docker-compose-$(uname -s)-$(uname -m) '
+        + '-o /usr/bin/docker-compose && sudo chmod +x /usr/bin/docker-compose'),
+      InitFile.fromFileInline('/docker-compose.yml', join(__dirname, '../../resources/docker-compose.yml')),
+      InitCommand.shellCommand('touch /.env'),
+      InitCommand.shellCommand(`echo KC_DB_PASSWORD=$(aws --region ${region} secretsmanager get-secret-value`
+        + ` --secret-id ${props.keycloakDBpasswordSecretArn} --query SecretString --output text) > /.env && `
+        + `echo RDS_HOSTNAME_WITH_PORT=${props.rdsInstanceEndpoint} >> /.env`),
+      InitCommand.shellCommand(`mkdir /certs && aws --region ${region} secretsmanager get-secret-value --secret-id`
+        + ` ${props.keycloakCertPemSecretArn} --query SecretString --output text > /certs/keycloak.pem && aws --region ${region}`
+        + ` secretsmanager get-secret-value --secret-id ${props.keycloakCertKeySecretArn} --query SecretString --output text > /certs/keycloak.key`),
+      InitCommand.shellCommand('systemctl start docker && docker-compose up -d'),
+    ];
+  }
+
+  private static getCfnInitConfigForInternalKeycloak(region: string, props: InitProps): InitElement[] {
+    return [
+      InitPackage.yum('docker'),
+      InitCommand.shellCommand('sudo curl -L https://github.com/docker/compose/releases/download/v2.9.0/docker-compose-$(uname -s)-$(uname -m) '
+        + '-o /usr/bin/docker-compose && sudo chmod +x /usr/bin/docker-compose'),
+      InitFile.fromFileInline('/docker-compose.yml', join(__dirname, '../../resources/internal-docker-compose.yml')),
+      InitCommand.shellCommand('touch /.env'),
+      InitCommand.shellCommand(`echo KC_DB_PASSWORD=$(aws --region ${region} secretsmanager get-secret-value`
+        + ` --secret-id ${props.keycloakDBpasswordSecretArn} --query SecretString --output text) > /.env && `
+        + `echo KEYCLOAK_ADMIN_LOGIN=$(aws --region ${region} secretsmanager get-secret-value --secret-id ${props.keycloakAdminUserSecretArn}`
+        + ' --query SecretString --output text) >> /.env && '
+        + `echo KEYCLOAK_ADMIN_PASSWORD=$(aws --region ${region} secretsmanager get-secret-value`
+        + ` --secret-id ${props.keycloakAdminPasswordSecretArn} --query SecretString --output text) >> /.env && `
+        + `echo RDS_HOSTNAME_WITH_PORT=${props.rdsInstanceEndpoint} >> /.env`),
+      InitCommand.shellCommand(`mkdir /certs && aws --region ${region} secretsmanager get-secret-value --secret-id`
+        + ` ${props.keycloakCertPemSecretArn} --query SecretString --output text > /certs/keycloak.pem && aws --region ${region}`
+        + ` secretsmanager get-secret-value --secret-id ${props.keycloakCertKeySecretArn} --query SecretString --output text > /certs/keycloak.key`),
+      InitCommand.shellCommand('systemctl start docker && docker-compose up -d'),
+    ];
   }
 }
