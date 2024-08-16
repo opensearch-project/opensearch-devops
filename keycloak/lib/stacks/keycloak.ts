@@ -12,7 +12,10 @@ import {
 } from 'aws-cdk-lib/aws-autoscaling';
 import {
   AmazonLinuxCpuType, CloudFormationInit,
+  InitCommand,
   InitElement,
+  InitFile,
+  InitPackage,
   InstanceClass, InstanceSize, InstanceType, MachineImage,
   SecurityGroup, SubnetType, Vpc,
 } from 'aws-cdk-lib/aws-ec2';
@@ -25,6 +28,7 @@ import {
 import { ARecord, HostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { LoadBalancerTarget } from 'aws-cdk-lib/aws-route53-targets';
 import { Construct } from 'constructs';
+import { join } from 'path';
 import { KeycloakMonitoring } from './monitoring';
 
 export interface InitProps {
@@ -147,5 +151,43 @@ export class KeycloakStack extends Stack {
       })],
     }));
     return role;
+  }
+
+  public static getCfnInitConfigForPublicKeycloak(region: string, props: InitProps): InitElement[] {
+    return [
+      InitPackage.yum('docker'),
+      InitCommand.shellCommand('sudo curl -L https://github.com/docker/compose/releases/download/v2.9.0/docker-compose-$(uname -s)-$(uname -m) '
+        + '-o /usr/bin/docker-compose && sudo chmod +x /usr/bin/docker-compose'),
+      InitFile.fromFileInline('/docker-compose.yml', join(__dirname, '../resources/docker-compose.yml')),
+      InitCommand.shellCommand('touch /.env'),
+      InitCommand.shellCommand(`echo KC_DB_PASSWORD=$(aws --region ${region} secretsmanager get-secret-value`
+        + ` --secret-id ${props.keycloakDBpasswordSecretArn} --query SecretString --output text) > /.env && `
+        + `echo RDS_HOSTNAME_WITH_PORT=${props.rdsInstanceEndpoint} >> /.env`),
+      InitCommand.shellCommand(`mkdir /certs && aws --region ${region} secretsmanager get-secret-value --secret-id`
+        + ` ${props.keycloakCertPemSecretArn} --query SecretString --output text > /certs/keycloak.pem && aws --region ${region}`
+        + ` secretsmanager get-secret-value --secret-id ${props.keycloakCertKeySecretArn} --query SecretString --output text > /certs/keycloak.key`),
+      InitCommand.shellCommand('systemctl start docker && docker-compose up -d'),
+    ];
+  }
+
+  public static getCfnInitConfigForInternalKeycloak(region: string, props: InitProps): InitElement[] {
+    return [
+      InitPackage.yum('docker'),
+      InitCommand.shellCommand('sudo curl -L https://github.com/docker/compose/releases/download/v2.9.0/docker-compose-$(uname -s)-$(uname -m) '
+        + '-o /usr/bin/docker-compose && sudo chmod +x /usr/bin/docker-compose'),
+      InitFile.fromFileInline('/docker-compose.yml', join(__dirname, '../resources/internal-docker-compose.yml')),
+      InitCommand.shellCommand('touch /.env'),
+      InitCommand.shellCommand(`echo KC_DB_PASSWORD=$(aws --region ${region} secretsmanager get-secret-value`
+        + ` --secret-id ${props.keycloakDBpasswordSecretArn} --query SecretString --output text) > /.env && `
+        + `echo KEYCLOAK_ADMIN_LOGIN=$(aws --region ${region} secretsmanager get-secret-value --secret-id ${props.keycloakAdminUserSecretArn}`
+        + ' --query SecretString --output text) >> /.env && '
+        + `echo KEYCLOAK_ADMIN_PASSWORD=$(aws --region ${region} secretsmanager get-secret-value`
+        + ` --secret-id ${props.keycloakAdminPasswordSecretArn} --query SecretString --output text) >> /.env && `
+        + `echo RDS_HOSTNAME_WITH_PORT=${props.rdsInstanceEndpoint} >> /.env`),
+      InitCommand.shellCommand(`mkdir /certs && aws --region ${region} secretsmanager get-secret-value --secret-id`
+        + ` ${props.keycloakCertPemSecretArn} --query SecretString --output text > /certs/keycloak.pem && aws --region ${region}`
+        + ` secretsmanager get-secret-value --secret-id ${props.keycloakCertKeySecretArn} --query SecretString --output text > /certs/keycloak.key`),
+      InitCommand.shellCommand('systemctl start docker && docker-compose up -d'),
+    ];
   }
 }
