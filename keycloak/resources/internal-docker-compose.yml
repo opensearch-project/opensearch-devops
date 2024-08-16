@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  keycloak:
+    restart: on-failure
+    container_name: keycloakInternal
+    image: quay.io/keycloak/keycloak:24.0.4
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://${RDS_HOSTNAME_WITH_PORT}/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_HOSTNAME_STRICT: false
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_LOGIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_HTTPS_CERTIFICATE_FILE: /opt/certs/keycloak.pem
+      KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/certs/keycloak.key
+      KC_HEALTH_ENABLED: true
+    command: start
+    volumes:
+      - /certs:/opt/certs
+    ports:
+      - 8443:8443
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: Keycloak/keycloak.log
+        awslogs-create-group: 'true'
