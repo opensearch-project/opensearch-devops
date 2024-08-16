@@ -8,14 +8,13 @@
 
 import { App } from 'aws-cdk-lib';
 import { Template } from 'aws-cdk-lib/assertions';
-import { AllStacks } from '../lib/all-stacks';
 import { KeycloakUtils } from '../lib/stacks/utils';
 
 test('Utils Stack Test', () => {
   const app = new App();
   const utilsStack = new KeycloakUtils(app, 'KeycloakTestUtilsStack', {
-    hostedZone: AllStacks.HOSTED_ZONE,
-    internalHostedZone: AllStacks.INTERNAL_HOSTED_ZONE,
+    hostedZone: 'keycloak.opensearch.org',
+    internalHostedZone: 'keycloak.internal.opensearch.org',
   });
   const utilsStackTemplate = Template.fromStack(utilsStack);
   utilsStackTemplate.resourceCountIs('AWS::Route53::HostedZone', 2);

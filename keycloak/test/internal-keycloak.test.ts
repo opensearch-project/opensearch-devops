@@ -9,7 +9,6 @@
 import { App } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { InitCommand } from 'aws-cdk-lib/aws-ec2';
-import { AllStacks } from '../lib/all-stacks';
 import { KeycloakStack } from '../lib/stacks/keycloak';
 import { RdsStack } from '../lib/stacks/rds';
 import { KeycloakUtils } from '../lib/stacks/utils';
@@ -19,8 +18,8 @@ test('Internal Keycloak Installation Test', () => {
   const app = new App();
   const vpcStack = new VpcStack(app, 'KeycloakTestVPCstack', {});
   const keycloakUtilsStack = new KeycloakUtils(app, 'KeycloakUtilsTestStack', {
-    hostedZone: AllStacks.HOSTED_ZONE,
-    internalHostedZone: AllStacks.INTERNAL_HOSTED_ZONE,
+    hostedZone: 'keycloak.opensearch.org',
+    internalHostedZone: 'keycloak.internal.opensearch.org',
   });
   const rdsStack = new RdsStack(app, 'RDSTestStack', {
     vpc: vpcStack.vpc,
