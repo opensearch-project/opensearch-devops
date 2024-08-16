@@ -13,17 +13,21 @@ import {
 import { ApplicationTargetGroup } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { Construct } from 'constructs';
 
+export interface KeycloakMonitoringProps {
+    targetGroup: ApplicationTargetGroup;
+    autoScalingGroup: AutoScalingGroup
+}
 export class KeycloakMonitoring {
     public readonly alarms: Alarm[] = [];
 
-    constructor(scope: Construct, id: string, targetGroup: ApplicationTargetGroup, autoScalingGroup: AutoScalingGroup) {
+    constructor(scope: Construct, id: string, props: KeycloakMonitoringProps) {
       const dashboard = new Dashboard(scope, 'AlarmDashboard');
 
       const cpuMetric = new Metric({
         namespace: 'AWS/EC2',
         metricName: `${id}-CPUUtilization`,
         dimensionsMap: {
-          AutoScalingGroupName: autoScalingGroup.autoScalingGroupName,
+          AutoScalingGroupName: props.autoScalingGroup.autoScalingGroupName,
         },
       });
 
@@ -37,7 +41,7 @@ export class KeycloakMonitoring {
 
       this.alarms.push(new Alarm(scope, `${id}-ExternalLoadBalancerUnhealthyHosts`, {
         alarmDescription: 'If any hosts behind the load balancer are unhealthy',
-        metric: targetGroup.metrics.unhealthyHostCount(),
+        metric: props.targetGroup.metrics.unhealthyHostCount(),
         evaluationPeriods: 3,
         threshold: 1,
         comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,

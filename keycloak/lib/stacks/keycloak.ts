@@ -53,7 +53,7 @@ export class KeycloakStack extends Stack {
     const instanceRole = this.createInstanceRole(id);
 
     const keycloakNodeAsg = new AutoScalingGroup(this, `${id}-keycloakASG`, {
-      instanceType: InstanceType.of(InstanceClass.C5, InstanceSize.XLARGE9),
+      instanceType: InstanceType.of(InstanceClass.C5, InstanceSize.XLARGE2),
       machineImage: MachineImage.latestAmazonLinux2023({
         cpuType: AmazonLinuxCpuType.X86_64,
       }),
@@ -114,7 +114,10 @@ export class KeycloakStack extends Stack {
     });
 
     // Add monitoring
-    new KeycloakMonitoring(this, `${id}-monitoring`, keycloakTargetGroup, keycloakNodeAsg);
+    new KeycloakMonitoring(this, `${id}-monitoring`, {
+      targetGroup: keycloakTargetGroup,
+      autoScalingGroup: keycloakNodeAsg,
+    });
   }
 
   private createInstanceRole(id: string): Role {
