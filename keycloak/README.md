@@ -1,4 +1,4 @@
-# Welcome to your CDK TypeScript project
+# CDK to deploy Keycloak infrastructure
 
 This is a blank project for CDK development with TypeScript.
 
