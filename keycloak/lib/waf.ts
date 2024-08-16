@@ -120,11 +120,11 @@ export class KeycloakWAF extends Stack {
   constructor(scope: Construct, id: string, props: WafProps) {
     super(scope, id);
     const waf = new WAF(this, 'waf');
-    new WebACLAssociation(this, 'wafALBassociation', {
+    new WebACLAssociation(this, 'wafAlbAssociation', {
       resourceArn: props.loadBalancerArn,
       webAclArn: waf.attrArn,
     });
-    new WebACLAssociation(this, 'wafInternalALBassociation', {
+    new WebACLAssociation(this, 'wafInternalAlbAssociation', {
       resourceArn: props.internalLoadBalancerArn,
       webAclArn: waf.attrArn,
     });
