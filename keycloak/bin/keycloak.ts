@@ -39,7 +39,7 @@ const rdsDBStack = new RdsStack(app, 'KeycloakRDS', {
 rdsDBStack.node.addDependency(vpcStack, utilsStack);
 
 // Deploy and install Public KeyCloak on EC2
-const keycloakStack = new KeycloakStack(app, 'PublicKeycloak', {
+const keycloakStack = new KeycloakStack(app, 'Keycloak', {
   vpc: vpcStack.vpc,
   keycloakSecurityGroup: vpcStack.keyCloaksecurityGroup,
   certificateArn: utilsStack.certificateArn,
@@ -55,7 +55,7 @@ const keycloakStack = new KeycloakStack(app, 'PublicKeycloak', {
 keycloakStack.node.addDependency(vpcStack, rdsDBStack, utilsStack);
 
 // Deploy and install Internal KeyCloak on EC2
-const keycloakInternalStack = new KeycloakStack(app, 'InternalKeycloak', {
+const keycloakInternalStack = new KeycloakStack(app, 'KeycloakInternal', {
   vpc: vpcStack.vpc,
   keycloakSecurityGroup: vpcStack.keycloakInternalSecurityGroup,
   certificateArn: utilsStack.internalCertificateArn,
