@@ -23,12 +23,12 @@ import { Construct } from 'constructs';
 import { join } from 'path';
 
 export interface RoutingProps extends StackProps {
-    readonly vpc: IVpc;
-    readonly securityGroup: ISecurityGroup
-    readonly certificateArn: string
-    readonly endpoint2x : string
-    readonly endpoint3x: string
-    readonly domainName: string
+  readonly vpc: IVpc;
+  readonly securityGroup: ISecurityGroup
+  readonly certificateArn: string
+  readonly endpoint2x: string
+  readonly endpoint3x: string
+  readonly domainName: string
 }
 
 export class Routing extends Stack {
@@ -108,12 +108,18 @@ export class Routing extends Stack {
                       proxy_set_header X-Real-IP $remote_addr;  # Set the X-Real-IP header
                       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;  # Set the X-Forwarded-For header
                       proxy_set_header X-Forwarded-Proto $scheme;  # Set the X-Forwarded-Proto header
+                      proxy_buffer_size   128k;
+                      proxy_buffers   4 256k;
+                      proxy_busy_buffers_size   256k;
                   }
                   location ^~ /3x {
                     proxy_pass https://${ngnixProps.endpoint3x}/3x;
                     proxy_set_header X-Real-IP $remote_addr;  # Set the X-Real-IP header
                     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;  # Set the X-Forwarded-For header
                     proxy_set_header X-Forwarded-Proto $scheme;  # Set the X-Forwarded-Proto header
+                    proxy_buffer_size   128k;
+                    proxy_buffers   4 256k;
+                    proxy_busy_buffers_size   256k;
                 }
               }`),
       InitFile.fromFileInline('/usr/share/nginx/html/index_nightly.html', join(__dirname, '../resources/assets/ngnix-index.html')),

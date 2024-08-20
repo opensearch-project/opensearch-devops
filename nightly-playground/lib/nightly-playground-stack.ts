@@ -39,14 +39,28 @@ export class NightlyPlaygroundStack {
       throw new Error('dashboardPassword parameter cannot be empty! Please provide the OpenSearch-Dashboards customized password for kibanauser');
     }
 
-    const additionalOsdConfig = `{"opensearch_security.auth.anonymous_auth_enabled": "true", "opensearch.password": "${dashboardPassword}", `
-    + '"opensearch_security.cookie.secure": "true", "opensearch_security.cookie.isSameSite": "None",'
-    + `"server.basePath": "/${playGroundId}", "server.rewriteBasePath": "true"}`;
+    const dashboardOpenIDClientSecret = scope.node.tryGetContext('dashboardOpenIDClientSecret');
+    if (dashboardOpenIDClientSecret === undefined) {
+      throw new Error('dashboardOpenIDClientSecret parameter cannot be empty!');
+    }
+
+    const additionalOsdConfig = `{"opensearch_security.auth.anonymous_auth_enabled": "true", "opensearch.password": "${dashboardPassword}",`
+      + '"opensearch_security.cookie.secure": "true", "opensearch_security.cookie.isSameSite": "None",'
+      + `"server.basePath": "/${playGroundId}", "server.rewriteBasePath": "true",`
+      + '"opensearch.requestHeadersWhitelist": ["authorization", "securitytenant"],'
+      + '"opensearch_security.auth.type": ["basicauth","openid"],'
+      + '"opensearch_security.auth.multiple_auth_enabled": "true",'
+      + '"opensearch_security.openid.connect_url": "https://keycloak.opensearch.org/realms/opensearch-nightly-playgrounds/.well-known/openid-configuration",'
+      + `"opensearch_security.openid.base_redirect_url": "https://playground.nightly.opensearch.org/${playGroundId}",`
+      + '"opensearch_security.openid.client_id": "opensearch-dashboards-nightly-playgrounds",'
+      + `"opensearch_security.openid.client_secret": "${dashboardOpenIDClientSecret}",`
+      + '"opensearch_security.ui.openid.login.buttonname": "Log in with GitHub",'
+      + '"opensearch_security.openid.verify_hostnames": "false" }';
 
     const securityConfig = '{ "resources/security-config/config.yml" : "opensearch/config/opensearch-security/config.yml", '
-    + '"resources/security-config/roles_mapping.yml" : "opensearch/config/opensearch-security/roles_mapping.yml", '
-    + '"resources/security-config/roles.yml" : "opensearch/config/opensearch-security/roles.yml", '
-    + '"resources/security-config/internal_users.yml": "opensearch/config/opensearch-security/internal_users.yml"}';
+      + '"resources/security-config/roles_mapping.yml" : "opensearch/config/opensearch-security/roles_mapping.yml", '
+      + '"resources/security-config/roles.yml" : "opensearch/config/opensearch-security/roles.yml", '
+      + '"resources/security-config/internal_users.yml": "opensearch/config/opensearch-security/internal_users.yml"}';
 
     const commonToolsStack = new CommonToolsStack(scope, 'commonsStack', {
       ...props,
