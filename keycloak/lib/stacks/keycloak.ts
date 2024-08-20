@@ -158,7 +158,7 @@ export class KeycloakStack extends Stack {
       InitPackage.yum('docker'),
       InitCommand.shellCommand('sudo curl -L https://github.com/docker/compose/releases/download/v2.9.0/docker-compose-$(uname -s)-$(uname -m) '
         + '-o /usr/bin/docker-compose && sudo chmod +x /usr/bin/docker-compose'),
-      InitFile.fromFileInline('/docker-compose.yml', join(__dirname, '../resources/docker-compose.yml')),
+      InitFile.fromFileInline('/docker-compose.yml', join(__dirname, '../../resources/docker-compose.yml')),
       InitCommand.shellCommand('touch /.env'),
       InitCommand.shellCommand(`echo KC_DB_PASSWORD=$(aws --region ${region} secretsmanager get-secret-value`
         + ` --secret-id ${props.keycloakDBpasswordSecretArn} --query SecretString --output text) > /.env && `
@@ -175,7 +175,7 @@ export class KeycloakStack extends Stack {
       InitPackage.yum('docker'),
       InitCommand.shellCommand('sudo curl -L https://github.com/docker/compose/releases/download/v2.9.0/docker-compose-$(uname -s)-$(uname -m) '
         + '-o /usr/bin/docker-compose && sudo chmod +x /usr/bin/docker-compose'),
-      InitFile.fromFileInline('/docker-compose.yml', join(__dirname, '../resources/internal-docker-compose.yml')),
+      InitFile.fromFileInline('/docker-compose.yml', join(__dirname, '../../resources/internal-docker-compose.yml')),
       InitCommand.shellCommand('touch /.env'),
       InitCommand.shellCommand(`echo KC_DB_PASSWORD=$(aws --region ${region} secretsmanager get-secret-value`
         + ` --secret-id ${props.keycloakDBpasswordSecretArn} --query SecretString --output text) > /.env && `
