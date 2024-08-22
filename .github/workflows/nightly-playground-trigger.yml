@@ -9,7 +9,7 @@ jobs:
   deploy-nightly-playground:
     strategy:
       matrix:
-        dist_version: ['2.16.0', '3.0.0']
+        dist_version: ['2.17.0', '3.0.0']
       fail-fast: false
     uses: ./.github/workflows/nightly-playground-deploy.yml
     secrets: inherit
