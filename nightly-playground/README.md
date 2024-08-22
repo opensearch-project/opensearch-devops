@@ -1,27 +1,23 @@
 # OpenSearch Nightly Playground
+Get a glance of your work in action on a fully deployed distribution cluster for upcoming version. The purpose of this playground is to get early feedback on upcoming features and see it in action.
+This cluster will deploy nightly build artifacts daily at 00:00 UTC (5PM PST).
 
-This project is an extension of [opensearch-cluster-cdk](https://github.com/opensearch-project/opensearch-cluster-cdk) that deploys nightly built artifacts daily. The source code concentrates on taking care of regular deployments, permissions, access, etc. For more customization, please feel free to directly use [opensearch-cluster-cdk](https://github.com/opensearch-project/opensearch-cluster-cdk).
+* **Where can I access it?**\
+  https://playground.nightly.opensearch.org/
 
-## Getting Started
+* **What commit was used to build this distribution?**\
+  Every user has the read-only access to the cluster. The entire distribution manifest of the deployed artifact is indexed in the cluster as a part of the automation. Simply go to the dev-tools and run the below query:
+  ```
+  GET opensearch/_doc/1
+  GET opensearch-dashboards/_doc/1
+  ```
+  This will give you components present in the deployed cluster along with the commit_id and the artifact location.
 
-- Requires [NPM](https://docs.npmjs.com/cli/v7/configuring-npm/install) to be installed
-- Install project dependencies using `npm install` from this project directory
-- Configure [aws credentials](https://docs.aws.amazon.com/cdk/latest/guide/getting_started.html#getting_started_prerequisites)
+* **Component missing from the cluster/distribution?**\
+  If a component is missing from the distribution, well because it failed to build and hence was not able to make the cut into the nightly distribution. Please go to the repository and search for build failure issues. Example: https://github.com/opensearch-project/security-analytics/issues/904
 
-## Deployment
+* **What if we need a more data indexed into these cluster?**\
+  Please feel free to raise an issue or pull request with the required data that you need in these clusters. The maintainers will review the data for security and sensitive data.
 
-### Required context parameters
-
-In order to deploy the stack the user needs to provide a set of required parameters listed below:
-
-| Name                          | Requirement | Type      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-|-------------------------------|:------------|:------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| distVersion                   | Required    | string      | The OpenSearch distribution version (released/un-released) the user wants to deploy                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| distributionUrl              | Required    | string     | OpenSearch tarball distribution URL plugin                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| dashboardsUrl                 | Required    | string      | OpenSearch-Dashboards tarball distribution URL version                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-
-#### Sample command to set up multi-node cluster with security enabled
-
-```
-npm run cdk deploy "*" -- -c distVersion=2.3.0 -c distributionUrl=https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/2.3.0/latest/linux/x64/tar/dist/opensearch/opensearch-2.3.0-linux-x64.tar.gz -c dashboardsUrl=https://ci.opensearch.org/ci/dbc/distribution-build-opensearch-dashboards/2.3.0/latest/linux/x64/tar/dist/opensearch-dashboards/opensearch-dashboards-2.3.0-linux-x64.tar.gz
-```
+* **What if we need more permissions to test different features on these clusters?**\
+  Please creat an GitHub issue requesting the right permissions required along with GitHub username.
