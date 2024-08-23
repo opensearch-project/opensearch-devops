@@ -57,7 +57,7 @@ jobs:
           pipenv install --deploy --dev
 
       - name: Validate OS and OSD
-        run: ./validation.sh --file-path opensearch=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} opensearch-dashboards=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}}
+        run: unset JAVA_HOME && ./validation.sh --file-path opensearch=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} opensearch-dashboards=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}}
 
       - uses: actions/checkout@v3
 
