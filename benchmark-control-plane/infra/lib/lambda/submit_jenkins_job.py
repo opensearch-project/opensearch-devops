@@ -11,10 +11,10 @@ def handler(event, context):
 
     if 'submitBenchmarkRun' in resource:
         secret_name = 'benchmark-job-token'
-        jenkins_job_name = 'zsngri-gradle-test'
+        jenkins_job_name = 'benchmark-pull-request'
     elif 'submitBenchmarkEndpointRun' in resource:
         secret_name = 'benchmark-endpoint-job-token'
-        jenkins_job_name = 'zsngri-gradle-test'
+        jenkins_job_name = 'benchmark-test-endpoint'
 
     job_token = get_secret(secret_name)
 

@@ -57,7 +57,7 @@ jobs:
           pipenv install --deploy --dev
 
       - name: Validate OS and OSD
-        run: ./validation.sh --file-path opensearch=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} opensearch-dashboards=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}}
+        run: unset JAVA_HOME && ./validation.sh --file-path opensearch=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} opensearch-dashboards=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}}
 
       - uses: actions/checkout@v3
 
@@ -77,7 +77,8 @@ jobs:
           npm install
           playground_id=`echo ${{inputs.dist_version}} | cut -d. -f1`x
           echo "PLAYGROUND_ID=$playground_id" >> "$GITHUB_OUTPUT"
-          npm run cdk deploy "infra*" -- -c playGroundId=$playground_id -c distVersion=${{inputs.dist_version}} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} -c adminPassword=${{ SECRETS.OPENSEARCH_PASSWORD }} --require-approval never
+          aws s3 cp s3://nightly-playgrounds-snapshots-bucket/internal_users.yml resources/security-config/internal_users.yml
+          npm run cdk deploy "infra*" -- -c playGroundId=$playground_id -c distVersion=${{inputs.dist_version}} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} -c adminPassword=${{ SECRETS.OPENSEARCH_PASSWORD }} -c dashboardOpenIDClientSecret=${{ SECRETS.DASHBOARD_OPENID_CLIENT_SECRET }} --require-approval never
 
           echo "ENDPOINT=$(aws cloudformation --region us-west-2 describe-stacks --stack-name infraStack-$playground_id --query 'Stacks[0].Outputs[0].OutputValue' --output text)" >> "$GITHUB_OUTPUT"
 
