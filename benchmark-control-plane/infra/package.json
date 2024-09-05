@@ -8,6 +8,7 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
+    "postbuild": "eslint --fix \"bin/**/*.ts\" \"lib/**/*.ts\" \"test/**/*.ts\" --ignore-pattern \"**/*.d.ts\" && jest",
     "cdk": "cdk"
   },
   "devDependencies": {
@@ -20,6 +21,11 @@
     "typescript": "~5.3.3"
   },
   "dependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^7.32.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.30.0",
     "aws-cdk-lib": "2.129.0",
     "constructs": "^10.0.0",
     "source-map-support": "^0.5.21",
