@@ -237,6 +237,5 @@ describe('Benchmark Control Plane Stack', () => {
       },
       Type: 'TOKEN',
     });
-
   });
 });
