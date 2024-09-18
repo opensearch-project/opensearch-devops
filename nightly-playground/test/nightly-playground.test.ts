@@ -47,7 +47,7 @@ test('Ensure security is always enabled with custom role mapping', () => {
               ignoreErrors: false,
             },
             '011': {
-              command: "set -ex; echo \"_meta:\n  type: rolesmapping\n  config_version: 2\nopendistro_security_anonymous_role:\n  backend_roles:\n    - opendistro_security_anonymous_backendrole\nall_access:\n  reserved: false\n  backend_roles:\n    - admin\n  description: Maps admin to all_access\nown_index:\n  reserved: false\n  users:\n    - '*'\n  description: Allow full access to an index named like the username\nkibana_user:\n  reserved: false\n  backend_roles:\n    - kibanauser\n  description: Maps kibanauser to kibana_user\nreadall:\n  reserved: false\n  backend_roles:\n    - readall\nkibana_server:\n  reserved: true\n  users:\n    - kibanaserver\n\" > opensearch/config/opensearch-security/roles_mapping.yml",
+              command: "set -ex; echo \"_meta:\n  type: rolesmapping\n  config_version: 2\nopendistro_security_anonymous_role:\n  backend_roles:\n    - opendistro_security_anonymous_backendrole\n    - default-roles-opensearch-nightly-playgrounds\nall_access:\n  reserved: false\n  backend_roles:\n    - admin\n    - admin_role_for_nightly\n  description: Maps admin to all_access\nown_index:\n  reserved: false\n  users:\n    - '*'\n  description: Allow full access to an index named like the username\nkibana_user:\n  reserved: false\n  backend_roles:\n    - kibanauser\n  description: Maps kibanauser to kibana_user\nreadall:\n  reserved: false\n  backend_roles:\n    - readall\nkibana_server:\n  reserved: true\n  users:\n    - kibanaserver\n\" > opensearch/config/opensearch-security/roles_mapping.yml",
               cwd: '/home/ec2-user',
               ignoreErrors: false,
             },

@@ -10,12 +10,14 @@ _meta:
 opendistro_security_anonymous_role:
   backend_roles:
     - "opendistro_security_anonymous_backendrole"
+    - "default-roles-opensearch-nightly-playgrounds"
 ## Demo roles mapping
 
 all_access:
   reserved: false
   backend_roles:
     - "admin"
+    - "admin_role_for_nightly"
   description: "Maps admin to all_access"
 
 own_index:
