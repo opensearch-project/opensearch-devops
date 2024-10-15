@@ -3,7 +3,7 @@ services:
   keycloak:
     restart: on-failure
     container_name: keycloak
-    image: quay.io/keycloak/keycloak:24.0.4
+    image: quay.io/keycloak/keycloak:26.0.0
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://${RDS_HOSTNAME_WITH_PORT}/keycloak
@@ -12,7 +12,7 @@ services:
       KC_DB_PASSWORD: ${KC_DB_PASSWORD}
       KC_HTTPS_CERTIFICATE_FILE: /opt/certs/keycloak.pem
       KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/certs/keycloak.key
-      KC_FEATURES_DISABLED: 'admin-api,admin2'
+      KC_FEATURES_DISABLED: 'admin-api,admin'
       KC_HEALTH_ENABLED: true
     command: start
     volumes:
