@@ -1,0 +1,15 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+boto3 = "<=1.34.37"
+requests = "<=2.28.1"
+python-jenkins = "1.8.0"
+ghapi = "1.0.5"
+jwt = "1.3.1"
+pytest = "*"
+pytest-mock = "*"
+
+[dev-packages]
