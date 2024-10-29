@@ -363,3 +363,22 @@ opendistro_security_anonymous_role:
         - 'global_tenant'
       allowed_actions:
         - "kibana_all_read"
+
+# Allow almost admin access to the users
+all_access_nightly:
+  reserved: true
+  hidden: false
+  static: true
+  description: "Allow full access to all indices and all cluster APIs except security config"
+  cluster_permissions:
+    - "*"
+  index_permissions:
+    - index_patterns:
+        - "*"
+      allowed_actions:
+        - "*"
+  tenant_permissions:
+    - tenant_patterns:
+        - "*"
+      allowed_actions:
+        - "kibana_all_write"
