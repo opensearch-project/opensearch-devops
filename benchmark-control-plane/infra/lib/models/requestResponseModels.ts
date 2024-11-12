@@ -19,7 +19,7 @@ export class RequestResponseModels {
             PASSWORD: { type: JsonSchemaType.STRING },
             TEST_WORKLOAD: {
               type: JsonSchemaType.STRING,
-              enum: ['nyc_taxis', 'http_logs', 'percolator', 'pmc', 'so'],
+              enum: ['nyc_taxis', 'http_logs', 'percolator', 'pmc', 'so', 'big5', 'vectorsearch', 'noaa', 'noaa_semantic_search'],
             },
             USER_TAGS: { type: JsonSchemaType.STRING },
             WORKLOAD_PARAMS: { type: JsonSchemaType.OBJECT },
@@ -54,7 +54,7 @@ export class RequestResponseModels {
             USE_50_PERCENT_HEAP: { type: JsonSchemaType.STRING },
             TEST_WORKLOAD: {
               type: JsonSchemaType.STRING,
-              enum: ['nyc_taxis', 'http_logs', 'percolator', 'pmc', 'so'],
+              enum: ['nyc_taxis', 'http_logs', 'percolator', 'pmc', 'so', 'big5', 'vectorsearch', 'noaa', 'noaa_semantic_search'],
             },
             USER_TAGS: { type: JsonSchemaType.STRING },
             WORKLOAD_PARAMS: { type: JsonSchemaType.OBJECT },

@@ -39,6 +39,8 @@ export class BenchmarkRestApiStack extends Stack {
           })),
           metricsEnabled: true,
           accessLogFormat: AccessLogFormat.jsonWithStandardFields(),
+          throttlingRateLimit: 10,
+          throttlingBurstLimit: 5,
         },
       });
 

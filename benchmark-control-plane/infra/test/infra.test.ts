@@ -106,6 +106,10 @@ describe('Benchmark Control Plane Stack', () => {
               'percolator',
               'pmc',
               'so',
+              'big5',
+              'vectorsearch',
+              'noaa',
+              'noaa_semantic_search',
             ],
           },
           USER_TAGS: {
@@ -193,6 +197,10 @@ describe('Benchmark Control Plane Stack', () => {
               'percolator',
               'pmc',
               'so',
+              'big5',
+              'vectorsearch',
+              'noaa',
+              'noaa_semantic_search',
             ],
           },
           USER_TAGS: {
