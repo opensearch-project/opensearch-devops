@@ -117,7 +117,7 @@ export class NightlyPlaygroundStack {
 
     const wafStack = new NightlyPlaygroundWAF(scope, 'wafStack', {
       ...props,
-      ngnixLoadBalancer: routingStack.alb,
+      nginxLoadBalancer: routingStack.alb,
     });
 
     this.stacks.push(wafStack);

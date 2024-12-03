@@ -239,7 +239,7 @@ test('Ensure port mapping', () => {
   });
 });
 
-test('ngnix load balancer and ASG resources', () => {
+test('nginx load balancer and ASG resources', () => {
   const app = new App({
     context: {
       distVersion: '2.3.0',
