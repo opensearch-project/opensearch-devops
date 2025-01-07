@@ -50,7 +50,7 @@ export class Routing extends Stack {
       certificates: [ListenerCertificate.fromArn(props.certificateArn)],
     });
 
-    const ngnix = new AutoScalingGroup(this, 'ngnixBasedRouting', {
+    const nginx = new AutoScalingGroup(this, 'nginxBasedRouting', {
       vpc: props.vpc,
       instanceType: InstanceType.of(InstanceClass.M5, InstanceSize.LARGE),
       machineImage: MachineImage.latestAmazonLinux({
@@ -72,18 +72,18 @@ export class Routing extends Stack {
       signals: Signals.waitForAll(),
     });
 
-    listener.addTargets('ngnixTargetGroup', {
+    listener.addTargets('nginxTargetGroup', {
       port: 443,
       protocol: ApplicationProtocol.HTTPS,
       healthCheck: {
         port: '443',
         path: '/',
       },
-      targets: [ngnix],
+      targets: [nginx],
     });
   }
 
-  private static getCfnInitElement(ngnixProps: RoutingProps): InitElement[] {
+  private static getCfnInitElement(nginxProps: RoutingProps): InitElement[] {
     const cfnInitConfig: InitElement[] = [
       InitCommand.shellCommand('amazon-linux-extras install nginx1.12 -y'),
       InitCommand.shellCommand('openssl req -x509 -nodes -newkey rsa:4096 -keyout /etc/nginx/cert.key -out /etc/nginx/cert.crt -days 365 -subj \'/CN=SH\''),
@@ -92,7 +92,7 @@ export class Routing extends Stack {
               
               server {
                   listen 443;
-                  server_name ${ngnixProps.domainName};
+                  server_name ${nginxProps.domainName};
               
                   ssl_certificate /etc/nginx/cert.crt;
                   ssl_certificate_key /etc/nginx/cert.key;
@@ -104,7 +104,7 @@ export class Routing extends Stack {
                   ssl_prefer_server_ciphers on;
               
                   location ^~ /2x {
-                      proxy_pass https://${ngnixProps.endpoint2x}/2x;
+                      proxy_pass https://${nginxProps.endpoint2x}/2x;
                       proxy_set_header X-Real-IP $remote_addr;  # Set the X-Real-IP header
                       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;  # Set the X-Forwarded-For header
                       proxy_set_header X-Forwarded-Proto $scheme;  # Set the X-Forwarded-Proto header
@@ -113,7 +113,7 @@ export class Routing extends Stack {
                       proxy_busy_buffers_size   256k;
                   }
                   location ^~ /3x {
-                    proxy_pass https://${ngnixProps.endpoint3x}/3x;
+                    proxy_pass https://${nginxProps.endpoint3x}/3x;
                     proxy_set_header X-Real-IP $remote_addr;  # Set the X-Real-IP header
                     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;  # Set the X-Forwarded-For header
                     proxy_set_header X-Forwarded-Proto $scheme;  # Set the X-Forwarded-Proto header
@@ -122,7 +122,7 @@ export class Routing extends Stack {
                     proxy_busy_buffers_size   256k;
                 }
               }`),
-      InitFile.fromFileInline('/usr/share/nginx/html/index_nightly.html', join(__dirname, '../resources/assets/ngnix-index.html')),
+      InitFile.fromFileInline('/usr/share/nginx/html/index_nightly.html', join(__dirname, '../resources/assets/nginx-index.html')),
       InitCommand.shellCommand('cp /usr/share/nginx/html/index_nightly.html /usr/share/nginx/html/index.html'),
       InitCommand.shellCommand('sudo systemctl start nginx'),
       InitCommand.shellCommand('sudo systemctl enable nginx'),

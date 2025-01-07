@@ -105,7 +105,7 @@ export class WebACLAssociation extends CfnWebACLAssociation {
 }
 
 export interface WafProps extends StackProps{
-    ngnixLoadBalancer: ApplicationLoadBalancer;
+    nginxLoadBalancer: ApplicationLoadBalancer;
 }
 
 export class NightlyPlaygroundWAF extends Stack {
@@ -113,8 +113,8 @@ export class NightlyPlaygroundWAF extends Stack {
     super(scope, id, props);
     const waf = new WAF(this, 'WAFv2');
     // Create an association with the alb
-    new WebACLAssociation(this, 'wafALBassociation-ngnix', {
-      resourceArn: props.ngnixLoadBalancer.loadBalancerArn,
+    new WebACLAssociation(this, 'wafALBassociation-nginx', {
+      resourceArn: props.nginxLoadBalancer.loadBalancerArn,
       webAclArn: waf.attrArn,
     });
   }
