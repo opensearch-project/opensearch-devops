@@ -9,6 +9,7 @@ import { InfraStack } from '@opensearch-project/opensearch-cluster-cdk/lib/infra
 import { NetworkStack } from '@opensearch-project/opensearch-cluster-cdk/lib/networking/vpc-stack';
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
+import { satisfies } from 'semver';
 import { CommonToolsStack } from './common-tools-stack';
 import { Routing } from './routing';
 import { NightlyPlaygroundWAF } from './waf';
@@ -43,6 +44,8 @@ export class NightlyPlaygroundStack {
     if (dashboardOpenIDClientSecret === undefined) {
       throw new Error('dashboardOpenIDClientSecret parameter cannot be empty!');
     }
+
+    const additionalConfig = '{"plugins.search_relevance.workbench_enabled" : true}';
 
     const additionalOsdConfig = `{"opensearch_security.auth.anonymous_auth_enabled": "true", "opensearch.password": "${dashboardPassword}",`
       + '"opensearch_security.cookie.secure": "true", "opensearch_security.cookie.isSameSite": "None",'
@@ -90,6 +93,7 @@ export class NightlyPlaygroundStack {
       singleNodeCluster: false,
       dashboardsUrl,
       customConfigFiles: securityConfig,
+      ...(satisfies(distVersion, '>=3.0.0') ? { additionalConfig } : {}),
       additionalOsdConfig,
       certificateArn: commonToolsStack.certificateArn,
       mapOpensearchPortTo: 8443,
