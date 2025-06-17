@@ -44,6 +44,8 @@ export class NightlyPlaygroundStack {
       throw new Error('dashboardOpenIDClientSecret parameter cannot be empty!');
     }
 
+    const additionalConfig = '{"plugins.search_relevance.workbench_enabled" : true}';
+
     const additionalOsdConfig = `{"opensearch_security.auth.anonymous_auth_enabled": "true", "opensearch.password": "${dashboardPassword}",`
       + '"opensearch_security.cookie.secure": "true", "opensearch_security.cookie.isSameSite": "None",'
       + `"server.basePath": "/${playGroundId}", "server.rewriteBasePath": "true",`
@@ -90,6 +92,7 @@ export class NightlyPlaygroundStack {
       singleNodeCluster: false,
       dashboardsUrl,
       customConfigFiles: securityConfig,
+      additionalConfig,
       additionalOsdConfig,
       certificateArn: commonToolsStack.certificateArn,
       mapOpensearchPortTo: 8443,
