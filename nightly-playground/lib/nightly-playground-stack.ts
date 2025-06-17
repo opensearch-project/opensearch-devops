@@ -9,6 +9,7 @@ import { InfraStack } from '@opensearch-project/opensearch-cluster-cdk/lib/infra
 import { NetworkStack } from '@opensearch-project/opensearch-cluster-cdk/lib/networking/vpc-stack';
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
+import { satisfies } from 'semver';
 import { CommonToolsStack } from './common-tools-stack';
 import { Routing } from './routing';
 import { NightlyPlaygroundWAF } from './waf';
@@ -92,7 +93,7 @@ export class NightlyPlaygroundStack {
       singleNodeCluster: false,
       dashboardsUrl,
       customConfigFiles: securityConfig,
-      additionalConfig,
+      ...(satisfies(distVersion, '>=3.0.0') ? { additionalConfig } : {}),
       additionalOsdConfig,
       certificateArn: commonToolsStack.certificateArn,
       mapOpensearchPortTo: 8443,
