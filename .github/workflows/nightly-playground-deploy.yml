@@ -57,7 +57,7 @@ jobs:
           pipenv install --deploy --dev
 
       - name: Validate OS and OSD
-        run: unset JAVA_HOME && ./validation.sh --file-path opensearch=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} opensearch-dashboards=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}}
+        run: unset JAVA_HOME && ./validation.sh --artifact-type staging --file-path opensearch=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} opensearch-dashboards=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}}
 
       - uses: actions/checkout@v3
 
@@ -139,6 +139,14 @@ jobs:
     steps:
       - name: Add sample data
         run : |
-          curl -X POST -f 'https://${{needs.validate-and-deploy.outputs.ENDPOINT}}/${{needs.validate-and-deploy.outputs.PLAYGROUND_ID}}/api/sample_data/logs' -H 'securitytenant: global' -H 'Content-Type: application/json' -H 'osd-version: ${{inputs.dist_version}}' -H 'osd-xsrf: osd-fetch' -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
-          curl -X POST -f 'https://${{needs.validate-and-deploy.outputs.ENDPOINT}}/${{needs.validate-and-deploy.outputs.PLAYGROUND_ID}}/api/sample_data/flights' -H 'securitytenant: global' -H 'Content-Type: application/json' -H 'osd-version: ${{inputs.dist_version}}' -H 'osd-xsrf: osd-fetch' -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
-          curl -X POST -f 'https://${{needs.validate-and-deploy.outputs.ENDPOINT}}/${{needs.validate-and-deploy.outputs.PLAYGROUND_ID}}/api/sample_data/ecommerce' -H 'securitytenant: global' -H 'Content-Type: application/json' -H 'osd-version: ${{inputs.dist_version}}' -H 'osd-xsrf: osd-fetch' -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} --insecure
+          for dataset in logs flights ecommerce; do
+            for tenant in global private; do
+              curl -X POST -f "https://${{needs.validate-and-deploy.outputs.ENDPOINT}}/${{needs.validate-and-deploy.outputs.PLAYGROUND_ID}}/api/sample_data/$dataset" \
+                -H "securitytenant: $tenant" \
+                -H "Content-Type: application/json" \
+                -H "osd-version: ${{inputs.dist_version}}" \
+                -H "osd-xsrf: osd-fetch" \
+                -u ${{ secrets.OPENSEARCH_USER }}:${{ secrets.OPENSEARCH_PASSWORD }} \
+                --insecure
+            done
+          done
