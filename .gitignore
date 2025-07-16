@@ -1,0 +1,23 @@
+*.js
+!.eslintrc.js
+!jest.config.js
+*.d.ts
+node_modules
+cdk.context.json
+.DS_Store
+lib/.DS_Store
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+
+# Coverage directory used by tools like istanbul
+coverage
+
+# coverage output
+coverage.lcov
+
+# excluding intellij Idea files
+*.iml
+.idea/
+.vscode/
