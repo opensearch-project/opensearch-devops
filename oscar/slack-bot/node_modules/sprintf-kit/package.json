@@ -1,0 +1,108 @@
+{
+	"name": "sprintf-kit",
+	"version": "2.0.2",
+	"description": "sprintf parser and basic formatter",
+	"author": "Mariusz Nowak <medyk@medikoo.com> (http://www.medikoo.com/)",
+	"keywords": [
+		"printf",
+		"sprintf",
+		"log",
+		"format",
+		"string"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/medikoo/sprintf-kit.git"
+	},
+	"dependencies": {
+		"es5-ext": "^0.10.64"
+	},
+	"devDependencies": {
+		"browserstack-tape-runner": "^3.0.0",
+		"eslint": "^8.57.0",
+		"eslint-config-medikoo": "^4.2.0",
+		"essentials": "^1.2.0",
+		"git-list-updated": "^1.2.1",
+		"github-release-from-cc-changelog": "^2.3.0",
+		"husky": "^4.3.8",
+		"lint-staged": "^15.2.5",
+		"nyc": "^15.1.0",
+		"prettier-elastic": "^3.2.5",
+		"tape": "^5.7.5",
+		"tape-index": "^3.2.0"
+	},
+	"husky": {
+		"hooks": {
+			"pre-commit": "lint-staged"
+		}
+	},
+	"lint-staged": {
+		"*.js": [
+			"eslint"
+		],
+		"*.{css,html,js,json,md,yaml,yml}": [
+			"prettier -c"
+		]
+	},
+	"eslintConfig": {
+		"extends": "medikoo/es5",
+		"root": true
+	},
+	"nyc": {
+		"all": true,
+		"exclude": [
+			".github",
+			"coverage/**",
+			"test/**",
+			"*.config.js"
+		],
+		"reporter": [
+			"lcov",
+			"html",
+			"text-summary"
+		]
+	},
+	"prettier": {
+		"printWidth": 100,
+		"tabWidth": 4,
+		"trailingComma": "none",
+		"overrides": [
+			{
+				"files": [
+					"*.md",
+					"*.yml"
+				],
+				"options": {
+					"tabWidth": 2
+				}
+			}
+		]
+	},
+	"scripts": {
+		"coverage": "nyc npm test",
+		"lint": "eslint --ignore-path=.gitignore .",
+		"lint:updated": "pipe-git-updated --base=main --ext=js -- eslint --ignore-pattern '!*'",
+		"prettier-check": "prettier -c --ignore-path .gitignore \"**/*.{css,html,js,json,md,yaml,yml}\"",
+		"prettier-check:updated": "pipe-git-updated --base=main --ext=css --ext=html --ext=js --ext=json --ext=md --ext=yaml --ext=yml -- prettier -c",
+		"prettify": "prettier --write --ignore-path .gitignore \"**/*.{css,html,js,json,md,yaml,yml}\"",
+		"prettify:updated": "pipe-git-updated ---base=main -ext=css --ext=html --ext=js --ext=json --ext=md --ext=yaml --ext=yml -- prettier --write",
+		"test": "npm run test-prepare && npm run test-run",
+		"test-browsers": "tape-index && browserstack-tape-runner test.index.js",
+		"test-prepare": "tape-index",
+		"test-run": "node test.index.js"
+	},
+	"browserstack": {
+		"browsers": [
+			"chrome_current",
+			"firefox_current",
+			"safari_current",
+			"opera_current",
+			"ie_11",
+			"edge_current"
+		]
+	},
+	"engines": {
+		"node": ">=0.12"
+	},
+	"license": "ISC"
+}

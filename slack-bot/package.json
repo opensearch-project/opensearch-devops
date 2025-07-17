@@ -1,0 +1,7 @@
+{
+  "name": "oscar-slack-bot",
+  "version": "1.0.0",
+  "dependencies": {
+    "serverless-python-requirements": "^6.1.0"
+  }
+}
