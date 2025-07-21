@@ -1,3 +1,14 @@
+oscar/.venv
+oscar/build_docs
+oscar/POC
+oscar/.env
+oscar/.env.example
+oscar/cdk/.venv
+oscar/cdk/.pytest_cache
+oscar/cdk/cdk.out
+oscar/slack-bot/__pycache__
+oscar/slack-bot/.pytest_cache
+oscar/slack-bot/serverless
 aws_id.txt
 .env
 .env.example
@@ -15,7 +26,9 @@ slack-bot/.pytest_cache
 slack-bot/node_modules
 slack-bot/node_modules/*
 slack-bot/node_modules/
-oscar/slack-bot/.pytest_cache
+build_docs
+build_docs/
+./build_docs/
 # Python
 __pycache__/
 *.py[cod]
