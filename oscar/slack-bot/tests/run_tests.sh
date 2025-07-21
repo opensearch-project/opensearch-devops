@@ -1,48 +1,48 @@
 #!/bin/bash
 
-# Run all tests with coverage report
+# Run all tests
 cd "$(dirname "$0")/.."
 
-# Check for required dependencies and install if missing
+# Check for required dependencies
 echo "Checking for required dependencies..."
-MISSING_DEPS=0
 
-# Check for pytest
-if ! python -c "import pytest" 2>/dev/null; then
-    echo "pytest not found, will install"
-    MISSING_DEPS=1
+# Function to check if a Python package is installed
+check_dependency() {
+    python -c "import $1" 2>/dev/null
+    if [ $? -ne 0 ]; then
+        echo "Error: Required dependency '$1' is missing. Please install it using: pip install $1"
+        exit 1
+    else
+        echo "✓ $1 is installed"
+    fi
+}
+
+# Check each required dependency
+check_dependency pytest
+check_dependency slack_bolt
+check_dependency boto3
+
+# Set required environment variables for testing if not already set
+if [ -z "$SLACK_BOT_TOKEN" ]; then
+    export SLACK_BOT_TOKEN="test-bot-token"
+    echo "Set SLACK_BOT_TOKEN for testing"
 fi
 
-# Check for pytest-cov
-if ! python -c "import pytest_cov" 2>/dev/null; then
-    echo "pytest-cov not found, will install"
-    MISSING_DEPS=1
+if [ -z "$SLACK_SIGNING_SECRET" ]; then
+    export SLACK_SIGNING_SECRET="test-signing-secret"
+    echo "Set SLACK_SIGNING_SECRET for testing"
 fi
 
-# Check for slack_bolt
-if ! python -c "import slack_bolt" 2>/dev/null; then
-    echo "slack_bolt not found, will install"
-    MISSING_DEPS=1
+if [ -z "$KNOWLEDGE_BASE_ID" ]; then
+    export KNOWLEDGE_BASE_ID="test-kb-id"
+    echo "Set KNOWLEDGE_BASE_ID for testing"
 fi
 
-# Check for boto3
-if ! python -c "import boto3" 2>/dev/null; then
-    echo "boto3 not found, will install"
-    MISSING_DEPS=1
+if [ -z "$MODEL_ARN" ]; then
+    export MODEL_ARN="arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-3-5-haiku-20241022-v1:0"
+    echo "Set MODEL_ARN for testing"
 fi
 
-# Check for moto
-if ! python -c "import moto" 2>/dev/null; then
-    echo "moto not found, will install"
-    MISSING_DEPS=1
-fi
-
-# Install missing dependencies if any
-if [ $MISSING_DEPS -eq 1 ]; then
-    echo "Installing missing dependencies..."
-    pip install pytest pytest-cov slack_bolt boto3 moto
-fi
-
-# Run tests with coverage
-echo "Running tests with coverage..."
-python -m pytest tests/ -v --cov=oscar --cov-report=term-missing
+# Run tests
+echo "Running tests..."
+PYTHONPATH=. pytest tests/ -v
