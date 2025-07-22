@@ -46,7 +46,7 @@ class Config:
         self.model_arn = os.environ.get('MODEL_ARN', f'arn:aws:bedrock:{self.region}::foundation-model/anthropic.claude-3-5-haiku-20241022-v1:0')
         
         # DynamoDB tables
-        self.sessions_table_name = os.environ.get('SESSIONS_TABLE_NAME', 'oscar-sessions-v2')
+        self.sessions_table_name = os.environ.get('SESSIONS_TABLE_NAME', 'oscar-sessions')
         self.context_table_name = os.environ.get('CONTEXT_TABLE_NAME', 'oscar-context')
         
         # Slack credentials
