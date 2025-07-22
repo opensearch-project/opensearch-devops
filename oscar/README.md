@@ -6,6 +6,7 @@ OSCAR is an AI-powered assistant for OpenSearch release management, leveraging A
 
 - **Slack Bot**: AI-powered Slack bot with thread-based context and knowledge base integration
 - **CDK Infrastructure**: Modular AWS CDK stacks for deploying the required infrastructure
+- **API Gateway**: HTTP endpoint that receives events from Slack and forwards them to Lambda
 - **Knowledge Base**: Amazon Bedrock knowledge base with OpenSearch documentation
 
 ## Features

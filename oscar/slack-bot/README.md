@@ -4,11 +4,13 @@ A Slack bot for OpenSearch release management, powered by AWS Lambda and Amazon 
 
 ## Architecture
 
-This Slack bot uses a two-phase processing approach to prevent duplicate responses:
+This Slack bot uses API Gateway and a two-phase processing approach to prevent duplicate responses:
 
-1. **Immediate Acknowledgment**: When a Slack event is received, the Lambda function immediately acknowledges it with a 200 OK response within Slack's 3-second timeout window.
+1. **Event Reception**: Slack sends events to an API Gateway endpoint, which triggers the Lambda function.
 
-2. **Asynchronous Processing**: After acknowledging the event, the Lambda function invokes itself asynchronously to process the event and generate a response.
+2. **Immediate Acknowledgment**: When a Slack event is received, the Lambda function immediately acknowledges it with a 200 OK response within Slack's 3-second timeout window.
+
+3. **Asynchronous Processing**: After acknowledging the event, the Lambda function invokes itself asynchronously to process the event and generate a response.
 
 ## Features
 
@@ -61,10 +63,11 @@ slack-bot/
 
 ## How It Works
 
-1. Slack sends an event to the API Gateway endpoint
-2. The Lambda function immediately acknowledges the event with a 200 OK response
-3. The Lambda function invokes itself asynchronously to process the event
-4. The asynchronous Lambda function:
+1. Slack sends an event to the API Gateway endpoint configured as a webhook URL in Slack
+2. API Gateway forwards the event to the Lambda function using the Lambda proxy integration
+3. The Lambda function immediately acknowledges the event with a 200 OK response
+4. The Lambda function invokes itself asynchronously to process the event
+5. The asynchronous Lambda function:
    - Checks if the user is being throttled
    - Processes the event and queries the knowledge base
    - Maintains conversation context in DynamoDB
