@@ -102,7 +102,7 @@ def test_stack_creates_lambda_function(stack):
         "AWS::Lambda::Function",
         {
             "Handler": "app.lambda_handler",
-            "Runtime": "python3.9",
+            "Runtime": "python3.12",
             "Timeout": 30,
             "MemorySize": 512
         }

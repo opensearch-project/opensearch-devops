@@ -149,7 +149,7 @@ class OscarLambdaStack(Construct):
         return lambda_.Function(
             self, "OscarSlackBotFunction",
             function_name=function_name,
-            runtime=lambda_.Runtime.PYTHON_3_9,
+            runtime=lambda_.Runtime.PYTHON_3_12,
             handler="app.lambda_handler",
             code=lambda_.Code.from_inline("""
 import os
