@@ -55,7 +55,9 @@ slack-bot/
 ├── config.py             # Configuration management
 ├── slack_handler.py      # Slack event handling
 ├── storage.py            # DynamoDB storage
-├── requirements.txt      # Python dependencies
+├── requirements.txt      # Python dependencies with security fixes
+├── setup.py              # Package setup with security checks
+├── install_deps.sh       # Dependency installation script
 └── tests/                # Unit tests
     ├── run_tests.sh      # Test runner script
     └── ...               # Test files
@@ -83,3 +85,19 @@ If the bot is not responding:
 2. Verify that the Lambda function has permission to send messages to Slack
 3. Ensure that the bot has been invited to the channel and has the necessary permissions
 4. Check that the Slack credentials are correctly set in the environment variables
+
+## Security
+
+### Dependency Security
+
+This project includes security measures to prevent vulnerabilities in dependencies:
+
+1. **Pinned Dependencies**: All dependencies have explicitly pinned versions in requirements.txt
+2. **Security Fixes**: urllib3 is pinned to version 2.5.0 to prevent CVE-2025-50181 and CVE-2025-50182
+3. **Installation Script**: The `install_deps.sh` script installs dependencies and verifies security
+
+To install dependencies securely:
+```bash
+chmod +x install_deps.sh
+./install_deps.sh
+```
