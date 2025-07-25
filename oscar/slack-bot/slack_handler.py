@@ -55,7 +55,6 @@ class SlackHandler:
         self.app.event("app_mention")(self.handle_app_mention)
         
         # Register message handler for DMs if enabled
-        # Use the imported config module for consistency with tests
         from config import config as config_instance
         if config_instance.enable_dm:
             self.app.message()(self.handle_message)
@@ -108,7 +107,6 @@ class SlackHandler:
         # Process the message
         self._process_message(channel, thread_ts, user_id, text, say, message_ts=event_ts)
     
-    # Keep _is_duplicate_event for test compatibility
     def _is_duplicate_event(self, event: Dict[str, Any]) -> bool:
         """
         Check if this is a duplicate event using event timestamp.
