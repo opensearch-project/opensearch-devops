@@ -1,0 +1,11 @@
+# OSCAR Slack Bot Dependencies
+
+# Core dependencies
+slack-bolt==1.23.0
+boto3==1.39.11
+
+# Security fixes - explicitly pinned to address CVE-2025-50181 and CVE-2025-50182
+urllib3==2.5.0
+
+# Ensure no transitive dependencies pull in vulnerable versions
+requests>=2.31.0
