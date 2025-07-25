@@ -14,7 +14,7 @@ import pytest
 from aws_cdk import App
 from aws_cdk.assertions import Template, Match
 
-from stacks.oscar_slack_bot_stack import OscarSlackBotStack
+from stacks.slack_bot_stack import OscarSlackBotStack
 
 
 @pytest.fixture

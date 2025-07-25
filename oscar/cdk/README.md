@@ -23,9 +23,56 @@ The CDK deployment creates a modular, serverless architecture for the OSCAR Slac
 
 The CDK code is organized into modular stacks for better maintainability:
 
-- **OscarSlackBotStack** (`oscar_slack_bot_stack.py`): Main stack that combines all components
+- **OscarSlackBotStack** (`slack_bot_stack.py`): Main stack that combines all components
 - **OscarStorageStack** (`storage_stack.py`): DynamoDB tables for data storage
 - **OscarLambdaStack** (`lambda_stack.py`): Lambda function and API Gateway for request processing
+
+## Lambda Code Customization
+
+The Lambda function code is located in the `lambda/` directory and can be easily customized:
+
+### Default Implementation
+- **File**: `lambda/app.py`
+- **Purpose**: Contains a placeholder Lambda handler that returns a success response
+- **Handler**: `app.lambda_handler`
+
+### Customizing the Lambda Code
+To deploy your own Lambda code (such as the full OSCAR Slack bot implementation):
+
+1. **Replace the placeholder code**: Edit or replace `lambda/app.py` with your implementation
+2. **Add dependencies**: Update `lambda/requirements.txt` with any required Python packages
+3. **Maintain the handler signature**: Ensure your main function is named `lambda_handler` and accepts `(event, context)` parameters
+4. **Redeploy**: Run the deployment script to update the Lambda function
+
+Example:
+```python
+# lambda/app.py
+def lambda_handler(event, context):
+    # Your custom implementation here
+    return {
+        'statusCode': 200,
+        'body': 'Your custom response'
+    }
+```
+
+This approach provides maximum flexibility while maintaining a simple deployment process.
+
+## Security Configuration
+
+### CORS (Cross-Origin Resource Sharing)
+The API Gateway is configured with secure CORS settings by default:
+
+- **Default allowed origins**: Slack domains (`https://slack.com`, `https://*.slack.com`, `https://api.slack.com`)
+- **Allowed methods**: POST only (required for Slack events)
+- **Allowed headers**: Content-Type, X-Slack-Request-Timestamp, X-Slack-Signature
+
+To add additional origins (e.g., for testing or custom integrations):
+```bash
+# In your .env file
+CORS_ALLOWED_ORIGINS=https://your-domain.com,https://another-domain.com
+```
+
+**Security Note**: Only add trusted domains to avoid potential security vulnerabilities.
 
 ## Environment Variables
 
@@ -50,6 +97,7 @@ The deployment uses the following environment variables, which can be set in a `
 - `PROMPT_TEMPLATE`: Custom prompt template for the Bedrock model
 - `ENVIRONMENT`: Deployment environment (default: dev)
 - `LAMBDA_FUNCTION_NAME`: Name of the Lambda function (default: oscar-slack-bot)
+- `CORS_ALLOWED_ORIGINS`: Comma-separated list of additional CORS origins (default: Slack domains only)
 
 ### Region Configuration
 

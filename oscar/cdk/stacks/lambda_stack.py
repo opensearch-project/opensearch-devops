@@ -11,6 +11,7 @@ Lambda stack for OSCAR Slack Bot.
 This module defines the Lambda function and API Gateway used by the OSCAR Slack Bot.
 """
 
+import logging
 import os
 from typing import Dict, Any, Optional
 from aws_cdk import (
@@ -22,6 +23,9 @@ from aws_cdk import (
     CfnOutput
 )
 from constructs import Construct
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 class OscarLambdaStack(Construct):
     """
@@ -84,22 +88,22 @@ class OscarLambdaStack(Construct):
             ]
         )
 
-        # Add permissions for Bedrock
+        # Add permissions for Bedrock Knowledge Base operations
         role.add_to_policy(
             iam.PolicyStatement(
                 actions=[
-                    "bedrock:InvokeModel",
+                    # Core Knowledge Base operations
+                    "bedrock-agent-runtime:RetrieveAndGenerate",
                     "bedrock:RetrieveAndGenerate",
                     "bedrock:Retrieve",
-                    "bedrock:GetFoundationModel",
-                    "bedrock:ListFoundationModels",
+                    # Knowledge Base access
                     "bedrock:GetKnowledgeBase",
-                    "bedrock:ListKnowledgeBases",
+                    # Foundation model access
+                    "bedrock:InvokeModel",
+                    "bedrock:GetFoundationModel",
+                    # Required for inference profile support (if using inference profiles)
                     "bedrock:GetInferenceProfile",
-                    "bedrock:ListInferenceProfiles",
-                    "bedrock-agent-runtime:Retrieve",
-                    "bedrock-agent-runtime:RetrieveAndGenerate",
-                    "bedrock-agent-runtime:InvokeAgent"
+                    "bedrock:ListInferenceProfiles"
                 ],
                 resources=["*"]
             )
@@ -151,14 +155,7 @@ class OscarLambdaStack(Construct):
             function_name=function_name,
             runtime=lambda_.Runtime.PYTHON_3_12,
             handler="app.lambda_handler",
-            code=lambda_.Code.from_inline("""
-import os
-def lambda_handler(event, context):
-    return {
-        'statusCode': 200,
-        'body': 'Lambda function deployed successfully. Will be updated with full code.'
-    }
-"""),
+            code=lambda_.Code.from_asset("lambda"),
             timeout=Duration.seconds(30),
             memory_size=512,
             environment=self._get_lambda_environment_variables(),
@@ -172,13 +169,17 @@ def lambda_handler(event, context):
         Returns:
             The created API Gateway
         """
+        # Configure CORS origins with security in mind
+        cors_origins = self._get_cors_origins()
+        
         api = apigateway.LambdaRestApi(
             self, "OscarSlackBotApi",
             handler=self.lambda_function,
             proxy=False,
             default_cors_preflight_options=apigateway.CorsOptions(
-                allow_origins=apigateway.Cors.ALL_ORIGINS,
-                allow_methods=["POST"]
+                allow_origins=cors_origins,
+                allow_methods=["POST"],
+                allow_headers=["Content-Type", "X-Slack-Request-Timestamp", "X-Slack-Signature"]
             )
         )
 
@@ -187,6 +188,31 @@ def lambda_handler(event, context):
         slack_events.add_method("POST")
         
         return api
+    
+    def _get_cors_origins(self) -> list[str]:
+        """
+        Get CORS origins configuration with security best practices.
+        
+        Returns:
+            List of allowed CORS origins
+        """
+        # Default secure origins for Slack bot
+        default_origins = [
+            "https://slack.com",
+            "https://*.slack.com",
+            "https://api.slack.com"
+        ]
+        
+        # Allow users to specify additional origins via environment variable
+        custom_origins = os.environ.get("CORS_ALLOWED_ORIGINS", "")
+        if custom_origins:
+            # Parse comma-separated origins and add to defaults
+            additional_origins = [origin.strip() for origin in custom_origins.split(",") if origin.strip()]
+            default_origins.extend(additional_origins)
+            logger.info(f"Added custom CORS origins: {additional_origins}")
+        
+        logger.info(f"Configured CORS origins: {default_origins}")
+        return default_origins
     
     def _add_outputs(self) -> None:
         """
@@ -224,12 +250,12 @@ def lambda_handler(event, context):
         knowledge_base_id = os.environ.get("KNOWLEDGE_BASE_ID")
         if not knowledge_base_id:
             knowledge_base_id = "PLACEHOLDER_KNOWLEDGE_BASE_ID"
-            print("WARNING: KNOWLEDGE_BASE_ID not set, using placeholder value")
+            logger.warning("KNOWLEDGE_BASE_ID not set, using placeholder value")
             
         model_arn = os.environ.get("MODEL_ARN")
         if not model_arn:
             model_arn = f'arn:aws:bedrock:{region}::foundation-model/anthropic.claude-3-5-haiku-20241022-v1:0'
-            print(f"WARNING: MODEL_ARN not set, using default Claude 3.5 Haiku model: {model_arn}")
+            logger.warning(f"MODEL_ARN not set, using default Claude 3.5 Haiku model: {model_arn}")
         
         env_vars: Dict[str, str] = {
             # Required configuration
@@ -256,5 +282,8 @@ def lambda_handler(event, context):
         prompt_template = os.environ.get("PROMPT_TEMPLATE")
         if prompt_template:
             env_vars["PROMPT_TEMPLATE"] = prompt_template
+        
+        # Note: CORS_ALLOWED_ORIGINS is used during CDK deployment, not as a Lambda environment variable
+        # It configures the API Gateway CORS settings, not runtime behavior
             
         return env_vars

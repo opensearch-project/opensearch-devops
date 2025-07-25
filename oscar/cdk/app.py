@@ -11,6 +11,7 @@ Main CDK application for OSCAR Slack Bot.
 This module defines the main CDK application that deploys the OSCAR Slack Bot stack.
 """
 
+import logging
 import os
 import sys
 from typing import Optional
@@ -19,7 +20,14 @@ from aws_cdk import (
     Environment,
     Tags
 )
-from stacks.oscar_slack_bot_stack import OscarSlackBotStack
+from stacks.slack_bot_stack import OscarSlackBotStack
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 def main() -> None:
     """
@@ -41,16 +49,16 @@ def main() -> None:
     account: Optional[str] = os.environ.get("CDK_DEFAULT_ACCOUNT")
     region: Optional[str] = os.environ.get("CDK_DEFAULT_REGION", "us-east-1")
 
-    print(f"Deploying to account: {account}")
-    print(f"Deploying to region: {region}")
+    logger.info(f"Deploying to account: {account}")
+    logger.info(f"Deploying to region: {region}")
 
     # Validate region - make configurable but with a default
     default_region: str = "us-east-1"
     expected_region: str = os.environ.get("AWS_REGION", default_region)
     
     if region != expected_region:
-        print(f"ERROR: Region is set to {region}, but should be {expected_region}")
-        print("Please make sure CDK_DEFAULT_REGION or AWS_REGION is set correctly")
+        logger.error(f"Region is set to {region}, but should be {expected_region}")
+        logger.error("Please make sure CDK_DEFAULT_REGION or AWS_REGION is set correctly")
         sys.exit(1)
 
     # Deploy the main stack
