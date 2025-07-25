@@ -214,100 +214,17 @@ class DynamoDBStorage(StorageInterface):
             logger.error(f"Error marking event: {e}")
             return False
 
-class InMemoryStorage(StorageInterface):
-    """In-memory implementation of storage interface for testing."""
-    
-    def __init__(self) -> None:
-        """Initialize in-memory storage."""
-        self.contexts: Dict[str, Dict[str, Union[Dict[str, Any], int]]] = {}
-        self.seen_events: Dict[str, Dict[str, Any]] = {}
-        self.dedup_ttl = config.dedup_ttl
-        self.context_ttl = config.context_ttl
-    
-    def store_context(self, thread_key: str, context: Dict[str, Any]) -> bool:
-        """
-        Store conversation context in memory.
-        
-        Args:
-            thread_key: Unique identifier for the conversation thread
-            context: Dictionary containing conversation context data
-            
-        Returns:
-            True if storage was successful
-        """
-        self.contexts[thread_key] = {
-            'context': context,
-            'expiration': int(time.time()) + self.context_ttl
-        }
-        return True
-    
-    def get_context(self, thread_key: str) -> Optional[Dict[str, Any]]:
-        """
-        Get conversation context from memory.
-        
-        Args:
-            thread_key: Unique identifier for the conversation thread
-            
-        Returns:
-            Dictionary containing conversation context data, or None if not found or expired
-        """
-        if thread_key in self.contexts:
-            # Check if expired
-            if self.contexts[thread_key]['expiration'] < int(time.time()):
-                del self.contexts[thread_key]
-                return None
-            return self.contexts[thread_key]['context']  # type: ignore
-        return None
-    
-    def has_seen_event(self, event_id: str) -> bool:
-        """
-        Check if an event has been seen before in memory.
-        
-        Args:
-            event_id: Unique identifier for the event
-            
-        Returns:
-            True if the event has been seen before and not expired, False otherwise
-        """
-        if event_id in self.seen_events:
-            # Check if expired
-            if self.seen_events[event_id]['ttl'] < int(time.time()):
-                del self.seen_events[event_id]
-                return False
-            return True
-        return False
-    
-    def mark_event_seen(self, event_id: str) -> bool:
-        """
-        Mark an event as seen in memory.
-        
-        Args:
-            event_id: Unique identifier for the event
-            
-        Returns:
-            True if the event was successfully marked as seen, False otherwise
-        """
-        current_time = int(time.time())
-        expiration = current_time + self.dedup_ttl
-        
-        self.seen_events[event_id] = {
-            'timestamp': current_time,
-            'ttl': expiration
-        }
-        logger.info(f"Marked event {event_id} as seen")
-        return True
+
 
 def get_storage(storage_type: str = 'dynamodb', region: Optional[str] = None) -> StorageInterface:
     """
     Get storage implementation based on type.
     
     Args:
-        storage_type: Type of storage to create ('dynamodb' or 'memory')
+        storage_type: Type of storage to create (currently only 'dynamodb' is supported)
         region: AWS region for DynamoDB service, defaults to config value if None
         
     Returns:
         An implementation of StorageInterface
     """
-    if storage_type == 'memory':
-        return InMemoryStorage()
     return DynamoDBStorage(region)
