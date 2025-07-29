@@ -47,19 +47,10 @@ def main() -> None:
 
     # Get account and region from environment variables
     account: Optional[str] = os.environ.get("CDK_DEFAULT_ACCOUNT")
-    region: Optional[str] = os.environ.get("CDK_DEFAULT_REGION", "us-east-1")
+    region: Optional[str] = os.environ.get("AWS_REGION", "us-east-1")
 
     logger.info(f"Deploying to account: {account}")
     logger.info(f"Deploying to region: {region}")
-
-    # Validate region - make configurable but with a default
-    default_region: str = "us-east-1"
-    expected_region: str = os.environ.get("AWS_REGION", default_region)
-    
-    if region != expected_region:
-        logger.error(f"Region is set to {region}, but should be {expected_region}")
-        logger.error("Please make sure CDK_DEFAULT_REGION or AWS_REGION is set correctly")
-        sys.exit(1)
 
     # Deploy the main stack
     stack = OscarSlackBotStack(
