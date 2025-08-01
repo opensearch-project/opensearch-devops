@@ -101,7 +101,7 @@ class TestConfig(unittest.TestCase):
             
             # Test default values
             self.assertEqual(test_config.region, 'us-east-1')  # Default region
-            self.assertEqual(test_config.sessions_table_name, 'oscar-sessions')
+            self.assertEqual(test_config.sessions_table_name, 'oscar-sessions-v2')  # Updated default
             self.assertEqual(test_config.context_table_name, 'oscar-context')
             self.assertEqual(test_config.dedup_ttl, 300)  # 5 minutes
             self.assertEqual(test_config.session_ttl, 3600)  # 1 hour

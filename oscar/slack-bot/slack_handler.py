@@ -173,7 +173,12 @@ class SlackHandler:
         
         # Update session ID if it changed
         if new_session_id and new_session_id != session_id:
+            logger.info(f"Session ID changed from {session_id} to {new_session_id}")
             context["session_id"] = new_session_id
+        elif new_session_id:
+            logger.info(f"Maintaining session ID: {new_session_id}")
+        else:
+            logger.info("No session ID available")
         
         # Append to history
         context["history"].append({
@@ -182,16 +187,71 @@ class SlackHandler:
             "timestamp": int(time.time())
         })
         
-        # Generate summary (simple for now, just the last few exchanges)
-        history_text = ""
-        for entry in context["history"][-3:]:  # Last 3 exchanges
-            history_text += f"User: {entry['query']}\nAssistant: {entry['response']}\n\n"
-        context["summary"] = history_text[:config.context_summary_length]
+        # Generate summary from conversation history
+        context["summary"] = self._generate_context_summary(context["history"])
+        logger.info(f"Generated summary length: {len(context['summary'])} (max: {config.context_summary_length})")
         
         # Store updated context
-        self.storage.store_context(thread_key, context)
+        logger.info(f"Storing context for thread_key: {thread_key}")
+        logger.info(f"Context now has {len(context['history'])} history entries")
+        logger.info(f"New summary length: {len(context['summary'])}")
+        success = self.storage.store_context(thread_key, context)
+        if success:
+            logger.info("Context stored successfully")
+        else:
+            logger.error("Failed to store context")
         
         return context
+    
+    def _generate_context_summary(self, history: List[Dict[str, Any]]) -> str:
+        """
+        Generate a concise summary from conversation history.
+        
+        Args:
+            history: List of conversation entries
+            
+        Returns:
+            Formatted summary string within configured length limits
+        """
+        if not history:
+            return ""
+        
+        # Use last 5 exchanges for better context
+        recent_entries = history[-5:]
+        logger.info(f"Generating summary from {len(recent_entries)} recent entries")
+        
+        summary_parts = []
+        for i, entry in enumerate(recent_entries):
+            # Truncate very long responses to keep summary manageable
+            query_text = self._truncate_text(entry['query'], 200)
+            response_text = self._truncate_text(entry['response'], 300)
+            
+            summary_parts.append(f"User: {query_text}\nAssistant: {response_text}")
+            logger.debug(f"Entry {i+1}: Query={len(entry['query'])} chars, Response={len(entry['response'])} chars")
+        
+        # Join with double newlines and ensure it fits within limits
+        full_summary = "\n\n".join(summary_parts) + "\n\n"
+        
+        if len(full_summary) > config.context_summary_length:
+            # Truncate but try to keep complete exchanges
+            truncated = full_summary[:config.context_summary_length].rsplit('\n\n', 1)[0] + "..."
+            logger.info(f"Summary truncated from {len(full_summary)} to {len(truncated)} chars")
+            return truncated
+        
+        return full_summary
+    
+    def _truncate_text(self, text: str, max_length: int) -> str:
+        """
+        Truncate text to maximum length with ellipsis if needed.
+        
+        Args:
+            text: Text to truncate
+            max_length: Maximum allowed length
+            
+        Returns:
+            Truncated text with ellipsis if needed
+        """
+        return text[:max_length] + "..." if len(text) > max_length else text
     
     def _manage_reactions(self, channel: str, timestamp: str, add_reaction: Optional[str] = None, 
                          remove_reaction: Optional[Union[str, List[str]]] = None) -> None:
@@ -264,6 +324,7 @@ class SlackHandler:
         thread_key = f"{channel}_{thread_ts}"
         
         logger.info(f"Processing message in channel {channel}, thread {thread_ts}, from user {user_id}")
+        logger.debug(f"Generated thread_key: {thread_key}, message_ts: {message_ts}")
         
         # Add thinking reaction to the specific message
         self._manage_reactions(channel, reaction_ts, add_reaction="thinking_face")
@@ -278,9 +339,21 @@ class SlackHandler:
             logger.info(f"Extracted query: {query}")
             
             # Get context from storage
+            logger.info(f"Looking for context with thread_key: {thread_key}")
             context = self.storage.get_context(thread_key)
+            if context:
+                logger.info(f"Found context with {len(context.get('history', []))} history entries")
+                logger.info(f"Context summary length: {len(context.get('summary', ''))}")
+            else:
+                logger.info("No existing context found for this thread")
+            
             context_summary = context.get("summary") if context else None
             session_id = context.get("session_id") if context else None
+            
+            # Log context usage
+            logger.debug(f"Context summary available: {bool(context_summary)}")
+            if context_summary:
+                logger.debug(f"Context summary preview: {context_summary[:100]}...")
             
             # Check if we're approaching timeout before querying knowledge base
             current_time = time.time()

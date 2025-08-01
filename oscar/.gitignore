@@ -1,0 +1,41 @@
+# Environment and secrets
+.env*
+aws_id.txt
+DEPLOYMENT_GUIDE.md
+
+# Build outputs
+build_docs/
+cdk.out/
+.cdk.staging/
+cdk-outputs.json
+
+# Dependencies
+node_modules/
+.serverless/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE and OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+./POC
+oscar/POC

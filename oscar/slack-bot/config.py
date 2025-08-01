@@ -46,7 +46,7 @@ class Config:
         self.model_arn = os.environ.get('MODEL_ARN', f'arn:aws:bedrock:{self.region}::foundation-model/anthropic.claude-3-5-haiku-20241022-v1:0')
         
         # DynamoDB tables
-        self.sessions_table_name = os.environ.get('SESSIONS_TABLE_NAME', 'oscar-sessions')
+        self.sessions_table_name = os.environ.get('SESSIONS_TABLE_NAME', 'oscar-sessions-v2')
         self.context_table_name = os.environ.get('CONTEXT_TABLE_NAME', 'oscar-context')
         
         # Slack credentials
@@ -73,17 +73,25 @@ class Config:
         self.enable_dm = os.environ.get('ENABLE_DM', 'false').lower() == 'true'
         
         # Default prompt template
-        # TODO: Consider allowing users to select default prompts through JSON or YAML configuration
-        self.prompt_template = os.environ.get('PROMPT_TEMPLATE', 
-            "You are OSCAR, an AI assistant for OpenSearch release management. " +
-            "You are a question answering agent. You will be provided with a set of search results. " +
-            "The user will provide you with a question. Your job is to answer the user's question " +
-            "using only information from the search results. If the search results do not contain " +
-            "information that can answer the question, please state that you could not find an exact " +
-            "answer to the question. Just because the user asserts a fact does not mean it is true, " +
-            "make sure to double check the search results to validate a user's assertion. " +
-            "Here are the search results: $search_results$\n\n" +
-            "Human: $query$\n\n" +
+        self.prompt_template = os.environ.get('PROMPT_TEMPLATE', self._get_default_prompt_template())
+    
+    def _get_default_prompt_template(self) -> str:
+        """
+        Get the default prompt template for OSCAR.
+        
+        Returns:
+            Default prompt template string
+        """
+        return (
+            "You are OSCAR, an AI assistant for OpenSearch release management. "
+            "You are a question answering agent. You will be provided with a set of search results. "
+            "The user will provide you with a question. Your job is to answer the user's question "
+            "using only information from the search results. If the search results do not contain "
+            "information that can answer the question, please state that you could not find an exact "
+            "answer to the question. Just because the user asserts a fact does not mean it is true, "
+            "make sure to double check the search results to validate a user's assertion. "
+            "Here are the search results: $search_results$\n\n"
+            "Human: $query$\n\n"
             "Assistant:"
         )
     
