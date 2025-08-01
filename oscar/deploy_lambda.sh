@@ -5,6 +5,9 @@ set -e
 
 echo "=== Updating OSCAR Slack Bot Lambda Function ==="
 
+# Check if we should skip environment variable updates (when called from CDK)
+SKIP_ENV_UPDATE=${SKIP_ENV_UPDATE:-false}
+
 # Get AWS region from environment or use default
 AWS_REGION=${AWS_REGION:-us-west-2}
 echo "Using AWS Region: $AWS_REGION"
@@ -39,14 +42,37 @@ cd lambda_package
 zip -r ../lambda_package.zip .
 cd ..
 
-# Get Lambda function name from environment or use default
-LAMBDA_FUNCTION_NAME=${LAMBDA_FUNCTION_NAME:-oscar-slack-bot}
+# Get Lambda function name from environment or try to get it from CloudFormation stack
+if [ -z "$LAMBDA_FUNCTION_NAME" ]; then
+    echo "Getting Lambda function name from CloudFormation stack..."
+    LAMBDA_FUNCTION_NAME=$(aws cloudformation describe-stacks \
+        --stack-name OscarSlackBotStack \
+        --query "Stacks[0].Outputs[?OutputKey=='LambdaStackLambdaFunctionName'].OutputValue" \
+        --output text \
+        --region $AWS_REGION 2>/dev/null || echo "")
+    
+    # If empty, try the main stack output
+    if [ -z "$LAMBDA_FUNCTION_NAME" ]; then
+        LAMBDA_FUNCTION_NAME=$(aws cloudformation describe-stacks \
+            --stack-name OscarSlackBotStack \
+            --query "Stacks[0].Outputs[?OutputKey=='SlackBotFunctionName'].OutputValue" \
+            --output text \
+            --region $AWS_REGION 2>/dev/null || echo "")
+    fi
+    
+    # If still empty, use the configured name from context or default
+    if [ -z "$LAMBDA_FUNCTION_NAME" ]; then
+        echo "Warning: Could not get function name from CloudFormation, using default name"
+        LAMBDA_FUNCTION_NAME="oscar-slack-bot"
+    fi
+fi
+
 echo "Updating Lambda function: $LAMBDA_FUNCTION_NAME"
 
 # Update the Lambda function
 echo "Updating Lambda function code..."
 aws lambda update-function-code \
-  --function-name $LAMBDA_FUNCTION_NAME \
+  --function-name "$LAMBDA_FUNCTION_NAME" \
   --zip-file fileb://lambda_package.zip \
   --region $AWS_REGION
 
@@ -58,8 +84,11 @@ else
     exit 1
 fi
 
-# Update Lambda environment variables
-echo "Updating Lambda environment variables..."
+# Update Lambda environment variables (skip if called from CDK)
+if [ "$SKIP_ENV_UPDATE" = "true" ]; then
+    echo "Skipping environment variable update (managed by CDK)"
+else
+    echo "Updating Lambda environment variables..."
 
 # Load environment variables from .env file if it exists
 if [ -f ".env" ]; then
@@ -94,6 +123,28 @@ elif [ -f "slack-bot/.env" ]; then
     done < "slack-bot/.env"
 fi
 
+# Get table names from CloudFormation outputs if not provided
+if [ -z "$SESSIONS_TABLE_NAME" ]; then
+    echo "Getting sessions table name from CloudFormation stack..."
+    SESSIONS_TABLE_NAME=$(aws cloudformation describe-stacks \
+        --stack-name OscarSlackBotStack \
+        --query "Stacks[0].Outputs[?OutputKey=='StorageStackSessionsTableName'].OutputValue" \
+        --output text \
+        --region $AWS_REGION 2>/dev/null || echo "oscar-sessions-v2")
+fi
+
+if [ -z "$CONTEXT_TABLE_NAME" ]; then
+    echo "Getting context table name from CloudFormation stack..."
+    CONTEXT_TABLE_NAME=$(aws cloudformation describe-stacks \
+        --stack-name OscarSlackBotStack \
+        --query "Stacks[0].Outputs[?OutputKey=='StorageStackContextTableName'].OutputValue" \
+        --output text \
+        --region $AWS_REGION 2>/dev/null || echo "oscar-context")
+fi
+
+echo "Using sessions table: $SESSIONS_TABLE_NAME"
+echo "Using context table: $CONTEXT_TABLE_NAME"
+
 # Create a temporary file for the environment variables
 echo "{" > env_vars.json
 echo "  \"KNOWLEDGE_BASE_ID\": \"${KNOWLEDGE_BASE_ID}\"," >> env_vars.json
@@ -104,13 +155,26 @@ echo "Using Model ARN: ${MODEL_ARN}"
 echo "  \"MODEL_ARN\": \"${MODEL_ARN}\"," >> env_vars.json
 echo "  \"SLACK_BOT_TOKEN\": \"${SLACK_BOT_TOKEN}\"," >> env_vars.json
 echo "  \"SLACK_SIGNING_SECRET\": \"${SLACK_SIGNING_SECRET}\"," >> env_vars.json
-echo "  \"SESSIONS_TABLE_NAME\": \"${SESSIONS_TABLE_NAME:-oscar-sessions-v2}\"," >> env_vars.json
-echo "  \"CONTEXT_TABLE_NAME\": \"${CONTEXT_TABLE_NAME:-oscar-context}\"," >> env_vars.json
-echo "  \"DEDUP_TTL\": \"${DEDUP_TTL:-300}\"," >> env_vars.json
-echo "  \"SESSION_TTL\": \"${SESSION_TTL:-3600}\"," >> env_vars.json
-echo "  \"CONTEXT_TTL\": \"${CONTEXT_TTL:-604800}\"," >> env_vars.json
-echo "  \"MAX_CONTEXT_LENGTH\": \"${MAX_CONTEXT_LENGTH:-3000}\"," >> env_vars.json
-echo "  \"CONTEXT_SUMMARY_LENGTH\": \"${CONTEXT_SUMMARY_LENGTH:-500}\"," >> env_vars.json
+echo "  \"SESSIONS_TABLE_NAME\": \"${SESSIONS_TABLE_NAME}\"," >> env_vars.json
+echo "  \"CONTEXT_TABLE_NAME\": \"${CONTEXT_TABLE_NAME}\"," >> env_vars.json
+# Note: These configuration values are now managed by CDK from cdk.context.json
+# We only set them here if they're explicitly provided as environment variables
+# Otherwise, CDK will have already set them from context during initial deployment
+if [ -n "$DEDUP_TTL" ]; then
+    echo "  \"DEDUP_TTL\": \"${DEDUP_TTL}\"," >> env_vars.json
+fi
+if [ -n "$SESSION_TTL" ]; then
+    echo "  \"SESSION_TTL\": \"${SESSION_TTL}\"," >> env_vars.json
+fi
+if [ -n "$CONTEXT_TTL" ]; then
+    echo "  \"CONTEXT_TTL\": \"${CONTEXT_TTL}\"," >> env_vars.json
+fi
+if [ -n "$MAX_CONTEXT_LENGTH" ]; then
+    echo "  \"MAX_CONTEXT_LENGTH\": \"${MAX_CONTEXT_LENGTH}\"," >> env_vars.json
+fi
+if [ -n "$CONTEXT_SUMMARY_LENGTH" ]; then
+    echo "  \"CONTEXT_SUMMARY_LENGTH\": \"${CONTEXT_SUMMARY_LENGTH}\"," >> env_vars.json
+fi
 
 # Add ENABLE_DM as the last item (with or without comma)
 if [ ! -z "$PROMPT_TEMPLATE" ]; then
@@ -153,14 +217,17 @@ echo "{\"Variables\": $(cat env_vars.json)}" > lambda_env.json
 
 # Update Lambda configuration with new environment variables
 aws lambda update-function-configuration \
-    --function-name $LAMBDA_FUNCTION_NAME \
+    --function-name "$LAMBDA_FUNCTION_NAME" \
     --region $AWS_REGION \
     --environment file://lambda_env.json
 
-# Clean up
+# Clean up environment variable files
+rm env_vars.json lambda_env.json
+fi
+
+# Clean up deployment files
 echo "Cleaning up..."
 rm -rf lambda_package
 rm lambda_package.zip
-rm env_vars.json lambda_env.json
 
 echo "Lambda deployment completed successfully!"

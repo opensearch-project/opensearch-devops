@@ -109,11 +109,7 @@ class DynamoDBStorage(StorageInterface):
         """
         try:
             # Ensure context size is within limits
-            if len(str(context)) > config.max_context_length:
-                logger.warning(f"Context for {thread_key} exceeds max length, truncating history")
-                # Keep only the most recent history entries
-                while len(str(context)) > config.max_context_length and len(context.get("history", [])) > 1:
-                    context["history"].pop(0)
+            context = self._ensure_context_size_limits(thread_key, context)
             
             # Store with TTL
             expiration = int(time.time()) + self.context_ttl
@@ -213,6 +209,36 @@ class DynamoDBStorage(StorageInterface):
         except Exception as e:
             logger.error(f"Error marking event: {e}")
             return False
+    
+    def _ensure_context_size_limits(self, thread_key: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Ensure context size is within configured limits by truncating history if needed.
+        
+        Args:
+            thread_key: Unique identifier for the conversation thread
+            context: Context dictionary to check and potentially truncate
+            
+        Returns:
+            Context dictionary with size within limits
+        """
+        context_size = len(str(context))
+        logger.debug(f"Context size for {thread_key}: {context_size} bytes (max: {config.max_context_length})")
+        
+        if context_size <= config.max_context_length:
+            return context
+        
+        logger.warning(f"Context for {thread_key} exceeds max length ({context_size} > {config.max_context_length}), truncating history")
+        original_history_count = len(context.get("history", []))
+        
+        # Keep only the most recent history entries
+        while len(str(context)) > config.max_context_length and len(context.get("history", [])) > 1:
+            removed_entry = context["history"].pop(0)
+            logger.debug(f"Removed history entry: {removed_entry['query'][:50]}...")
+        
+        final_history_count = len(context.get("history", []))
+        logger.info(f"Truncated history from {original_history_count} to {final_history_count} entries")
+        
+        return context
 
 
 

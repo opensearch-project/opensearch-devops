@@ -1,5 +1,7 @@
 # Environment and secrets
 .env*
+aws_id.txt
+DEPLOYMENT_GUIDE.md
 
 # Build outputs
 build_docs/
@@ -34,3 +36,6 @@ env/
 *.swp
 *.swo
 .DS_Store
+
+./POC
+oscar/POC

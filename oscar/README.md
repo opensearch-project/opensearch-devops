@@ -41,60 +41,54 @@ OSCAR is deployed using AWS CDK:
 ./deploy_lambda.sh
 ```
 
-## Environment Variables
+## Configuration
 
-Create a `.env` file in the root directory with the following variables:
+OSCAR uses a hybrid configuration approach for optimal security and maintainability:
 
-### Required Variables
+### Environment Variables (.env file)
+**For sensitive data and large text configurations:**
 
-| Variable | Description |
-|----------|-------------|
-| `SLACK_BOT_TOKEN` | Slack bot token |
-| `SLACK_SIGNING_SECRET` | Slack signing secret |
-| `KNOWLEDGE_BASE_ID` | Bedrock knowledge base ID |
-| `MODEL_ARN` | Bedrock model ARN |
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `SLACK_BOT_TOKEN` | Slack bot token | Yes |
+| `SLACK_SIGNING_SECRET` | Slack signing secret | Yes |
+| `KNOWLEDGE_BASE_ID` | Bedrock knowledge base ID | Yes |
+| `AWS_REGION` | AWS region | Yes |
+| `PROMPT_TEMPLATE` | Custom prompt template (optional) | No |
 
-### Optional Variables
+### CDK Context Configuration (cdk/cdk.context.json)
+**For infrastructure and bot behavior settings:**
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `AWS_REGION` | AWS region | us-east-1 |
-| `SESSIONS_TABLE_NAME` | DynamoDB sessions table name | oscar-sessions-v2 |
-| `CONTEXT_TABLE_NAME` | DynamoDB context table name | oscar-context |
-| `DEDUP_TTL` | Deduplication TTL in seconds | 300 (5 minutes) |
-| `SESSION_TTL` | Session TTL in seconds | 3600 (1 hour) |
-| `CONTEXT_TTL` | Context TTL in seconds | 604800 (7 days) |
-| `MAX_CONTEXT_LENGTH` | Maximum context length | 3000 |
-| `CONTEXT_SUMMARY_LENGTH` | Context summary length | 500 |
-| `ENABLE_DM` | Enable direct messages | false |
-| `PROMPT_TEMPLATE` | Custom prompt template | Default template |
-<!-- | `THROTTLE_REQUESTS_PER_MINUTE` | Maximum requests per minute per user | 5 |
-| `THROTTLE_WINDOW_SECONDS` | Throttling window in seconds | 60 | -->
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `stage` | Deployment stage (Dev/Beta/Prod) | Dev |
+| `model_arn` | Bedrock model ARN | Claude 3.5 Sonnet |
+| `lambda_function_name` | Lambda function name | oscar-slack-bot |
+| `sessions_table_name` | DynamoDB sessions table | oscar-sessions-v2 |
+| `context_table_name` | DynamoDB context table | oscar-context |
+| `lambda_timeout` | Lambda timeout (seconds) | 120 |
+| `lambda_memory` | Lambda memory (MB) | 512 |
+| `max_context_length` | Maximum context length | 5000 |
+| `context_summary_length` | Context summary length | 1000 |
+| `enable_dm` | Enable direct messages | false |
 
-### Important Notes on Region Configuration
+### Configuration Benefits
+- **Security**: Secrets stay in environment variables, never in version control
+- **Flexibility**: Infrastructure settings in context files for easy environment management
+- **Best Practices**: Follows CDK recommended patterns for configuration management
 
-**Region Compatibility**: The AWS region used for the Bedrock knowledge base must match the region specified in your environment variables. If your knowledge base is in `us-west-2`, make sure to set `AWS_REGION=us-west-2` in your `.env` file.
+### Important Notes
 
-**Parameter Precedence**:
-1. Command-line arguments (highest priority)
-2. Environment variables from `.env` file
-3. Extracted from MODEL_ARN (if available)
-4. Default values in code (lowest priority)
+**Region Compatibility**: The AWS region must match across all components:
+- `.env` file: `AWS_REGION=us-west-2`
+- Context file: `model_arn` must use the same region
+- Bedrock knowledge base must exist in the same region
 
-For example, if you specify `--region us-west-2` in the command line, it will override any region setting in your `.env` file or defaults.
-
-### Important Notes on Region Configuration
-
-- **Region Compatibility**: The AWS region used for the Bedrock knowledge base must match the region specified in `AWS_REGION` and in the `MODEL_ARN`. Using different regions will result in errors when querying the knowledge base.
-
-### Configuration Precedence
-
-When determining configuration values, the following precedence is used (highest to lowest):
-
-1. Command-line arguments (e.g., `--region`, `--enable-dm`)
-2. Environment variables from `.env` file
-3. Values extracted from other settings (e.g., region from `MODEL_ARN`)
-4. Default values in code
+**Enhanced Context Preservation**: Recent improvements include:
+- **Better AI Model**: Uses Claude 3.5 Sonnet for improved response quality
+- **Larger Context**: Increased context limits (5000 chars) for better conversation continuity
+- **Improved Summaries**: Enhanced context summarization (1000 chars) for richer thread context
+- **Longer Timeout**: Extended Lambda timeout (120s) to accommodate the more capable model
 
 ## Usage
 

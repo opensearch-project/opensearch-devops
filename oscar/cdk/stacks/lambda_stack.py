@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright OpenSearch Contributors
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -8,12 +8,20 @@
 """
 Lambda stack for OSCAR Slack Bot.
 
-This module defines the Lambda function and API Gateway used by the OSCAR Slack Bot.
+This module defines the Lambda function, IAM role, and API Gateway used by the OSCAR Slack Bot.
+It handles configuration management, security permissions, and resource creation following
+AWS best practices.
+
+The stack creates:
+- Lambda function with configurable timeout and memory
+- IAM role with least-privilege permissions
+- API Gateway with CORS configuration
+- CloudFormation outputs for integration
 """
 
 import logging
 import os
-from typing import Dict, Any, Optional
+from typing import Dict, List, Optional
 from aws_cdk import (
     Duration,
     aws_lambda as lambda_,
@@ -27,12 +35,37 @@ from constructs import Construct
 # Configure logging
 logger = logging.getLogger(__name__)
 
+# Constants
+DEFAULT_LAMBDA_TIMEOUT = 30  # seconds
+DEFAULT_LAMBDA_MEMORY = 512  # MB
+DEFAULT_FUNCTION_NAME = "oscar-slack-bot"
+DEFAULT_AWS_REGION = "us-east-1"
+
+# Slack-specific CORS origins
+SLACK_CORS_ORIGINS = [
+    "https://slack.com",
+    "https://*.slack.com", 
+    "https://api.slack.com"
+]
+
+# Required environment variables for bot functionality
+REQUIRED_ENV_VARS = [
+    "SLACK_BOT_TOKEN",
+    "SLACK_SIGNING_SECRET", 
+    "KNOWLEDGE_BASE_ID"
+]
+
 class OscarLambdaStack(Construct):
     """
     Lambda resources for OSCAR Slack Bot.
     
-    This construct creates and configures the Lambda function, IAM role,
-    and API Gateway for the OSCAR Slack Bot.
+    This construct creates and configures:
+    - Lambda function with configurable runtime settings
+    - IAM role with least-privilege permissions for Bedrock, DynamoDB, and self-invocation
+    - API Gateway with Slack-optimized CORS configuration
+    - CloudFormation outputs for external integration
+    
+    The construct follows AWS security best practices and CDK patterns.
     """
     
     def __init__(
@@ -43,120 +76,192 @@ class OscarLambdaStack(Construct):
         context_table: dynamodb.Table
     ) -> None:
         """
-        Initialize Lambda resources.
+        Initialize Lambda resources with dependency injection.
         
         Args:
             scope: The CDK construct scope
-            construct_id: The ID of the construct
-            sessions_table: The DynamoDB table for session data
-            context_table: The DynamoDB table for context data
+            construct_id: The ID of the construct  
+            sessions_table: DynamoDB table for session data storage
+            context_table: DynamoDB table for conversation context storage
+            
+        Raises:
+            ValueError: If required tables are not provided
         """
         super().__init__(scope, construct_id)
         
-        # Create Lambda function role with appropriate permissions
-        self.lambda_role = self._create_lambda_role(sessions_table, context_table)
+        # Validate inputs
+        if not sessions_table or not context_table:
+            raise ValueError("Both sessions_table and context_table are required")
+        
+        # Store table references for environment variable configuration
+        self.sessions_table = sessions_table
+        self.context_table = context_table
+        
+        # Create resources in dependency order
+        logger.info("Creating Lambda stack resources for %s", construct_id)
+        
+        # 1. Create IAM role with required permissions
+        self.lambda_role = self._create_lambda_role()
 
-        # Create Lambda function with placeholder code
+        # 2. Create Lambda function with role
         self.lambda_function = self._create_lambda_function()
 
-        # Create API Gateway
+        # 3. Create API Gateway for external access
         self.api = self._create_api_gateway()
         
-        # Add outputs for important resources
+        # 4. Export important resource information
         self._add_outputs()
-    
-    def _create_lambda_role(
-        self, 
-        sessions_table: dynamodb.Table, 
-        context_table: dynamodb.Table
-    ) -> iam.Role:
-        """
-        Create the IAM role for the Lambda function with appropriate permissions.
         
-        Args:
-            sessions_table: The DynamoDB table for session data
-            context_table: The DynamoDB table for context data
-            
+        logger.info("Lambda stack resources created successfully")
+    
+    def _create_lambda_role(self) -> iam.Role:
+        """
+        Create IAM role for Lambda function with least-privilege permissions.
+        
+        The role includes permissions for:
+        - Basic Lambda execution (CloudWatch Logs)
+        - Bedrock Knowledge Base operations
+        - DynamoDB table access (specific tables only)
+        - Self-invocation for async processing
+        
         Returns:
-            The created IAM role
+            Configured IAM role for the Lambda function
         """
         role = iam.Role(
             self, "OscarLambdaRole",
             assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
             managed_policies=[
                 iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")
-            ]
+            ],
+            description="IAM role for OSCAR Slack Bot Lambda function"
         )
 
-        # Add permissions for Bedrock Knowledge Base operations
-        role.add_to_policy(
-            iam.PolicyStatement(
-                actions=[
-                    "bedrock-agent-runtime:RetrieveAndGenerate",
-                    "bedrock:RetrieveAndGenerate",
-                    "bedrock:Retrieve",
-                    "bedrock:GetKnowledgeBase",
-                    "bedrock:InvokeModel",
-                    "bedrock:GetFoundationModel",
-                    "bedrock:GetInferenceProfile",
-                    "bedrock:ListInferenceProfiles"
-                ],
-                resources=["*"]
-            )
-        )
-
-        # Add permissions for DynamoDB with least privilege
-        role.add_to_policy(
-            iam.PolicyStatement(
-                actions=[
-                    "dynamodb:GetItem",
-                    "dynamodb:PutItem",
-                    "dynamodb:UpdateItem",
-                    "dynamodb:DeleteItem",
-                    "dynamodb:Query"
-                ],
-                resources=[
-                    sessions_table.table_arn,
-                    context_table.table_arn
-                ]
-            )
-        )
+        # Bedrock permissions for AI/ML operations
+        self._add_bedrock_permissions(role)
         
-        # Add permissions for Lambda to invoke itself asynchronously
-        function_name = os.environ.get("LAMBDA_FUNCTION_NAME", "oscar-slack-bot")
-        role.add_to_policy(
-            iam.PolicyStatement(
-                actions=[
-                    "lambda:InvokeFunction"
-                ],
-                resources=[
-                    f"arn:aws:lambda:*:*:function:{function_name}"
-                ]
-            )
-        )
+        # DynamoDB permissions for data storage
+        self._add_dynamodb_permissions(role)
         
+        # Self-invocation permissions for async processing
+        self._add_lambda_permissions(role)
+        
+        logger.info("Created Lambda IAM role with required permissions")
         return role
+    
+    def _add_bedrock_permissions(self, role: iam.Role) -> None:
+        """Add Bedrock service permissions to the IAM role."""
+        bedrock_actions = [
+            "bedrock-agent-runtime:RetrieveAndGenerate",
+            "bedrock:RetrieveAndGenerate", 
+            "bedrock:Retrieve",
+            "bedrock:GetKnowledgeBase",
+            "bedrock:InvokeModel",
+            "bedrock:GetFoundationModel",
+            "bedrock:GetInferenceProfile",
+            "bedrock:ListInferenceProfiles"
+        ]
+        
+        role.add_to_policy(
+            iam.PolicyStatement(
+                sid="BedrockAccess",
+                actions=bedrock_actions,
+                resources=["*"],  # Bedrock requires wildcard for some operations
+                effect=iam.Effect.ALLOW
+            )
+        )
+    
+    def _add_dynamodb_permissions(self, role: iam.Role) -> None:
+        """Add DynamoDB permissions for specific tables only."""
+        dynamodb_actions = [
+            "dynamodb:GetItem",
+            "dynamodb:PutItem", 
+            "dynamodb:UpdateItem",
+            "dynamodb:DeleteItem",
+            "dynamodb:Query"
+        ]
+        
+        role.add_to_policy(
+            iam.PolicyStatement(
+                sid="DynamoDBAccess",
+                actions=dynamodb_actions,
+                resources=[
+                    self.sessions_table.table_arn,
+                    self.context_table.table_arn
+                ],
+                effect=iam.Effect.ALLOW
+            )
+        )
+    
+    def _add_lambda_permissions(self, role: iam.Role) -> None:
+        """Add self-invocation permissions for async processing."""
+        # Get function name from context or environment
+        app = self.node.root
+        function_name = (
+            app.node.try_get_context('lambda_function_name') or
+            os.environ.get("LAMBDA_FUNCTION_NAME", DEFAULT_FUNCTION_NAME)
+        )
+        
+        role.add_to_policy(
+            iam.PolicyStatement(
+                sid="SelfInvocation",
+                actions=["lambda:InvokeFunction"],
+                resources=[f"arn:aws:lambda:*:*:function:{function_name}"],
+                effect=iam.Effect.ALLOW
+            )
+        )
     
     def _create_lambda_function(self) -> lambda_.Function:
         """
-        Create the Lambda function with placeholder code.
+        Create Lambda function with configurable runtime settings.
+        
+        Configuration is sourced from CDK context with fallbacks to environment
+        variables and sensible defaults.
         
         Returns:
-            The created Lambda function
+            Configured Lambda function
         """
-        function_name = os.environ.get("LAMBDA_FUNCTION_NAME", "oscar-slack-bot")
+        # Get configuration from context with defaults
+        app = self.node.root
+        config = self._get_lambda_configuration(app)
         
-        return lambda_.Function(
+        # Create Lambda function
+        function = lambda_.Function(
             self, "OscarSlackBotFunction",
-            function_name=function_name,
+            function_name=config['name'],
             runtime=lambda_.Runtime.PYTHON_3_12,
             handler="app.lambda_handler",
-            code=lambda_.Code.from_asset("lambda"),
-            timeout=Duration.seconds(30),
-            memory_size=512,
+            code=lambda_.Code.from_asset("../slack-bot"),
+            timeout=Duration.seconds(config['timeout']),
+            memory_size=config['memory'],
             environment=self._get_lambda_environment_variables(),
-            role=self.lambda_role
+            role=self.lambda_role,
+            description=f"OSCAR Slack Bot Lambda function (Stage: {app.node.try_get_context('stage') or 'Dev'})",
+            # Enable tracing for better observability
+            tracing=lambda_.Tracing.ACTIVE
         )
+        
+        logger.info("Created Lambda function: %s (timeout: %ds, memory: %dMB)", 
+                   config['name'], config['timeout'], config['memory'])
+        return function
+    
+    def _get_lambda_configuration(self, app) -> Dict[str, any]:
+        """
+        Get Lambda function configuration from context and environment.
+        
+        Args:
+            app: CDK App instance for context access
+            
+        Returns:
+            Dictionary with Lambda configuration parameters
+        """
+        return {
+            'name': (
+                app.node.try_get_context('lambda_function_name') or
+                os.environ.get("LAMBDA_FUNCTION_NAME", DEFAULT_FUNCTION_NAME)
+            ),
+            'timeout': app.node.try_get_context('lambda_timeout') or DEFAULT_LAMBDA_TIMEOUT,
+            'memory': app.node.try_get_context('lambda_memory') or DEFAULT_LAMBDA_MEMORY
+        }
     
     def _create_api_gateway(self) -> apigateway.LambdaRestApi:
         """
@@ -185,30 +290,44 @@ class OscarLambdaStack(Construct):
         
         return api
     
-    def _get_cors_origins(self) -> list[str]:
+    def _get_cors_origins(self) -> List[str]:
         """
         Get CORS origins configuration with security best practices.
+        
+        Combines default Slack origins with any custom origins from context.
+        All origins are validated to ensure they use HTTPS.
         
         Returns:
             List of allowed CORS origins
         """
-        # Default secure origins for Slack bot
-        default_origins = [
-            "https://slack.com",
-            "https://*.slack.com",
-            "https://api.slack.com"
-        ]
+        # Start with secure Slack origins
+        origins = SLACK_CORS_ORIGINS.copy()
         
-        # Allow users to specify additional origins via environment variable
-        custom_origins = os.environ.get("CORS_ALLOWED_ORIGINS", "")
-        if custom_origins:
-            # Parse comma-separated origins and add to defaults
-            additional_origins = [origin.strip() for origin in custom_origins.split(",") if origin.strip()]
-            default_origins.extend(additional_origins)
-            logger.info(f"Added custom CORS origins: {additional_origins}")
+        # Add custom origins from context if provided
+        app = self.node.root
+        custom_origins_str = app.node.try_get_context('cors_allowed_origins') or ""
         
-        logger.info(f"Configured CORS origins: {default_origins}")
-        return default_origins
+        if custom_origins_str:
+            custom_origins = [
+                origin.strip() 
+                for origin in custom_origins_str.split(",") 
+                if origin.strip()
+            ]
+            
+            # Validate custom origins (must be HTTPS)
+            validated_origins = []
+            for origin in custom_origins:
+                if origin.startswith('https://'):
+                    validated_origins.append(origin)
+                else:
+                    logger.warning("Skipping non-HTTPS CORS origin: %s", origin)
+            
+            if validated_origins:
+                origins.extend(validated_origins)
+                logger.info("Added custom CORS origins: %s", validated_origins)
+        
+        logger.info("Configured CORS origins: %s", origins)
+        return origins
     
     def _add_outputs(self) -> None:
         """
@@ -234,52 +353,95 @@ class OscarLambdaStack(Construct):
     
     def _get_lambda_environment_variables(self) -> Dict[str, str]:
         """
-        Get environment variables for Lambda function.
+        Build environment variables for Lambda function.
+        
+        Combines required secrets from environment variables with configuration
+        from CDK context. Validates required variables and provides warnings
+        for missing configuration.
         
         Returns:
             Dictionary of environment variables for the Lambda function
         """
         # Get AWS region with fallback
-        region = os.environ.get("AWS_REGION", "us-east-1")
+        region = os.environ.get("AWS_REGION", DEFAULT_AWS_REGION)
+        app = self.node.root
         
-        # Define required variables with validation
-        knowledge_base_id = os.environ.get("KNOWLEDGE_BASE_ID")
-        if not knowledge_base_id:
-            knowledge_base_id = "PLACEHOLDER_KNOWLEDGE_BASE_ID"
-            logger.warning("KNOWLEDGE_BASE_ID not set, using placeholder value")
-            
-        model_arn = os.environ.get("MODEL_ARN")
-        if not model_arn:
-            model_arn = f'arn:aws:bedrock:{region}::foundation-model/anthropic.claude-3-5-haiku-20241022-v1:0'
-            logger.warning(f"MODEL_ARN not set, using default Claude 3.5 Haiku model: {model_arn}")
+        # Build environment variables dictionary
+        env_vars = {}
         
-        env_vars: Dict[str, str] = {
-            # Required configuration
-            "KNOWLEDGE_BASE_ID": knowledge_base_id,
-            "MODEL_ARN": model_arn,
-            "SLACK_BOT_TOKEN": os.environ.get("SLACK_BOT_TOKEN", ""),
-            "SLACK_SIGNING_SECRET": os.environ.get("SLACK_SIGNING_SECRET", ""),
-            
-            # Optional configuration
-            # Note: AWS_REGION is a reserved environment variable in Lambda and cannot be set manually
-            "SESSIONS_TABLE_NAME": os.environ.get("SESSIONS_TABLE_NAME", "oscar-sessions-v2"),
-            "CONTEXT_TABLE_NAME": os.environ.get("CONTEXT_TABLE_NAME", "oscar-context"),
-            "DEDUP_TTL": os.environ.get("DEDUP_TTL", "300"),
-            "SESSION_TTL": os.environ.get("SESSION_TTL", "3600"),
-            "CONTEXT_TTL": os.environ.get("CONTEXT_TTL", "604800"),  # 7 days
-            "MAX_CONTEXT_LENGTH": os.environ.get("MAX_CONTEXT_LENGTH", "3000"),
-            "CONTEXT_SUMMARY_LENGTH": os.environ.get("CONTEXT_SUMMARY_LENGTH", "500"),
-            
-            # Feature flags
-            "ENABLE_DM": os.environ.get("ENABLE_DM", "false"),
-        }
+        # Add required secrets with validation
+        env_vars.update(self._get_required_secrets())
         
-        # Add prompt template if provided
+        # Add Bedrock configuration
+        env_vars.update(self._get_bedrock_config(app, region))
+        
+        # Add DynamoDB table names (use actual table names from resources)
+        env_vars.update({
+            "SESSIONS_TABLE_NAME": self.sessions_table.table_name,
+            "CONTEXT_TABLE_NAME": self.context_table.table_name,
+        })
+        
+        # Add optional configuration from context
+        env_vars.update(self._get_optional_config(app))
+        
+        # Add large text configuration from environment
         prompt_template = os.environ.get("PROMPT_TEMPLATE")
         if prompt_template:
             env_vars["PROMPT_TEMPLATE"] = prompt_template
+            logger.info("Added custom prompt template from environment")
         
-        # Note: CORS_ALLOWED_ORIGINS is used during CDK deployment, not as a Lambda environment variable
-        # It configures the API Gateway CORS settings, not runtime behavior
-            
+        logger.info("Configured %d environment variables for Lambda", len(env_vars))
         return env_vars
+    
+    def _get_required_secrets(self) -> Dict[str, str]:
+        """Get and validate required secret environment variables."""
+        secrets = {}
+        missing_secrets = []
+        
+        for var_name in REQUIRED_ENV_VARS:
+            value = os.environ.get(var_name, "")
+            secrets[var_name] = value
+            
+            if not value:
+                missing_secrets.append(var_name)
+        
+        # Special handling for KNOWLEDGE_BASE_ID placeholder
+        if not secrets["KNOWLEDGE_BASE_ID"]:
+            secrets["KNOWLEDGE_BASE_ID"] = "PLACEHOLDER_KNOWLEDGE_BASE_ID"
+            logger.warning("KNOWLEDGE_BASE_ID not set, using placeholder. Bot will not function until configured.")
+        
+        if missing_secrets:
+            logger.warning("Missing required environment variables: %s", ', '.join(missing_secrets))
+            logger.warning("Bot will not function until these are configured in .env file")
+        
+        return secrets
+    
+    def _get_bedrock_config(self, app, region: str) -> Dict[str, str]:
+        """Get Bedrock model configuration."""
+        model_arn = app.node.try_get_context('model_arn')
+        if not model_arn:
+            model_arn = f'arn:aws:bedrock:{region}::foundation-model/anthropic.claude-3-5-haiku-20241022-v1:0'
+            logger.info("Using default Bedrock model: Claude 3.5 Haiku")
+        else:
+            logger.info("Using configured Bedrock model from context")
+        
+        return {"MODEL_ARN": model_arn}
+    
+    def _get_optional_config(self, app) -> Dict[str, str]:
+        """Get optional configuration parameters from context."""
+        # Mapping of context keys to environment variable names and defaults
+        config_mapping = {
+            'dedup_ttl': ('DEDUP_TTL', '300'),
+            'session_ttl': ('SESSION_TTL', '3600'), 
+            'context_ttl': ('CONTEXT_TTL', '604800'),
+            'max_context_length': ('MAX_CONTEXT_LENGTH', '3000'),
+            'context_summary_length': ('CONTEXT_SUMMARY_LENGTH', '500'),
+            'enable_dm': ('ENABLE_DM', 'false')
+        }
+        
+        config = {}
+        for context_key, (env_key, default_value) in config_mapping.items():
+            value = app.node.try_get_context(context_key) or default_value
+            config[env_key] = str(value)
+        
+        return config

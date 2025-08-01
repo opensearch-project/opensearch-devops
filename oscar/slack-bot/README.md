@@ -21,26 +21,31 @@ This Slack bot uses API Gateway and a two-phase processing approach to prevent d
 <!-- - **Throttling**: Rate limits requests to prevent overuse -->
 - **Toggleable DM Support**: Enable or disable direct message functionality
 
-## Environment Variables
+## Configuration
 
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `SLACK_BOT_TOKEN` | Slack bot token | Yes | - |
-| `SLACK_SIGNING_SECRET` | Slack signing secret | Yes | - |
-| `KNOWLEDGE_BASE_ID` | Bedrock knowledge base ID | Yes | - |
-| `MODEL_ARN` | Bedrock model ARN | No | Claude 3.5 Haiku |
-| `AWS_REGION` | AWS region | No | us-east-1 |
-| `SESSIONS_TABLE_NAME` | DynamoDB sessions table name | No | oscar-sessions-v2 |
-| `CONTEXT_TABLE_NAME` | DynamoDB context table name | No | oscar-context |
-| `DEDUP_TTL` | Deduplication TTL in seconds | No | 300 (5 minutes) |
-| `SESSION_TTL` | Session TTL in seconds | No | 3600 (1 hour) |
-| `CONTEXT_TTL` | Context TTL in seconds | No | 604800 (7 days) |
-| `MAX_CONTEXT_LENGTH` | Maximum context length | No | 3000 |
-| `CONTEXT_SUMMARY_LENGTH` | Context summary length | No | 500 |
-| `ENABLE_DM` | Enable direct messages | No | false |
-| `PROMPT_TEMPLATE` | Custom prompt template | No | Default template |
-<!-- | `THROTTLE_REQUESTS_PER_MINUTE` | Maximum requests per minute per user | No | 5 |
-| `THROTTLE_WINDOW_SECONDS` | Throttling window in seconds | No | 60 | -->
+The bot uses environment variables set by the CDK deployment. Key variables include:
+
+### Required Environment Variables
+| Variable | Description | Source |
+|----------|-------------|--------|
+| `SLACK_BOT_TOKEN` | Slack bot token | `.env` file |
+| `SLACK_SIGNING_SECRET` | Slack signing secret | `.env` file |
+| `KNOWLEDGE_BASE_ID` | Bedrock knowledge base ID | `.env` file |
+| `AWS_REGION` | AWS region | `.env` file |
+
+### Configuration from CDK Context
+Most bot behavior is configured via `cdk/cdk.context.json`:
+- **Model**: Claude 3.5 Sonnet (enhanced AI capabilities)
+- **Context Limits**: 5000 chars max, 1000 char summaries
+- **Timeouts**: 120 second Lambda timeout for complex queries
+- **Tables**: DynamoDB table names and TTL settings
+- **Features**: Direct message support, CORS origins
+
+### Recent Improvements
+- **Enhanced Context Preservation**: Better thread-based conversation continuity
+- **Improved AI Model**: Upgraded to Claude 3.5 Sonnet for higher quality responses
+- **Optimized Performance**: Better context summarization and query processing
+- **Robust Error Handling**: Graceful fallbacks and comprehensive logging
 
 ## Deployment
 

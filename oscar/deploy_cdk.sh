@@ -255,11 +255,8 @@ fi
 # Extract AWS account and region information
 extract_aws_info
 
-# Export MODEL_ARN and KNOWLEDGE_BASE_ID for the stack if not already set
-if [ -z "$MODEL_ARN" ]; then
-    export MODEL_ARN="arn:aws:bedrock:$AWS_REGION::foundation-model/anthropic.claude-3-5-haiku-20241022-v1:0"
-    log "WARNING: MODEL_ARN not set, using default: $MODEL_ARN"
-fi
+# Note: MODEL_ARN is now configured via cdk.context.json, not environment variables
+# The CDK stack will use the context configuration and fall back to a default if needed
 
 if [ -z "$KNOWLEDGE_BASE_ID" ]; then
     export KNOWLEDGE_BASE_ID="PLACEHOLDER_KNOWLEDGE_BASE_ID"
@@ -410,21 +407,33 @@ fi
 # Get outputs
 if [ "$DRY_RUN" = false ]; then
     log "Getting deployment outputs..."
-    LAMBDA_FUNCTION_NAME=$(AWS_DEFAULT_REGION=$AWS_REGION aws cloudformation describe-stacks --stack-name OscarSlackBotStack --query "Stacks[0].Outputs[?OutputKey=='LambdaFunctionName'].OutputValue" --output text --region $AWS_REGION)
-    WEBHOOK_URL=$(AWS_DEFAULT_REGION=$AWS_REGION aws cloudformation describe-stacks --stack-name OscarSlackBotStack --query "Stacks[0].Outputs[?contains(OutputKey, 'SlackWebhookUrl')].OutputValue" --output text --region $AWS_REGION)
-
-    # If webhook URL is empty, try alternative output key pattern
-    if [ -z "$WEBHOOK_URL" ]; then
-        WEBHOOK_URL=$(AWS_DEFAULT_REGION=$AWS_REGION aws cloudformation describe-stacks --stack-name OscarSlackBotStack --query "Stacks[0].Outputs[?contains(OutputKey, 'LambdaStackSlackWebhookUrl')].OutputValue" --output text --region $AWS_REGION)
+    
+    # Get the Lambda function name from CloudFormation outputs
+    LAMBDA_FUNCTION_NAME=$(AWS_DEFAULT_REGION=$AWS_REGION aws cloudformation describe-stacks --stack-name OscarSlackBotStack --query "Stacks[0].Outputs[?OutputKey=='LambdaStackLambdaFunctionName'].OutputValue" --output text --region $AWS_REGION)
+    
+    # If empty, try the main stack output
+    if [ -z "$LAMBDA_FUNCTION_NAME" ]; then
+        LAMBDA_FUNCTION_NAME=$(AWS_DEFAULT_REGION=$AWS_REGION aws cloudformation describe-stacks --stack-name OscarSlackBotStack --query "Stacks[0].Outputs[?OutputKey=='SlackBotFunctionName'].OutputValue" --output text --region $AWS_REGION)
     fi
     
-    # If still empty, try the new output key
+    # If still empty, use the configured name from context or default
+    if [ -z "$LAMBDA_FUNCTION_NAME" ]; then
+        LAMBDA_FUNCTION_NAME="oscar-slack-bot"
+    fi
+    
+    # Get webhook URL
+    WEBHOOK_URL=$(AWS_DEFAULT_REGION=$AWS_REGION aws cloudformation describe-stacks --stack-name OscarSlackBotStack --query "Stacks[0].Outputs[?OutputKey=='LambdaStackSlackWebhookUrl'].OutputValue" --output text --region $AWS_REGION)
+
+    # If webhook URL is empty, try the main stack API URL and append the path
     if [ -z "$WEBHOOK_URL" ]; then
         WEBHOOK_URL=$(AWS_DEFAULT_REGION=$AWS_REGION aws cloudformation describe-stacks --stack-name OscarSlackBotStack --query "Stacks[0].Outputs[?OutputKey=='SlackBotApiUrl'].OutputValue" --output text --region $AWS_REGION)
         if [ -n "$WEBHOOK_URL" ]; then
             WEBHOOK_URL="${WEBHOOK_URL}slack/events"
         fi
     fi
+    
+    log "Found Lambda function name: $LAMBDA_FUNCTION_NAME"
+    log "Found webhook URL: $WEBHOOK_URL"
 else
     log "DRY RUN: Would get deployment outputs"
     LAMBDA_FUNCTION_NAME="oscar-slack-bot"
@@ -434,8 +443,8 @@ fi
 # Update the Lambda function with the full code
 log "Updating Lambda function with full code..."
 if [ "$DRY_RUN" = false ]; then
-    # Pass the ENABLE_DM variable explicitly to deploy_lambda.sh
-    ENABLE_DM=$ENABLE_DM LAMBDA_FUNCTION_NAME=$LAMBDA_FUNCTION_NAME AWS_REGION=$AWS_REGION ./deploy_lambda.sh || handle_error "Failed to update Lambda function code"
+    # Pass variables to deploy_lambda.sh and skip env update since CDK already set them
+    SKIP_ENV_UPDATE=true ENABLE_DM=$ENABLE_DM LAMBDA_FUNCTION_NAME=$LAMBDA_FUNCTION_NAME AWS_REGION=$AWS_REGION ./deploy_lambda.sh || handle_error "Failed to update Lambda function code"
 else
     log "DRY RUN: Would update Lambda function $LAMBDA_FUNCTION_NAME with full code"
 fi

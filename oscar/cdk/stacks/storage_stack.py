@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright OpenSearch Contributors
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -8,9 +8,20 @@
 """
 Storage stack for OSCAR Slack Bot.
 
-This module defines the DynamoDB tables used by the OSCAR Slack Bot.
+This module defines the DynamoDB tables used by the OSCAR Slack Bot for persistent
+data storage. It creates two tables:
+
+1. Sessions Table: Stores session data with event_id as partition key
+2. Context Table: Stores conversation context with thread_key as partition key
+
+Both tables use:
+- Pay-per-request billing for cost optimization
+- TTL attributes for automatic data cleanup
+- AWS-managed encryption for security
+- Stage-appropriate removal policies
 """
 
+import logging
 import os
 from typing import Optional
 from aws_cdk import (
@@ -20,17 +31,32 @@ from aws_cdk import (
 )
 from constructs import Construct
 
+# Configure logging
+logger = logging.getLogger(__name__)
+
+# Default table names
+DEFAULT_SESSIONS_TABLE = "oscar-sessions-v2"
+DEFAULT_CONTEXT_TABLE = "oscar-context"
+
 class OscarStorageStack(Construct):
     """
     Storage resources for OSCAR Slack Bot.
     
-    This construct creates and configures the DynamoDB tables used by the
-    OSCAR Slack Bot for storing session data and conversation context.
+    Creates and configures DynamoDB tables for persistent data storage:
+    - Sessions table for deduplication and session management
+    - Context table for conversation history and context preservation
+    
+    Features:
+    - Configurable table names via CDK context
+    - Stage-appropriate removal policies (retain for Prod, destroy for Dev/Beta)
+    - Pay-per-request billing for cost optimization
+    - TTL attributes for automatic data cleanup
+    - AWS-managed encryption
     """
     
     def __init__(self, scope: Construct, construct_id: str) -> None:
         """
-        Initialize storage resources.
+        Initialize storage resources with configuration management.
         
         Args:
             scope: The CDK construct scope
@@ -38,56 +64,100 @@ class OscarStorageStack(Construct):
         """
         super().__init__(scope, construct_id)
         
-        # Get table names from environment variables or use defaults
-        sessions_table_name: str = os.environ.get("SESSIONS_TABLE_NAME", "oscar-sessions-v2")
-        context_table_name: str = os.environ.get("CONTEXT_TABLE_NAME", "oscar-context")
+        logger.info("Creating storage stack resources for %s", construct_id)
         
-        # Determine removal policy based on environment
-        environment: str = os.environ.get("ENVIRONMENT", "dev")
-        removal_policy: RemovalPolicy = (
-            RemovalPolicy.RETAIN if environment == "prod" else RemovalPolicy.DESTROY
-        )
+        # Get deployment configuration
+        config = self._get_storage_configuration(scope)
         
-        # Create DynamoDB Tables
+        # Create DynamoDB tables with appropriate policies
         self.sessions_table = self._create_sessions_table(
-            sessions_table_name, 
-            removal_policy
+            config['sessions_table_name'], 
+            config['removal_policy']
         )
-
         self.context_table = self._create_context_table(
-            context_table_name, 
-            removal_policy
+            config['context_table_name'], 
+            config['removal_policy']
         )
         
-        # Outputs
+        # Export table information for other stacks
+        self._add_outputs()
+        
+        logger.info("Storage stack resources created successfully")
+        logger.info("Sessions table: %s", self.sessions_table.table_name)
+        logger.info("Context table: %s", self.context_table.table_name)
+    
+    def _get_storage_configuration(self, scope: Construct) -> dict:
+        """
+        Get storage configuration from context and environment.
+        
+        Args:
+            scope: The CDK construct scope for context access
+            
+        Returns:
+            Dictionary with storage configuration
+        """
+        app = scope.node.root
+        stage = app.node.try_get_context('stage') or 'Dev'
+        
+        # Get table names with fallback hierarchy: context -> env -> default
+        sessions_table_name = (
+            app.node.try_get_context('sessions_table_name') or
+            os.environ.get("SESSIONS_TABLE_NAME", DEFAULT_SESSIONS_TABLE)
+        )
+        
+        context_table_name = (
+            app.node.try_get_context('context_table_name') or
+            os.environ.get("CONTEXT_TABLE_NAME", DEFAULT_CONTEXT_TABLE)
+        )
+        
+        # Set removal policy based on stage (retain production data)
+        removal_policy = (
+            RemovalPolicy.RETAIN if stage == 'Prod' else RemovalPolicy.DESTROY
+        )
+        
+        config = {
+            'stage': stage,
+            'sessions_table_name': sessions_table_name,
+            'context_table_name': context_table_name,
+            'removal_policy': removal_policy
+        }
+        
+        logger.info("Storage configuration: %s", config)
+        return config
+    
+    def _add_outputs(self) -> None:
+        """Add CloudFormation outputs for table references."""
         CfnOutput(
             self, "SessionsTableName",
             value=self.sessions_table.table_name,
-            description="Name of the DynamoDB table for session data"
+            description="Name of the DynamoDB table for session data",
+            export_name=f"{self.node.scope.stack_name}-SessionsTableName"
         )
         
         CfnOutput(
-            self, "ContextTableName",
+            self, "ContextTableName", 
             value=self.context_table.table_name,
-            description="Name of the DynamoDB table for context data"
+            description="Name of the DynamoDB table for context data",
+            export_name=f"{self.node.scope.stack_name}-ContextTableName"
         )
     
-    def _create_sessions_table(
-        self, 
-        table_name: str, 
-        removal_policy: RemovalPolicy
-    ) -> dynamodb.Table:
+    def _create_sessions_table(self, table_name: str, removal_policy: RemovalPolicy) -> dynamodb.Table:
         """
-        Create the sessions DynamoDB table.
+        Create DynamoDB table for session data and deduplication.
+        
+        The sessions table stores:
+        - Event deduplication data (event_id as partition key)
+        - Session state information
+        - TTL for automatic cleanup
         
         Args:
-            table_name: Name of the DynamoDB table
+            table_name: Name for the DynamoDB table
             removal_policy: CDK removal policy for the table
             
         Returns:
-            The created DynamoDB table
+            Configured DynamoDB table for sessions
         """
-        return dynamodb.Table(
+        table = dynamodb.Table(
             self, "OscarSessionsTable",
             table_name=table_name,
             partition_key=dynamodb.Attribute(
@@ -97,25 +167,32 @@ class OscarStorageStack(Construct):
             time_to_live_attribute="ttl",
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             removal_policy=removal_policy,
-            encryption=dynamodb.TableEncryption.AWS_MANAGED
+            encryption=dynamodb.TableEncryption.AWS_MANAGED,
+            point_in_time_recovery=removal_policy == RemovalPolicy.RETAIN,  # Enable for production
+            deletion_protection=removal_policy == RemovalPolicy.RETAIN,     # Protect production data
+            table_class=dynamodb.TableClass.STANDARD
         )
+        
+        logger.info("Created sessions table: %s", table_name)
+        return table
     
-    def _create_context_table(
-        self, 
-        table_name: str, 
-        removal_policy: RemovalPolicy
-    ) -> dynamodb.Table:
+    def _create_context_table(self, table_name: str, removal_policy: RemovalPolicy) -> dynamodb.Table:
         """
-        Create the context DynamoDB table.
+        Create DynamoDB table for conversation context storage.
+        
+        The context table stores:
+        - Conversation history (thread_key as partition key)
+        - Context summaries and metadata
+        - TTL for automatic cleanup
         
         Args:
-            table_name: Name of the DynamoDB table
+            table_name: Name for the DynamoDB table
             removal_policy: CDK removal policy for the table
             
         Returns:
-            The created DynamoDB table
+            Configured DynamoDB table for context
         """
-        return dynamodb.Table(
+        table = dynamodb.Table(
             self, "OscarContextTable",
             table_name=table_name,
             partition_key=dynamodb.Attribute(
@@ -125,5 +202,11 @@ class OscarStorageStack(Construct):
             time_to_live_attribute="ttl",
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             removal_policy=removal_policy,
-            encryption=dynamodb.TableEncryption.AWS_MANAGED
+            encryption=dynamodb.TableEncryption.AWS_MANAGED,
+            point_in_time_recovery=removal_policy == RemovalPolicy.RETAIN,  # Enable for production
+            deletion_protection=removal_policy == RemovalPolicy.RETAIN,     # Protect production data
+            table_class=dynamodb.TableClass.STANDARD
         )
+        
+        logger.info("Created context table: %s", table_name)
+        return table

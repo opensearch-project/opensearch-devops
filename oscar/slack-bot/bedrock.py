@@ -133,25 +133,38 @@ class BedrockKnowledgeBase(KnowledgeBaseInterface):
             try:
                 logger.info(f"Attempting query with session_id: {session_id}")
                 if is_inference_profile:
-                    return self._execute_query(query, session_id)
+                    result = self._execute_query(query, session_id)
+                    logger.info("Session-based query succeeded")
+                    return result
                 else:
-                    return self._query_with_fallback(query, session_id)
+                    result = self._query_with_fallback(query, session_id)
+                    logger.info("Session-based query succeeded")
+                    return result
             except Exception as e:
                 logger.warning(f"Session-based query failed (possibly expired session): {e}")
                 # Session ID might be expired, fall through to context summary fallback
+        else:
+            logger.info("No session_id available, skipping session-based query")
         
         # Second attempt: Use enhanced query with context summary (without session_id)
         if context_summary:
             logger.info("Falling back to context-enhanced query without session_id")
-            enhanced_query = f"Previous conversation context:\n{context_summary}\n\nCurrent question: {query}"
+            enhanced_query = self._create_context_enhanced_query(query, context_summary)
+            logger.debug(f"Enhanced query: {enhanced_query[:200]}...")
             try:
                 if is_inference_profile:
-                    return self._execute_query(enhanced_query, None)
+                    result = self._execute_query(enhanced_query, None)
+                    logger.info("Context-enhanced query succeeded")
+                    return result
                 else:
-                    return self._query_with_fallback(enhanced_query, None)
+                    result = self._query_with_fallback(enhanced_query, None)
+                    logger.info("Context-enhanced query succeeded")
+                    return result
             except Exception as e:
                 logger.warning(f"Context-enhanced query failed: {e}")
                 # Fall through to plain query
+        else:
+            logger.info("No context_summary available, skipping context-enhanced query")
         
         # Third attempt: Just use the plain query as last resort
         logger.info("Using plain query without context or session")
@@ -162,8 +175,30 @@ class BedrockKnowledgeBase(KnowledgeBaseInterface):
                 return self._query_with_fallback(query, None)
         except Exception as e:
             logger.error(f"All query attempts failed: {e}", exc_info=True)
-            return ("I'm sorry, I couldn't retrieve the information you requested. "
-                   "There might be an issue with the knowledge base or the query format."), None
+            return self._get_fallback_response(), None
+    
+    def _create_context_enhanced_query(self, query: str, context_summary: str) -> str:
+        """
+        Create an enhanced query that includes conversation context.
+        
+        Args:
+            query: The user's current query
+            context_summary: Summary of previous conversation
+            
+        Returns:
+            Enhanced query string with context
+        """
+        return f"Previous conversation context:\n{context_summary}\n\nCurrent question: {query}"
+    
+    def _get_fallback_response(self) -> str:
+        """
+        Get a user-friendly fallback response when all query attempts fail.
+        
+        Returns:
+            Fallback error message
+        """
+        return ("I'm sorry, I couldn't retrieve the information you requested. "
+               "There might be an issue with the knowledge base or the query format.")
     
     def _execute_query(self, query: str, session_id: Optional[str] = None) -> Tuple[str, Optional[str]]:
         """

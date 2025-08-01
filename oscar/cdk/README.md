@@ -74,71 +74,58 @@ CORS_ALLOWED_ORIGINS=https://your-domain.com,https://another-domain.com
 
 **Security Note**: Only add trusted domains to avoid potential security vulnerabilities.
 
-## Environment Variables
+## Configuration
 
-The deployment uses the following environment variables, which can be set in a `.env` file in the root directory:
+OSCAR uses a hybrid configuration approach following CDK best practices:
 
-### Required Variables
-- `KNOWLEDGE_BASE_ID`: ID of your Amazon Bedrock knowledge base
-- `MODEL_ARN`: ARN of the Bedrock model to use (default: Claude 3.5 Haiku)
+### Environment Variables (.env file)
+**For sensitive data only:**
 - `SLACK_BOT_TOKEN`: Bot token from your Slack app
-- `SLACK_SIGNING_SECRET`: Signing secret from your Slack app
+- `SLACK_SIGNING_SECRET`: Signing secret from your Slack app  
+- `KNOWLEDGE_BASE_ID`: ID of your Amazon Bedrock knowledge base
+- `AWS_REGION`: AWS region for deployment
+- `PROMPT_TEMPLATE`: Custom prompt template (optional, for large text)
 
-### Optional Variables
-- `AWS_REGION`: AWS region (default: us-east-1)
-- `SESSIONS_TABLE_NAME`: Name of the DynamoDB table for sessions (default: "oscar-sessions-v2")
-- `CONTEXT_TABLE_NAME`: Name of the DynamoDB table for context (default: "oscar-context")
-- `DEDUP_TTL`: Time-to-live for deduplication records in seconds (default: 300)
-- `SESSION_TTL`: Time-to-live for session records in seconds (default: 3600)
-- `CONTEXT_TTL`: Time-to-live for context records in seconds (default: 604800)
-- `MAX_CONTEXT_LENGTH`: Maximum length of context summary (default: 3000)
-- `CONTEXT_SUMMARY_LENGTH`: Length of context summary for each interaction (default: 500)
-- `ENABLE_DM`: Enable direct message functionality (default: false)
-- `PROMPT_TEMPLATE`: Custom prompt template for the Bedrock model
-- `ENVIRONMENT`: Deployment environment (default: dev)
-- `LAMBDA_FUNCTION_NAME`: Name of the Lambda function (default: oscar-slack-bot)
-- `CORS_ALLOWED_ORIGINS`: Comma-separated list of additional CORS origins (default: Slack domains only)
+### CDK Context Configuration (cdk.context.json)
+**For infrastructure and behavior settings:**
+- `stage`: Deployment stage (Dev/Beta/Prod)
+- `model_arn`: Bedrock model ARN (default: Claude 3.5 Sonnet)
+- `lambda_function_name`: Lambda function name
+- `sessions_table_name`: DynamoDB sessions table name
+- `context_table_name`: DynamoDB context table name
+- `lambda_timeout`: Lambda timeout in seconds (default: 120)
+- `lambda_memory`: Lambda memory in MB (default: 512)
+- `max_context_length`: Maximum context length (default: 5000)
+- `context_summary_length`: Context summary length (default: 1000)
+- `enable_dm`: Enable direct messages (default: false)
+- `cors_allowed_origins`: Additional CORS origins
 
-### Region Configuration
+### Configuration Benefits
+- **Security**: Secrets never stored in version control
+- **Maintainability**: Infrastructure settings easily managed per environment
+- **Best Practices**: Follows CDK recommended configuration patterns
+- **Deployment Safety**: Context validation prevents misconfiguration
 
-**Important**: The AWS region used for infrastructure deployment must be compatible with your Bedrock resources. Specifically:
+### Recent Improvements
 
-1. The region where your Bedrock knowledge base exists must match the `AWS_REGION` environment variable
-2. The region in your `MODEL_ARN` must match the region where the model is available
-
-For example, if your knowledge base is in `us-west-2`, you should set:
-```
-AWS_REGION=us-west-2
-MODEL_ARN=arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-3-5-haiku-20241022-v1:0
-```
-
-### Configuration Precedence
-
-When determining which AWS region to use, the deployment script follows this order of precedence:
-
-1. Command-line arguments (`--region` flag) - highest priority
-2. Environment variables from `.env` file (`AWS_REGION` or `AWS_DEFAULT_REGION`)
-3. Region extracted from `MODEL_ARN` environment variable
-4. Default region specified in code (us-east-1) - lowest priority
-
-This allows you to override the region at different levels depending on your needs.
+**Enhanced Context Preservation**: The latest version includes significant improvements:
+- **Better AI Model**: Upgraded to Claude 3.5 Sonnet for improved response quality
+- **Larger Context**: Increased context limits (5000 chars) for better conversation continuity  
+- **Enhanced Summaries**: Improved context summarization (1000 chars) for richer thread context
+- **Extended Timeout**: Longer Lambda timeout (120s) to accommodate the more capable model
+- **Robust Configuration**: Context-based configuration prevents deployment issues
 
 ### Region Configuration
 
-**Important**: The AWS region used for infrastructure deployment and the region where your Bedrock knowledge base is located must be compatible:
+**Critical**: All AWS resources must be in the same region:
+- `.env` file: `AWS_REGION=us-west-2`
+- Context file: `model_arn` must use the same region
+- Bedrock knowledge base must exist in the same region
 
-- The region specified in `AWS_REGION` should match the region in your `MODEL_ARN` and the region where your knowledge base is created
-- If these regions don't match, the Lambda function will not be able to access the knowledge base
-- You can deploy infrastructure in one region while using Bedrock resources from another region by explicitly setting `AWS_REGION` in your `.env` file
-
-### Configuration Precedence
-
-The deployment script uses the following precedence to determine configuration values (highest to lowest):
-
-1. Command-line arguments to `deploy_cdk.sh` (e.g., `--region`, `--account`)
-2. Environment variables from `.env` file
-3. Values extracted from other settings (e.g., region from `MODEL_ARN`)
-4. Default values in code
+**Configuration Precedence**:
+1. CDK context values (recommended)
+2. Environment variables from `.env` file  
+3. Default values in code
 
 ## Deployment Instructions
 
@@ -240,6 +227,14 @@ cdk destroy
 
 ## Configuration Files
 
-- **cdk.json**: Contains CDK app configuration and context values
-- **cdk.context.json**: Contains environment-specific context values like region
+- **cdk.json**: Contains CDK app configuration and feature flags
+- **cdk.context.json**: Contains environment-specific context values (infrastructure settings)
 - **requirements.txt**: Python dependencies for the CDK application
+- **CONTEXT_CONFIG.md**: Comprehensive guide to context configuration options
+
+### Context Configuration Guide
+
+For detailed information about all available context parameters, see [CONTEXT_CONFIG.md](CONTEXT_CONFIG.md). This guide includes:
+- Complete parameter reference with descriptions and valid values
+- Configuration examples for different deployment stages
+- Best practices for managing configuration across environments
