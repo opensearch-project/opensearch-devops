@@ -1,13 +1,20 @@
-# Environment and secrets
+# Environment, secrets, and docs
 .env*
 aws_id.txt
 DEPLOYMENT_GUIDE.md
+MIGRATION_GUIDE.md
+PHASE1_COMPLETE.md
+build_docs/
+metrics/docs/
+.kiro/
+instructions.md
 
 # Build outputs
 build_docs/
 cdk.out/
 .cdk.staging/
 cdk-outputs.json
+oscar-agent-deploy/
 
 # Dependencies
 node_modules/
@@ -36,6 +43,3 @@ env/
 *.swp
 *.swo
 .DS_Store
-
-./POC
-oscar/POC
