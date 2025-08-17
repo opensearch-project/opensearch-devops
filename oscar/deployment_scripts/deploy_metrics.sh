@@ -2,12 +2,12 @@
 # Copyright OpenSearch Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-# Deploy the new minimal metrics implementation
+# Deploy metrics Lambda functions with proper permissions and dependencies
 # FULL DEPLOYMENT - Creates functions, roles, and permissions
 
 set -e
 
-echo "🚀 Deploying new minimal metrics implementation"
+echo "🚀 Deploying metrics Lambda functions..."
 
 # Load environment variables
 if [ -f .env ]; then
@@ -22,9 +22,6 @@ fi
 
 # Verify region configuration
 echo "🌍 Using AWS Region: $AWS_REGION"
-if [ "$AWS_REGION" != "us-east-1" ]; then
-    echo "⚠️  Warning: Expected region us-east-1, but using $AWS_REGION"
-fi
 
 # Use the correct VPC role ARN
 ROLE_ARN="${LAMBDA_EXECUTION_ROLE_ARN:-arn:aws:iam::395380602281:role/oscar-metrics-lambda-vpc-role}"
@@ -32,11 +29,11 @@ echo "Using IAM role: $ROLE_ARN"
 
 # Create deployment package
 echo "📦 Creating deployment package..."
-rm -rf new-package new-package.zip
-mkdir new-package
+rm -rf metrics-package metrics-package.zip
+mkdir metrics-package
 
 # Create comprehensive requirements.txt for metrics
-cat > new-package/requirements.txt << EOF
+cat > metrics-package/requirements.txt << EOF
 # Core AWS dependencies
 boto3>=1.34.0
 botocore>=1.34.0
@@ -57,27 +54,27 @@ EOF
 
 # Install dependencies with upgrade flag
 echo "📦 Installing Python dependencies..."
-if ! pip install -r new-package/requirements.txt -t new-package/ --upgrade --quiet; then
+if ! pip install -r metrics-package/requirements.txt -t metrics-package/ --upgrade --quiet; then
     echo "❌ Failed to install dependencies with pip. Trying alternative approach..."
     # Try installing each dependency individually
     while IFS= read -r line; do
         if [[ $line =~ ^[a-zA-Z] ]]; then
             echo "  Installing: $line"
-            pip install "$line" -t new-package/ --upgrade --quiet || {
+            pip install "$line" -t metrics-package/ --upgrade --quiet || {
                 echo "❌ Failed to install $line"
                 exit 1
             }
         fi
-    done < new-package/requirements.txt
+    done < metrics-package/requirements.txt
 fi
 
 # Verify critical dependencies
 echo "🔍 Verifying dependencies..."
 CRITICAL_DEPS=("boto3" "botocore" "requests")
 for dep in "${CRITICAL_DEPS[@]}"; do
-    if [ ! -d "new-package/$dep" ] && [ ! -d "new-package/${dep//_/-}" ]; then
+    if [ ! -d "metrics-package/$dep" ] && [ ! -d "metrics-package/${dep//_/-}" ]; then
         echo "❌ Missing dependency: $dep"
-        pip install "$dep" -t new-package/ --upgrade --quiet || {
+        pip install "$dep" -t metrics-package/ --upgrade --quiet || {
             echo "❌ Failed to install $dep"
             exit 1
         }
@@ -87,35 +84,14 @@ done
 echo "✅ Dependencies verified"
 
 # Copy source code
-cp metrics/*.py new-package/
+cp metrics/*.py metrics-package/
 
 # Remove requirements.txt from package (not needed in Lambda)
-rm -f new-package/requirements.txt
+rm -f metrics-package/requirements.txt
 
 # Create zip
-cd new-package && zip -r ../new-package.zip . -q && cd ..
-rm -rf new-package
-
-# Create environment variables - match .env file exactly
-cat > env-vars.json << EOF
-{
-    "Variables": {
-        "OPENSEARCH_HOST": "$OPENSEARCH_HOST",
-        "OPENSEARCH_REGION": "$OPENSEARCH_REGION",
-        "OPENSEARCH_SERVICE": "$OPENSEARCH_SERVICE",
-        "OPENSEARCH_DOMAIN_ARN": "$OPENSEARCH_DOMAIN_ARN",
-        "VPC_ID": "$VPC_ID",
-        "SUBNET_IDS": "$SUBNET_IDS",
-        "SECURITY_GROUP_ID": "$SECURITY_GROUP_ID",
-        "LOG_LEVEL": "${LOG_LEVEL:-INFO}",
-        "REQUEST_TIMEOUT": "${REQUEST_TIMEOUT:-30}",
-        "MAX_RESULTS": "${MAX_RESULTS:-50}",
-        "MOCK_MODE": "${MOCK_MODE:-false}",
-        "AGENT_TYPE": "build-metrics",
-        "METRICS_ROLE_ARN": "${METRICS_ROLE_ARN:-arn:aws:iam::979020455945:role/OpenSearchOscarAccessRole}"
-    }
-}
-EOF
+cd metrics-package && zip -r ../metrics-package.zip . -q && cd ..
+rm -rf metrics-package
 
 # Create VPC configuration
 IFS=',' read -ra SUBNET_ARRAY <<< "$SUBNET_IDS"
@@ -150,7 +126,7 @@ for func_config in "${AGENT_FUNCTIONS[@]}"; do
     
     echo "🚀 Deploying $FUNCTION_NAME ($AGENT_TYPE)..."
     
-    # Update environment variables for this agent type
+    # Create environment variables for this agent type
     cat > env-vars.json << EOF
 {
     "Variables": {
@@ -171,38 +147,44 @@ for func_config in "${AGENT_FUNCTIONS[@]}"; do
 }
 EOF
     
-    # Delete if exists
-    aws lambda delete-function --function-name "$FUNCTION_NAME" --region "$AWS_REGION" 2>/dev/null || true
-    
-    # Wait for deletion
-    sleep 2
-    
-    # Create new function
-    aws lambda create-function \
-        --function-name "$FUNCTION_NAME" \
-        --runtime python3.12 \
-        --role "$ROLE_ARN" \
-        --handler lambda_function.lambda_handler \
-        --zip-file fileb://new-package.zip \
-        --timeout 60 \
-        --memory-size 256 \
-        --vpc-config file://vpc-config.json \
-        --environment file://env-vars.json \
-        --region "$AWS_REGION" >/dev/null
+    # Check if function exists
+    if aws lambda get-function --function-name "$FUNCTION_NAME" --region "$AWS_REGION" > /dev/null 2>&1; then
+        echo "📝 Updating existing function..."
+        # Update function code
+        aws lambda update-function-code \
+            --function-name "$FUNCTION_NAME" \
+            --zip-file fileb://metrics-package.zip \
+            --region "$AWS_REGION" >/dev/null
+        
+        # Wait for update to complete
+        aws lambda wait function-updated --function-name "$FUNCTION_NAME" --region "$AWS_REGION"
+        
+        # Update configuration
+        aws lambda update-function-configuration \
+            --function-name "$FUNCTION_NAME" \
+            --environment file://env-vars.json \
+            --region "$AWS_REGION" >/dev/null
+    else
+        echo "🆕 Creating new function..."
+        # Create new function
+        aws lambda create-function \
+            --function-name "$FUNCTION_NAME" \
+            --runtime python3.12 \
+            --role "$ROLE_ARN" \
+            --handler lambda_function.lambda_handler \
+            --zip-file fileb://metrics-package.zip \
+            --timeout 60 \
+            --memory-size 256 \
+            --vpc-config file://vpc-config.json \
+            --environment file://env-vars.json \
+            --region "$AWS_REGION" >/dev/null
+    fi
     
     echo "✅ $FUNCTION_NAME deployed"
     
     # Wait for function to be ready
     aws lambda wait function-active --function-name "$FUNCTION_NAME" --region "$AWS_REGION"
 done
-
-echo "⏳ Waiting for functions to be ready..."
-for func_config in "${AGENT_FUNCTIONS[@]}"; do
-    IFS=':' read -ra FUNC_PARTS <<< "$func_config"
-    FUNCTION_NAME="${FUNC_PARTS[0]}"
-    aws lambda wait function-active --function-name "$FUNCTION_NAME" --region "$AWS_REGION"
-done
-echo "✅ All functions ready for testing"
 
 echo "✅ All functions deployed successfully"
 
@@ -250,14 +232,16 @@ done
 echo "✅ Bedrock permissions configured"
 
 # Cleanup
-rm -f new-package.zip env-vars.json vpc-config.json
+rm -f metrics-package.zip env-vars.json vpc-config.json
 
 echo ""
-echo "🧪 Test commands:"
-echo "# Basic test:"
+echo "🎉 Metrics Lambda Functions Deployment Complete!"
+echo ""
+echo "📋 Deployed Functions:"
+for func_config in "${AGENT_FUNCTIONS[@]}"; do
+    IFS=':' read -ra FUNC_PARTS <<< "$func_config"
+    echo "   ✅ ${FUNC_PARTS[0]} (${FUNC_PARTS[1]})"
+done
+echo ""
+echo "🧪 Test command:"
 echo "aws lambda invoke --function-name oscar-build-metrics-agent-new --payload '{\"function\": \"test_basic\"}' --cli-binary-format raw-in-base64-out --region $AWS_REGION test.json && cat test.json | jq ."
-echo "# Role assumption test:"
-echo "aws lambda invoke --function-name oscar-build-metrics-agent-new --payload '{\"function\": \"test_role_only\"}' --cli-binary-format raw-in-base64-out --region $AWS_REGION test.json && cat test.json | jq ."
-echo "# Metrics tests:"
-echo "aws lambda invoke --function-name oscar-build-metrics-agent-new --payload '{\"function\": \"get_build_metrics\"}' --cli-binary-format raw-in-base64-out --region $AWS_REGION test.json && cat test.json | jq ."
-echo "aws lambda invoke --function-name oscar-test-metrics-agent-new --payload '{\"function\": \"get_test_metrics\"}' --cli-binary-format raw-in-base64-out --region $AWS_REGION test.json && cat test.json | jq ."

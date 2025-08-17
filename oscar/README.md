@@ -8,7 +8,7 @@ The system is built with a modular, serverless architecture consisting of:
 
 - **oscar-agent/**: Core bot logic and Slack integration
 - **metrics/**: Analytics and performance monitoring
-- **cdk/**: AWS infrastructure deployment
+- **deployment_scripts/**: Deployment automation and infrastructure setup
 
 ## Key Features
 
@@ -22,20 +22,57 @@ The system is built with a modular, serverless architecture consisting of:
 
 ```
 OSCAR/
-├── oscar-agent/           # Main bot application
-│   ├── communication_handler/  # Message processing and formatting
-│   ├── slack_handler/          # Slack-specific event handling
-│   └── bedrock/               # Core AI agent logic
-├── metrics/              # Analytics and monitoring
-├── cdk/                  # AWS infrastructure code
-└── deployment_scripts/   # Deployment automation
+├── oscar-agent/              # Main bot application
+│   ├── communication_handler/    # Message processing and formatting
+│   ├── slack_handler/           # Slack-specific event handling
+│   └── bedrock/                # Core AI agent logic
+├── metrics/                 # Analytics and monitoring
+├── deployment_scripts/      # Full deployment automation
+│   ├── deploy_all.sh           # Complete system deployment
+│   ├── deploy_metrics.sh       # Metrics functions deployment
+│   ├── deploy_communication_handler.sh  # Communication handler deployment
+│   └── deploy_oscar_agent.sh   # Main agent deployment
+└── lambda_update_scripts/   # Code-only updates (preserves permissions)
+    ├── update_all.sh           # Update all Lambda function code
+    ├── update_metrics.sh       # Update metrics code only
+    ├── update_communication_handler.sh  # Update communication handler code
+    └── update_slack_agent.sh   # Update main agent code only
 ```
 
 ## Getting Started
 
-1. Configure your environment variables in `.env`
-2. Run deployment scripts to set up AWS infrastructure
-3. Configure your Slack app with the generated webhook URL
-4. Deploy the bot code to AWS Lambda
+### Full Deployment (New Setup)
+```bash
+# 1. Configure environment variables
+cp .env.example .env
+# Edit .env with your values
 
-Each major component has its own README with detailed information about structure and functionality.
+# 2. Deploy complete system
+./deployment_scripts/deploy_all.sh
+```
+
+### Code Updates (Existing Deployment)
+```bash
+# Update all Lambda function code (preserves permissions)
+./lambda_update_scripts/update_all.sh
+
+# Or update individual components
+./lambda_update_scripts/update_metrics.sh
+./lambda_update_scripts/update_communication_handler.sh
+./lambda_update_scripts/update_slack_agent.sh
+```
+
+### Individual Component Deployment
+```bash
+# Deploy specific components with full setup
+./deployment_scripts/deploy_metrics.sh
+./deployment_scripts/deploy_communication_handler.sh
+./deployment_scripts/deploy_oscar_agent.sh
+```
+
+## Deployment Scripts Overview
+
+- **deployment_scripts/**: Full deployment with infrastructure, permissions, and dependencies
+- **lambda_update_scripts/**: Code-only updates that preserve existing configurations
+
+Each directory has its own README with detailed information about structure and functionality.

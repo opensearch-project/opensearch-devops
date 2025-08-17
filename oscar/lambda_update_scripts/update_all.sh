@@ -30,21 +30,21 @@ echo ""
 # Step 1: Update Metrics Lambda Functions
 echo "📊 Step 1: Updating Metrics Lambda Functions..."
 echo "=============================================="
-./update_metrics.sh
+./lambda_update_scripts/update_metrics.sh
 echo "✅ Metrics functions updated"
 
 # Step 2: Update Communication Handler
 echo ""
 echo "💬 Step 2: Updating Communication Handler..."
 echo "==========================================="
-./update_communication_handler.sh
+./lambda_update_scripts/update_communication_handler.sh
 echo "✅ Communication Handler updated"
 
 # Step 3: Update Slack Agent
 echo ""
 echo "🤖 Step 3: Updating Slack Agent..."
 echo "================================="
-./update_slack_agent.sh
+./lambda_update_scripts/update_slack_agent.sh
 echo "✅ Slack Agent updated"
 
 echo ""

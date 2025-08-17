@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # OSCAR Complete Deployment Script
-# Deploys all infrastructure and Lambda functions
+# Deploys all infrastructure and Lambda functions with proper dependencies and permissions
 
 set -e
 
@@ -46,26 +46,29 @@ cdk deploy --require-approval never --region $AWS_REGION
 cd ..
 echo "✅ CDK Infrastructure deployed"
 
-# Step 2: Deploy Metrics Lambda Functions
+# Step 2: Setup DynamoDB Tables
 echo ""
-echo "📊 Step 2: Deploying Metrics Lambda Functions..."
-echo "==============================================="
-./deploy_metrics.sh
-echo "✅ Metrics Lambda functions deployed"
+echo "🗄️  Step 2: Setting up DynamoDB Tables..."
+echo "========================================="
+python cdk/setup_dynamodb_tables.py
+echo "✅ DynamoDB tables configured"
 
-# Step 3: Deploy Communication Handler
+# Step 3: Deploy Lambda Functions
 echo ""
-echo "💬 Step 3: Deploying Communication Handler..."
-echo "============================================"
-./deploy_communication_handler.sh
-echo "✅ Communication Handler deployed"
+echo "📦 Step 3: Deploying Lambda Functions..."
+echo "======================================="
 
-# Step 4: Deploy Slack Agent (Main Bot)
-echo ""
-echo "🤖 Step 4: Deploying Slack Agent..."
-echo "=================================="
-./deploy_slack_agent.sh
-echo "✅ Slack Agent deployed"
+# Deploy metrics functions
+echo "📊 Deploying Metrics Lambda Functions..."
+./deployment_scripts/deploy_metrics.sh
+
+# Deploy communication handler
+echo "💬 Deploying Communication Handler..."
+./deployment_scripts/deploy_communication_handler.sh
+
+# Deploy main OSCAR agent
+echo "🤖 Deploying OSCAR Main Agent..."
+./deployment_scripts/deploy_oscar_agent.sh
 
 echo ""
 echo "🎉 OSCAR Complete Deployment Finished!"
@@ -73,9 +76,10 @@ echo "====================================="
 echo ""
 echo "📋 Deployment Summary:"
 echo "   ✅ CDK Infrastructure"
+echo "   ✅ DynamoDB Tables (oscar-agent-context, oscar-agent-sessions)"
 echo "   ✅ Metrics Lambda Functions (4)"
 echo "   ✅ Communication Handler"
-echo "   ✅ Slack Agent"
+echo "   ✅ OSCAR Main Agent"
 echo ""
 echo "📝 Next Steps:"
 echo "   1. Configure Slack webhook URL in your Slack app"
@@ -83,6 +87,6 @@ echo "   2. Test OSCAR with: @oscar hello"
 echo "   3. Monitor CloudWatch logs for any issues"
 echo ""
 echo "🔗 Useful Commands:"
-echo "   Update only code: ./update_all.sh"
-echo "   Update metrics: ./update_metrics.sh"
-echo "   Update slack agent: ./update_slack_agent.sh"
+echo "   Update only code: ./lambda_update_scripts/update_all.sh"
+echo "   Update metrics: ./lambda_update_scripts/update_metrics.sh"
+echo "   Update slack agent: ./lambda_update_scripts/update_slack_agent.sh"

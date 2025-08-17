@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Deploy OSCAR Communication Handler Lambda Function
-# FULL DEPLOYMENT - Creates function, role, and permissions
+# FULL DEPLOYMENT - Creates function, role, and permissions with proper dependencies
 
 set -e
 
@@ -36,9 +36,6 @@ LAMBDA_ROLE_NAME="oscar-communication-handler-role"
 
 # Verify region configuration
 echo "🌍 Using AWS Region: $AWS_REGION"
-if [ "$AWS_REGION" != "us-east-1" ]; then
-    echo "⚠️  Warning: Expected region us-east-1, but using $AWS_REGION"
-fi
 
 echo "📦 Creating deployment package..."
 
@@ -211,6 +208,58 @@ EOF
     sleep 10
 else
     echo "✅ IAM role already exists: $LAMBDA_ROLE_NAME"
+    
+    # Update the policy to ensure it has the correct permissions
+    echo "🔄 Updating IAM role policy..."
+    cat > $TEMP_DIR/lambda-policy.json << EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:InvokeAgent",
+        "bedrock:InvokeModel",
+        "bedrock:GetAgent",
+        "bedrock:GetKnowledgeBase"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:PutItem",
+        "dynamodb:GetItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:Query",
+        "dynamodb:Scan"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:*:*:table/oscar-agent-context",
+        "arn:aws:dynamodb:*:*:table/oscar-agent-sessions"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:*:*:*"
+    }
+  ]
+}
+EOF
+
+    aws iam put-role-policy \
+        --role-name $LAMBDA_ROLE_NAME \
+        --policy-name "CommunicationHandlerPolicy" \
+        --policy-document file://$TEMP_DIR/lambda-policy.json \
+        --region $AWS_REGION
+
+    echo "✅ Updated IAM role policy"
 fi
 
 # Get role ARN
@@ -270,32 +319,6 @@ aws lambda add-permission \
     --region $AWS_REGION \
     2>/dev/null || echo "⚠️  Permission may already exist"
 
-# Test the function
-echo "🧪 Testing Lambda function..."
-cat > $TEMP_DIR/test-event.json << 'EOF'
-{
-  "actionGroup": "communication-orchestration",
-  "apiPath": "/send_automated_message",
-  "httpMethod": "POST",
-  "parameters": [
-    {
-      "name": "query",
-      "value": "send missing release notes message to riley-needs-to-lock-in channel"
-    }
-  ]
-}
-EOF
-
-echo "📤 Invoking test..."
-aws lambda invoke \
-    --function-name $FUNCTION_NAME \
-    --payload file://$TEMP_DIR/test-event.json \
-    --region $AWS_REGION \
-    $TEMP_DIR/response.json
-
-echo "📥 Test response:"
-cat $TEMP_DIR/response.json | jq '.' 2>/dev/null || cat $TEMP_DIR/response.json
-
 # Cleanup
 echo "🧹 Cleaning up temporary files..."
 rm -rf $TEMP_DIR
@@ -309,11 +332,10 @@ echo "   Function ARN:  $FUNCTION_ARN"
 echo "   IAM Role:      $ROLE_ARN"
 echo "   Region:        $AWS_REGION"
 echo ""
-echo "📝 Next Steps:"
-echo "   1. Update OSCAR supervisor agent with new action group"
-echo "   2. Configure function schema in Bedrock console"
-echo "   3. Test with authorized Slack users"
-echo "   4. Monitor CloudWatch logs for any issues"
+echo "✅ Configured with proper permissions for:"
+echo "   📊 DynamoDB access (oscar-agent-context, oscar-agent-sessions)"
+echo "   🤖 Bedrock agent invocation"
+echo "   📝 CloudWatch logging"
 echo ""
-echo "📖 For detailed configuration instructions, see:"
-echo "   docs/COMMUNICATION_ORCHESTRATION_AGENT_CONFIG.md"
+echo "🧪 Test command:"
+echo "aws lambda invoke --function-name $FUNCTION_NAME --payload '{\"actionGroup\": \"communication-orchestration\", \"apiPath\": \"/send_automated_message\"}' --cli-binary-format raw-in-base64-out --region $AWS_REGION test.json && cat test.json"
