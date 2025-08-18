@@ -282,8 +282,8 @@ if aws lambda get-function --function-name $FUNCTION_NAME --region $AWS_REGION >
         --function-name $FUNCTION_NAME \
         --runtime python3.12 \
         --handler lambda_function.lambda_handler \
-        --timeout 30 \
-        --memory-size 256 \
+        --timeout ${LAMBDA_TIMEOUT:-150} \
+        --memory-size ${LAMBDA_MEMORY_SIZE:-512} \
         --environment Variables="{SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN,CONTEXT_TABLE_NAME=oscar-agent-context}" \
         --region $AWS_REGION
 
@@ -297,8 +297,8 @@ else
         --role $ROLE_ARN \
         --handler lambda_function.lambda_handler \
         --zip-file fileb://$DEPLOYMENT_PACKAGE \
-        --timeout 30 \
-        --memory-size 256 \
+        --timeout ${LAMBDA_TIMEOUT:-150} \
+        --memory-size ${LAMBDA_MEMORY_SIZE:-512} \
         --environment Variables="{SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN,CONTEXT_TABLE_NAME=oscar-agent-context}" \
         --region $AWS_REGION
 

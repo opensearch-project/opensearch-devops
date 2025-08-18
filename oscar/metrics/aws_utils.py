@@ -81,6 +81,3 @@ def opensearch_request(method, path, body=None):
         return response.json()
     else:
         raise Exception(f'OpenSearch request failed: {response.status_code} - {response.text}')
-
-
-# Test functionality moved to tests/test_aws_connectivity.py

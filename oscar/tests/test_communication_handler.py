@@ -49,25 +49,6 @@ class TestCommunicationHandler:
         assert '*bold*' in special_message
         assert '_italic_' in special_message
     
-    def test_template_processing_logic(self):
-        """Test basic template processing logic."""
-        # Test template rendering logic
-        template = 'Hello {user}, your query about {topic} has been processed.'
-        variables = {'user': 'John', 'topic': 'OpenSearch'}
-        
-        # Basic string formatting
-        result = template.format(**variables)
-        assert result == 'Hello John, your query about OpenSearch has been processed.'
-        
-        # Test with missing variables
-        incomplete_variables = {'user': 'John'}
-        try:
-            incomplete_result = template.format(**incomplete_variables)
-            # Should raise KeyError for missing 'topic'
-            assert False, "Should have raised KeyError"
-        except KeyError:
-            assert True  # Expected behavior
-    
     def test_response_building_logic(self):
         """Test response building logic."""
         # Test basic response structure

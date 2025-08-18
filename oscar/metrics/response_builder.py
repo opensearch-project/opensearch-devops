@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 def create_response(event: Dict[str, Any], result: Dict[str, Any]) -> Dict[str, Any]:
     """Create a response in the format expected by the Bedrock agent."""
     logger.info(f"📤 CREATE_RESPONSE: Starting response creation")
-    action_group = event.get('actionGroup', 'metrics-agent')
+    action_group = event.get('actionGroup')
     function = event.get('function', 'unknown')
     logger.info(f"📤 CREATE_RESPONSE: action_group={action_group}, function={function}")
     

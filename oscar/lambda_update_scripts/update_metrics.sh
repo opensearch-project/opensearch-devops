@@ -101,17 +101,27 @@ AGENT_FUNCTIONS=(
 )
 
 for FUNCTION_NAME in "${AGENT_FUNCTIONS[@]}"; do
-    echo "🔄 Updating code for $FUNCTION_NAME..."
+    echo "🔄 Updating code and configuration for $FUNCTION_NAME..."
     
-    # Update ONLY function code - preserves all permissions and configurations
+    # Update function code
     aws lambda update-function-code \
         --function-name "$FUNCTION_NAME" \
         --zip-file fileb://update-package.zip \
         --region "$AWS_REGION" >/dev/null
     
-    echo "✅ $FUNCTION_NAME code updated"
+    # Wait for code update to complete
+    aws lambda wait function-updated --function-name "$FUNCTION_NAME" --region "$AWS_REGION"
     
-    # Wait for function to be ready
+    # Update timeout and memory configuration
+    aws lambda update-function-configuration \
+        --function-name "$FUNCTION_NAME" \
+        --timeout ${METRICS_TIMEOUT:-150} \
+        --memory-size ${METRICS_MEMORY_SIZE:-512} \
+        --region "$AWS_REGION" >/dev/null
+    
+    echo "✅ $FUNCTION_NAME code and configuration updated"
+    
+    # Wait for configuration update to complete
     aws lambda wait function-updated --function-name "$FUNCTION_NAME" --region "$AWS_REGION"
 done
 

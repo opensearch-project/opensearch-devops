@@ -19,7 +19,6 @@ from typing import Optional, Tuple
 
 from bedrock.bedrock_agent import BedrockAgentCore
 from bedrock.error_handler import AgentErrorHandler
-from bedrock.metrics_coordinator import MetricsCoordinator
 from bedrock.query_processor import QueryProcessor
 
 logger = logging.getLogger(__name__)
@@ -72,7 +71,6 @@ class EnhancedBedrockOSCARAgent(OSCARAgentInterface):
         # Initialize all components
         self.bedrock_agent = BedrockAgentCore(region)
         self.error_handler = AgentErrorHandler()
-        self.metrics_coordinator = MetricsCoordinator(self.bedrock_agent.region)
         self.query_processor = QueryProcessor(self.bedrock_agent, self.error_handler)
         
         logger.info(f"Initialized EnhancedBedrockOSCARAgent with region: {self.bedrock_agent.region}")

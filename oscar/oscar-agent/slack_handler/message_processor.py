@@ -80,7 +80,7 @@ class MessageProcessor:
         
         try:
             # Extract or generate query based on source
-            if slash_command or channel == 'im':
+            if slash_command or 'im' in channel:
                 # For slash commands, text is already the formatted query
                 query = text
                 logger.info(f"Using pre-formatted slash command query: {query}")

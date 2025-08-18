@@ -19,6 +19,7 @@ Classes:
 import logging
 import os
 from typing import Optional, Tuple
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -78,14 +79,14 @@ class Config:
         self.context_ttl = int(os.environ.get('CONTEXT_TTL', 604800))  # 7 days
         
         # Context settings
-        self.max_context_length = int(os.environ.get('MAX_CONTEXT_LENGTH', 8000))  # Increased from 3000
-        self.context_summary_length = int(os.environ.get('CONTEXT_SUMMARY_LENGTH', 1000))  # Increased from 500
+        self.max_context_length = int(os.environ.get('MAX_CONTEXT_LENGTH', 8000))  
+        self.context_summary_length = int(os.environ.get('CONTEXT_SUMMARY_LENGTH', 1000)) 
         
         # Feature flags
         self.enable_dm = os.environ.get('ENABLE_DM', 'false').lower() == 'true'
         
         # Agent timeout and retry settings
-        self.agent_timeout = int(os.environ.get('AGENT_TIMEOUT', 60))  # 60 seconds
+        self.agent_timeout = int(os.environ.get('AGENT_TIMEOUT', 90)) 
         self.agent_max_retries = int(os.environ.get('AGENT_MAX_RETRIES', 2))
         
         # Timeout thresholds
@@ -93,8 +94,8 @@ class Config:
         self.timeout_threshold = int(os.environ.get('TIMEOUT_THRESHOLD_SECONDS', 120))
         
         # Thread pool settings
-        self.max_workers = int(os.environ.get('MAX_WORKERS', 50))
-        self.max_active_queries = int(os.environ.get('MAX_ACTIVE_QUERIES', 50))
+        self.max_workers = int(os.environ.get('MAX_WORKERS', 100))
+        self.max_active_queries = int(os.environ.get('MAX_ACTIVE_QUERIES',  100))
         self.monitor_interval = int(os.environ.get('MONITOR_INTERVAL_SECONDS', 15))
         
         # Thread naming
@@ -127,37 +128,15 @@ class Config:
             'broadcast': os.environ.get('AGENT_QUERY_BROADCAST', '')
         }
         
-        # Message templates
-        self.message_templates = {
-            'missing_release_notes': {
-                'template': os.environ.get('TEMPLATE_MISSING_RELEASE_NOTES', ''),
-                'default_channel': os.environ.get('DEFAULT_CHANNEL_MISSING_RELEASE_NOTES', 'C096MV7JZ0T')
-            },
-            'criteria_not_met': {
-                'template': os.environ.get('TEMPLATE_CRITERIA_NOT_MET', ''),
-                'default_channel': os.environ.get('DEFAULT_CHANNEL_CRITERIA_NOT_MET', 'C096MV7JZ0T')
-            },
-            'documentation_issues': {
-                'template': os.environ.get('TEMPLATE_DOCUMENTATION_ISSUES', ''),
-                'default_channel': os.environ.get('DEFAULT_CHANNEL_DOCUMENTATION_ISSUES', 'C096MV7JZ0T')
-            },
-            'missing_code_coverage': {
-                'template': os.environ.get('TEMPLATE_MISSING_CODE_COVERAGE', ''),
-                'default_channel': os.environ.get('DEFAULT_CHANNEL_MISSING_CODE_COVERAGE', 'C09827S7CEB')
-            },
-            'release_announcement': {
-                'template': os.environ.get('TEMPLATE_RELEASE_ANNOUNCEMENT', ''),
-                'default_channel': os.environ.get('DEFAULT_CHANNEL_RELEASE_ANNOUNCEMENT', 'C096MV7JZ0T')
-            }
-        }
         
-        # Channel mappings
-        self.channel_mappings = {
-            'opensearch-release-manager': os.environ.get('CHANNEL_MAPPING_RELEASE_MANAGER', 'C096MV7JZ0T'),
-            'private-oscar-test': os.environ.get('CHANNEL_MAPPING_TEST', 'C09827S7CEB'),
-            'opensearch-3-2-0-release': os.environ.get('CHANNEL_MAPPING_3_2_0_RELEASE', 'C088XMSH4DA'),
-            'riley-needs-to-lock-in': os.environ.get('CHANNEL_MAPPING_RILEY', 'C091EH1JKCL')
-        }
+        # Channel mappings - load from JSON string in environment
+        channel_mappings_str = os.environ.get('CHANNEL_MAPPINGS', '{}')
+        try:
+            self.channel_mappings = json.loads(channel_mappings_str)
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse CHANNEL_MAPPINGS JSON: {e}")
+            # Fallback to empty dict
+            self.channel_mappings = {}
         
         # Regex patterns
         self.patterns = {
@@ -173,17 +152,14 @@ class Config:
             'channel_mention': os.environ.get('CHANNEL_MENTION_PATTERN', r'(?<!<)#([a-zA-Z0-9_-]+)(?!>)'),
             'version': os.environ.get('VERSION_PATTERN', r'version\s+(\d+\.\d+\.\d+)')
         }
-        
-        # Default values
-        self.default_version = os.environ.get('DEFAULT_VERSION', '3.2.0')
-        
+                
         # Logging and preview settings
         self.log_query_preview_length = int(os.environ.get('LOG_QUERY_PREVIEW_LENGTH', 100))
         self.log_context_preview_length = int(os.environ.get('LOG_CONTEXT_PREVIEW_LENGTH', 200))
         self.log_history_preview_length = int(os.environ.get('LOG_HISTORY_PREVIEW_LENGTH', 50))
         self.log_max_history_entries = int(os.environ.get('LOG_MAX_HISTORY_ENTRIES', 2))
         
-        # Phase 2: Multi-agent configuration (for future use)
+        # Phase 2: Multi-agent configuration (for individual use or testing)
         self.oscar_knowledge_agent_id = os.environ.get('OSCAR_KNOWLEDGE_AGENT_ID')
         self.oscar_knowledge_agent_alias_id = os.environ.get('OSCAR_KNOWLEDGE_AGENT_ALIAS_ID')
         self.oscar_metrics_agent_id = os.environ.get('OSCAR_METRICS_AGENT_ID')
@@ -192,10 +168,6 @@ class Config:
         self.oscar_build_agent_alias_id = os.environ.get('OSCAR_BUILD_AGENT_ALIAS_ID')
         self.oscar_test_agent_id = os.environ.get('OSCAR_TEST_AGENT_ID')
         self.oscar_test_agent_alias_id = os.environ.get('OSCAR_TEST_AGENT_ALIAS_ID')
-        
-        # Agent routing configuration (Phase 2)
-        self.enable_multi_agent = os.environ.get('ENABLE_MULTI_AGENT', 'false').lower() == 'true'
-        self.default_agent = os.environ.get('DEFAULT_AGENT', 'knowledge')
     
     def get_slack_credentials(self) -> Tuple[Optional[str], Optional[str]]:
         """
@@ -208,6 +180,5 @@ class Config:
 
 # Create a singleton instance with validation based on context
 # Allow disabling validation via environment variable for communication handler
-import os
 _disable_validation = os.environ.get('DISABLE_CONFIG_VALIDATION', 'false').lower() == 'true'
 config = Config(validate_required=not _disable_validation)

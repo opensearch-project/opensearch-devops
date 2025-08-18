@@ -13,7 +13,6 @@ Handles all message processing, formatting, and response building.
 - `message_handler.py` - Central message processing logic
 - `message_formatter.py` - Response formatting and templating
 - `response_builder.py` - Constructs structured responses
-- `template_processor.py` - Template rendering and customization
 - `context_storage.py` - Conversation context management
 - `slack_client.py` - Slack API interactions
 

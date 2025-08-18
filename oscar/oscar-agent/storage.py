@@ -29,7 +29,7 @@ from config import config
 logger = logging.getLogger(__name__)
 
 class StorageInterface(ABC):
-    """Abstract base class for storage implementations.
+    """Abstract base class for storage implementations (defined so non-dynamo storage could also be configured).
     
     This interface defines the contract for all storage implementations,
     ensuring consistent behavior for context and session management.
@@ -232,13 +232,6 @@ class DynamoDBStorage(StorageInterface):
                     history_count = len(context.get("history", []))
                     session_id = context.get("session_id")
                     logger.info(f"✅ GET_CONTEXT: Successfully retrieved context for thread {thread_key} (history: {history_count} entries, session: {session_id})")
-                    
-                    # Log first few history entries for debugging
-                    if history_count > 0:
-                        for i, entry in enumerate(context["history"][:2]):  # Log first 2 entries
-                            query_preview = entry.get("query", "")[:50] + "..." if len(entry.get("query", "")) > 50 else entry.get("query", "")
-                            logger.info(f"📝 GET_CONTEXT: History[{i}]: query='{query_preview}', timestamp={entry.get('timestamp')}")
-                    
                     return context
                 else:
                     logger.warning(f"❌ GET_CONTEXT: Context field missing for thread {thread_key}")
@@ -352,10 +345,6 @@ class DynamoDBStorage(StorageInterface):
                         
             formatted_context = "\n".join(context_lines)
             logger.info(f"✅ GET_CONTEXT_FOR_QUERY: Generated context for query (thread {thread_key}): {len(formatted_context)} characters")
-            
-            # Log a preview of the formatted context
-            preview = formatted_context[:200] + "..." if len(formatted_context) > 200 else formatted_context
-            logger.info(f"📄 GET_CONTEXT_FOR_QUERY: Context preview: {repr(preview)}")
             
             return formatted_context
             

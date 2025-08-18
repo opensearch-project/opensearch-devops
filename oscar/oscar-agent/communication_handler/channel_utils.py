@@ -27,7 +27,7 @@ class ChannelUtils:
         Returns:
             Channel ID if found, None otherwise
         """
-        # Channel ID pattern
+        # Channel ID pattern - direct channel ID in query
         channel_id_match = re.search(config.patterns['channel_id'], query)
         if channel_id_match:
             channel_id = channel_id_match.group(1)
@@ -41,17 +41,12 @@ class ChannelUtils:
             return config.channel_mappings.get(channel_name)
         
         # Text-based channel mentions using configured mappings
+        # Check if any channel name from mappings appears in the query text
         query_lower = query.lower()
-        if 'riley-needs-to-lock-in' in query_lower:
-            return config.channel_mappings.get('riley-needs-to-lock-in')
-        elif '3-2-0' in query_lower or '3.2.0' in query_lower or 'release channel' in query_lower:
-            return config.channel_mappings.get('opensearch-release-manager')
-        elif 'build channel' in query_lower:
-            return config.channel_mappings.get('private-oscar-test')
-        elif 'test channel' in query_lower:
-            return config.channel_mappings.get('riley-needs-to-lock-in')
-        elif 'dev channel' in query_lower:
-            return config.channel_mappings.get('opensearch-3-2-0-release')
+        for channel_name, channel_id in config.channel_mappings.items():
+            # Check if channel name (with or without hashtag) appears in query
+            if channel_name in query_lower:
+                return channel_id
         
         return None
     

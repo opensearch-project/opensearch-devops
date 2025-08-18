@@ -61,7 +61,7 @@ def query_integration_test_results(
     logger.info(f"🔍 INTEGRATION_QUERY: Starting integration test query")
     logger.info(f"🔍 INTEGRATION_QUERY: version={version}, rc_number={rc_number}, components={components}")
     
-    # Use reasonable size limit - we'll deduplicate results for cleaner output
+    # Use large size limit - we'll deduplicate results for cleaner output
     size_limit = config.large_query_size
     logger.info(f"🔍 INTEGRATION_QUERY: Using size limit: {size_limit}")
 

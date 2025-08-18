@@ -124,7 +124,7 @@ class ContextManager:
             "history": []
         }
         
-        # If there was a user query (slash command), add it to history
+        # If there was a user query (for slash commands), add it to history
         if user_query:
             context["history"].append({
                 "query": user_query,

@@ -173,8 +173,8 @@ EOF
             --role "$ROLE_ARN" \
             --handler lambda_function.lambda_handler \
             --zip-file fileb://metrics-package.zip \
-            --timeout 60 \
-            --memory-size 256 \
+            --timeout ${METRICS_TIMEOUT:-150} \
+            --memory-size ${METRICS_MEMORY_SIZE:-512} \
             --vpc-config file://vpc-config.json \
             --environment file://env-vars.json \
             --region "$AWS_REGION" >/dev/null

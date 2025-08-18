@@ -35,6 +35,7 @@ def generate_integration_summary(results: List[Dict[str, Any]]) -> Dict[str, Any
     """
     all_results = []
     for result in results:
+        # Assuming that component build status fails only when at least one of with security and without security fail
         status = result.get('component_build_result', 'unknown')
         all_results.append(status)
     
@@ -87,7 +88,7 @@ def generate_build_summary(results: List[Dict[str, Any]]) -> Dict[str, Any]:
         'status_breakdown': {
             'passed': passed_count,
             'failed': failed_count,
-            'other': total_count - passed_count - failed_count
+            'other/unknown': total_count - passed_count - failed_count
         }
     }
 

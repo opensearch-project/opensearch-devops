@@ -107,6 +107,9 @@ echo "✅ Created deployment package: $DEPLOYMENT_PACKAGE"
 
 # Check if Lambda function exists
 # Create environment variables for communication handler
+# Escape the CHANNEL_MAPPINGS JSON for proper embedding
+ESCAPED_CHANNEL_MAPPINGS=$(echo "$CHANNEL_MAPPINGS" | sed 's/"/\\"/g')
+
 cat > $TEMP_DIR/env-vars.json << EOF
 {
     "Variables": {
@@ -118,21 +121,7 @@ cat > $TEMP_DIR/env-vars.json << EOF
         "MESSAGE_PREVIEW_LENGTH": "${MESSAGE_PREVIEW_LENGTH:-100}",
         "BEDROCK_RESPONSE_MESSAGE_VERSION": "${BEDROCK_RESPONSE_MESSAGE_VERSION:-1.0}",
         "BEDROCK_ACTION_GROUP_NAME": "${BEDROCK_ACTION_GROUP_NAME:-communication-orchestration}",
-        "DEFAULT_VERSION": "${DEFAULT_VERSION:-3.2.0}",
-        "TEMPLATE_MISSING_RELEASE_NOTES": "$TEMPLATE_MISSING_RELEASE_NOTES",
-        "TEMPLATE_CRITERIA_NOT_MET": "$TEMPLATE_CRITERIA_NOT_MET",
-        "TEMPLATE_DOCUMENTATION_ISSUES": "$TEMPLATE_DOCUMENTATION_ISSUES",
-        "TEMPLATE_MISSING_CODE_COVERAGE": "$TEMPLATE_MISSING_CODE_COVERAGE",
-        "TEMPLATE_RELEASE_ANNOUNCEMENT": "$TEMPLATE_RELEASE_ANNOUNCEMENT",
-        "DEFAULT_CHANNEL_MISSING_RELEASE_NOTES": "${DEFAULT_CHANNEL_MISSING_RELEASE_NOTES:-C096MV7JZ0T}",
-        "DEFAULT_CHANNEL_CRITERIA_NOT_MET": "${DEFAULT_CHANNEL_CRITERIA_NOT_MET:-C096MV7JZ0T}",
-        "DEFAULT_CHANNEL_DOCUMENTATION_ISSUES": "${DEFAULT_CHANNEL_DOCUMENTATION_ISSUES:-C096MV7JZ0T}",
-        "DEFAULT_CHANNEL_MISSING_CODE_COVERAGE": "${DEFAULT_CHANNEL_MISSING_CODE_COVERAGE:-C09827S7CEB}",
-        "DEFAULT_CHANNEL_RELEASE_ANNOUNCEMENT": "${DEFAULT_CHANNEL_RELEASE_ANNOUNCEMENT:-C096MV7JZ0T}",
-        "CHANNEL_MAPPING_RELEASE_MANAGER": "${CHANNEL_MAPPING_RELEASE_MANAGER:-C096MV7JZ0T}",
-        "CHANNEL_MAPPING_TEST": "${CHANNEL_MAPPING_TEST:-C09827S7CEB}",
-        "CHANNEL_MAPPING_3_2_0_RELEASE": "${CHANNEL_MAPPING_3_2_0_RELEASE:-C088XMSH4DA}",
-        "CHANNEL_MAPPING_RILEY": "${CHANNEL_MAPPING_RILEY:-C091EH1JKCL}"
+        "CHANNEL_MAPPINGS": "$ESCAPED_CHANNEL_MAPPINGS"
     }
 }
 EOF
@@ -151,10 +140,12 @@ if aws lambda get-function --function-name $FUNCTION_NAME --region $AWS_REGION >
     echo "⏳ Waiting for code update to complete..."
     aws lambda wait function-updated --function-name $FUNCTION_NAME --region $AWS_REGION
     
-    # Update environment variables
+    # Update environment variables, timeout, and memory
     aws lambda update-function-configuration \
         --function-name $FUNCTION_NAME \
         --environment file://$TEMP_DIR/env-vars.json \
+        --timeout ${LAMBDA_TIMEOUT:-150} \
+        --memory-size ${LAMBDA_MEMORY_SIZE:-512} \
         --region $AWS_REGION >/dev/null
 
     echo "✅ Updated Lambda function code: $FUNCTION_NAME"

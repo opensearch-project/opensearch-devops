@@ -149,28 +149,6 @@ def handle_metrics_query(agent_type: str, function_name: str, params: Dict[str, 
             logger.info(f"📊 METRICS_QUERY [{req_id}]: Calling extract_test_results for integration test data")
             results = extract_test_results(opensearch_results)
             logger.info(f"📊 METRICS_QUERY [{req_id}]: extract_test_results completed, got {len(results)} results")
-            
-            # Debug: Log summary of results by component and status
-            component_status_summary = {}
-            for result in results:
-                component = result.get('component')
-                status = result.get('component_build_result')
-                platform = result.get('platform')
-                arch = result.get('architecture')
-                dist = result.get('distribution')
-                build_time = result.get('build_start_time')
-                
-                key = f"{component}_{platform}_{arch}_{dist}"
-                if key not in component_status_summary:
-                    component_status_summary[key] = []
-                component_status_summary[key].append({
-                    'status': status,
-                    'build_time': build_time
-                })
-            
-            logger.info(f"📊 METRICS_QUERY [{req_id}]: Final results summary:")
-            for key, statuses in component_status_summary.items():
-                logger.info(f"📊 METRICS_QUERY [{req_id}]: {key}: {statuses}")
         elif agent_type in ['build-metrics', 'build']:
             results = extract_build_results(opensearch_results)
         elif agent_type in ['release-metrics', 'release']:
@@ -181,7 +159,7 @@ def handle_metrics_query(agent_type: str, function_name: str, params: Dict[str, 
             raw_results = [hit.get('_source', {}) for hit in hits]
             
             # If this looks like integration test data, apply deduplication
-            if raw_results and any('component_build_result' in r and 'build_start_time' in r for r in raw_results):
+            if raw_results and any('with_security' in r and 'without_security' in r for r in raw_results):
                 logger.info(f"📊 METRICS_QUERY [{req_id}]: Fallback case detected integration test data, applying deduplication")
                 results = deduplicate_integration_test_results(raw_results)
             else:
@@ -204,23 +182,7 @@ def handle_metrics_query(agent_type: str, function_name: str, params: Dict[str, 
         
         logger.info(f"📊 METRICS_QUERY [{req_id}]: Query returned {len(results)} results after filtering")
         logger.info(f"📊 METRICS_QUERY [{req_id}]: About to create final response")
-        
-        # Log final summary before returning
-        failed_results = [r for r in results if r.get('component_build_result') == 'failed' or r.get('status') == 'failed']
-        passed_results = [r for r in results if r.get('component_build_result') == 'passed' or r.get('status') == 'passed']
-        
-        logger.info(f"📊 METRICS_QUERY [{req_id}]: FINAL SUMMARY - Total: {len(results)}, Failed: {len(failed_results)}, Passed: {len(passed_results)}")
-        
-        if failed_results:
-            logger.info(f"📊 METRICS_QUERY [{req_id}]: FAILED COMPONENTS:")
-            for result in failed_results:
-                component = result.get('component')
-                platform = result.get('platform')
-                arch = result.get('architecture')
-                dist = result.get('distribution')
-                build_time = result.get('build_start_time')
-                logger.info(f"📊 METRICS_QUERY [{req_id}]: - {component} ({platform}/{arch}/{dist}) - time: {build_time}")
-        
+
         # Generate appropriate summary based on agent type
         if agent_type in ['integration-test', 'test-metrics', 'test']:
             summary = generate_integration_summary(results)
@@ -229,14 +191,8 @@ def handle_metrics_query(agent_type: str, function_name: str, params: Dict[str, 
         elif agent_type in ['release-metrics', 'release']:
             summary = generate_release_summary(results)
         else:
-            # Fallback summary
-            summary = {
-                'total_components': len(results),
-                'failed_components': len(failed_results),
-                'passed_components': len(passed_results),
-                'failed_component_names': [r.get('component') for r in failed_results],
-                'passed_component_names': [r.get('component') for r in passed_results]
-            }
+            # Fallback on emptysummary
+            summary = {}
         
         # Return results directly - let the LLM interpret them
         return {

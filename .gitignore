@@ -1,5 +1,5 @@
 # Environment, secrets, and docs
-.env*
+.env
 aws_id.txt
 DEPLOYMENT_GUIDE.md
 MIGRATION_GUIDE.md

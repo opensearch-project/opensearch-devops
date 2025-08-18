@@ -11,7 +11,6 @@ The communication handler serves as the messaging layer between the AI agent and
 ### Message Processing
 - **message_handler.py** - Central coordinator for all message processing workflows
 - **message_formatter.py** - Formats responses according to platform requirements
-- **template_processor.py** - Handles dynamic template rendering and customization
 
 ### Response Construction  
 - **response_builder.py** - Constructs structured responses with proper formatting

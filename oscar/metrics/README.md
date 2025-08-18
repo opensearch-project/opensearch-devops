@@ -19,7 +19,6 @@ The metrics module collects, processes, and analyzes data about bot interactions
 - **metrics_handler.py** - Central coordinator for metrics operations
 
 ### Analysis Tools
-- **index_explorer.py** - Explores and analyzes data indices and patterns
 - **response_builder.py** - Formats metric responses for different consumers
 - **helper_functions.py** - Shared utilities and common operations
 

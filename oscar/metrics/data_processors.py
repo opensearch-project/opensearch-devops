@@ -95,7 +95,7 @@ def deduplicate_integration_test_results(results: List[Dict[str, Any]]) -> List[
         architecture = result.get('architecture') 
         distribution = result.get('distribution')
         
-        if component and version and rc_number is not None:
+        if component and version and rc_number and platform and architecture and distribution is not None:
             key = (component, str(version), str(rc_number), str(platform), str(architecture), str(distribution))
             
             logger.debug(f"🔄 DEDUP: Processing {component} - key: {key}, build_time: {build_start_time}")
@@ -139,13 +139,6 @@ def deduplicate_integration_test_results(results: List[Dict[str, Any]]) -> List[
     
     deduplicated_results = list(groups.values()) + ungrouped
     logger.info(f"🔄 DEDUP: Deduplication complete: {len(results)} -> {len(deduplicated_results)} results")
-    
-    # Log final results for debugging
-    for result in deduplicated_results:
-        component = result.get('component')
-        status = result.get('component_build_result')
-        build_time = result.get('build_start_time')
-        logger.debug(f"🔄 DEDUP: Final result - {component}: {status} (time: {build_time})")
     
     return deduplicated_results
 
@@ -204,16 +197,9 @@ def extract_test_results(opensearch_result: Dict[str, Any]) -> List[Dict[str, An
         without_security = source.get('without_security', '')
         component_build_result = source.get('component_build_result', '')
         
-        # Calculate overall status - if either security test fails, overall is failed
-        overall_status = 'passed'
-        if component_build_result == 'failed':
-            overall_status = 'failed'
-        elif with_security == 'fail' or without_security == 'fail':
-            overall_status = 'failed'
-        elif with_security == 'pass' and without_security == 'pass':
+        if component_build_result != 'failed' and with_security == 'pass' and without_security == 'pass':
             overall_status = 'passed'
-        elif component_build_result in ['passed', 'success']:
-            overall_status = 'passed'
+        else: overall_status = 'failed'
         
         results.append({
             'component': source.get('component'),
@@ -259,11 +245,6 @@ def extract_build_results(opensearch_result: Dict[str, Any]) -> List[Dict[str, A
             'rc_number': source.get('rc_number'),
             'component_category': source.get('component_category'),
             'component_build_result': source.get('component_build_result'),
-            # Legacy fields for backward compatibility
-            'status': source.get('component_build_result'),
-            'build_number': source.get('distribution_build_number'),
-            'timestamp': source.get('build_start_time'),
-            'category': source.get('component_category')
         })
     
     return deduplicate_by_highest_build_number(results)
@@ -279,37 +260,23 @@ def extract_release_results(opensearch_result: Dict[str, Any]) -> List[Dict[str,
         
         # Calculate enhanced readiness score based on all available metrics
         readiness_score = 0
-        readiness_checks = []
         
         # Core release readiness checks
         if source.get('release_issue_exists'):
             readiness_score += 1
-            readiness_checks.append('release_issue_exists')
         if source.get('release_notes'):
             readiness_score += 1
-            readiness_checks.append('release_notes')
         if source.get('version_increment'):
             readiness_score += 1
-            readiness_checks.append('version_increment')
         if source.get('release_branch'):
             readiness_score += 1
-            readiness_checks.append('release_branch')
         if source.get('release_owner_exists'):
-            readiness_score += 1
-            readiness_checks.append('release_owner_exists')
-        
+            readiness_score += 1        
+            
         # Additional quality checks
         issues_open = source.get('issues_open', 0)
         pulls_open = source.get('pulls_open', 0)
         autocut_issues_open = source.get('autocut_issues_open', 0)
-        
-        # Bonus points for clean state
-        if issues_open == 0:
-            readiness_score += 0.5
-        if pulls_open == 0:
-            readiness_score += 0.5
-        if autocut_issues_open == 0:
-            readiness_score += 0.5
         
         component = source.get('component')
         release_notes = source.get('release_notes')
@@ -341,16 +308,11 @@ def extract_release_results(opensearch_result: Dict[str, Any]) -> List[Dict[str,
             'autocut_issues_open': autocut_issues_open,
             
             # Calculated readiness metrics
-            'readiness_score': round(readiness_score, 1),
-            'readiness_checks_passed': readiness_checks,
-            'is_ready': readiness_score >= 4,  # Adjusted threshold for enhanced scoring
-            'readiness_percentage': round((readiness_score / 6.5) * 100, 1),  # Out of max possible score
-            
+            'readiness_score': round(readiness_score, 1),            
             # Quality indicators
             'has_open_issues': issues_open > 0,
             'has_open_pulls': pulls_open > 0,
             'has_autocut_issues': autocut_issues_open > 0,
-            'clean_state': issues_open == 0 and pulls_open == 0 and autocut_issues_open == 0
         })
     
     # Apply deduplication to avoid duplicate component entries

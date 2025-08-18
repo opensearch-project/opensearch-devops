@@ -75,7 +75,7 @@ class AgentErrorHandler:
             return "Your query is taking longer than expected. Please try a more specific question or try again later."
         
         # Handle EventStreamError from throttling
-        elif 'throttl' in str(error).lower():
+        elif 'throttl' or 'throttle' in str(error).lower():
             return "I'm currently experiencing high load. Please wait a moment and try again."
         
         else:

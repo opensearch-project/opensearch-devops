@@ -114,7 +114,7 @@ def lambda_handler(event: Dict[str, Any], context: Optional[object]) -> Dict[str
             # For slash commands and other non-JSON payloads, continue without body parsing
             body = None
     
-    # Handle URL verification challenge immediately
+    # Handle Slack URL verification challenge immediately
     if body and body.get('type') == 'url_verification':
         challenge = body.get('challenge')
         logger.info(f"URL verification challenge: {challenge}")
@@ -124,7 +124,7 @@ def lambda_handler(event: Dict[str, Any], context: Optional[object]) -> Dict[str
             'body': json.dumps({'challenge': challenge})
         }
     
-    # Handle Slack retries - acknowledge but don't process
+    # Handle Slack retries - acknowledge but don't process --> implemented as such to avoid potential duplicate response issues
     if event.get('headers') and event.get('headers').get('X-Slack-Retry-Num'):
         retry_count = int(event.get('headers').get('X-Slack-Retry-Num', '0'))
         retry_reason = event.get('headers').get('X-Slack-Retry-Reason', 'unknown')

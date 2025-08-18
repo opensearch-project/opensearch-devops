@@ -21,8 +21,7 @@ import json
 import logging
 import uuid
 from typing import Any, Dict
-
-# Test functions moved to tests/test_aws_connectivity.py
+import traceback
 from helper_functions import handle_component_resolution, handle_rc_build_mapping
 from metrics_handler import handle_metrics_query
 from response_builder import create_response
@@ -82,10 +81,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 logger.info(f"🚀 LAMBDA_HANDLER [{request_id}]: Processing param '{param_name}' = {value} (type: {type(value)})")
                 
                 # Handle different value types
-                if isinstance(value, list):
-                    # Already an array, keep as is
-                    pass
-                elif isinstance(value, str) and value.startswith('[') and value.endswith(']'):
+                if isinstance(value, str) and value.startswith('[') and value.endswith(']'):
                     # Handle array parameters that might be passed as JSON strings
                     try:
                         value = json.loads(value)
@@ -104,7 +100,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 params[param_name] = value
         
-        # Get agent_type from parameters - this should be passed by the supervisor agent
+        # Get agent_type from parameters if passed by the supervisor agent
         agent_type = params.get('agent_type')
         
         # If agent_type is not provided, infer it from the function name using exact mappings
@@ -123,12 +119,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             elif function_name in ['get_release_metrics']:
                 agent_type = 'release-metrics'
                 logger.info(f"Mapped function '{function_name}' to agent_type 'release-metrics'")
-            
-            # Handle deprecated/problematic functions
-            elif function_name in ['get_test_metrics', 'get_metrics']:
-                agent_type = 'integration-test'  # Default to integration test
-                logger.warning(f"Function '{function_name}' is deprecated/generic, mapping to 'integration-test'. Consider using 'get_integration_test_metrics' instead.")
-            
+
             # Default fallback
             else:
                 agent_type = 'integration-test'  # Default fallback
@@ -141,10 +132,6 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Route based on function name
         if function_name == 'test_basic':
             result = {'status': 'success', 'message': 'Enhanced Lambda function is working', 'agent_type': agent_type}
-        elif function_name == 'test_role_only':
-            result = {'status': 'success', 'message': 'Test functions moved to test suite'}
-        elif function_name == 'test_opensearch':
-            result = {'status': 'success', 'message': 'Test functions moved to test suite'}
         # Route to specific function handlers
         elif function_name in [
             # Integration Test Agent functions
@@ -184,6 +171,5 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
     except Exception as e:
         logger.error(f"🚀 LAMBDA_HANDLER [{request_id}]: Exception occurred: {e}")
-        import traceback
         logger.error(f"🚀 LAMBDA_HANDLER [{request_id}]: Stack trace: {traceback.format_exc()}")
         return create_response(event, {'error': str(e), 'type': 'lambda_error'})

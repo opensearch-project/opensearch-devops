@@ -59,23 +59,8 @@ class MessageFormatter:
             # Convert links [text](url) to Slack format <url|text>
             formatted = re.sub(config.patterns['link'], r'<\2|\1>', formatted)
             
-            # Convert strikethrough (~text~) - this stays the same in Slack
-            # No changes needed for strikethrough
-            
-            # Convert inline code (`code`) - this stays the same in Slack
-            # No changes needed for inline code
-            
-            # Convert code blocks (```code```) - this stays the same in Slack
-            # No changes needed for code blocks
-            
-            # Convert blockquotes (> text) - this stays the same in Slack
-            # No changes needed for blockquotes
-            
             # Convert bullet points (* item or - item) to consistent format
             formatted = re.sub(config.patterns['bullet'], r'• ', formatted, flags=re.MULTILINE)
-            
-            # Convert numbered lists (1. item) - keep as is since Slack supports this
-            # No changes needed for numbered lists
             
             # Note: @username mentions are handled by convert_at_symbols_to_slack_pings()
             # to avoid double conversion, we don't convert them here

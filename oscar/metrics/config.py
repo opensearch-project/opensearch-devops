@@ -58,19 +58,19 @@ class MetricsConfig:
         
         # Query configuration
         self.request_timeout = int(os.environ.get('REQUEST_TIMEOUT', 30))
-        self.max_results = int(os.environ.get('MAX_RESULTS', 50))
-        self.default_query_size = int(os.environ.get('OPENSEARCH_DEFAULT_QUERY_SIZE', 100))
+        self.max_results = int(os.environ.get('MAX_RESULTS', 1000))
+        self.default_query_size = int(os.environ.get('OPENSEARCH_DEFAULT_QUERY_SIZE', 500))
         self.large_query_size = int(os.environ.get('OPENSEARCH_LARGE_QUERY_SIZE', 1000))
-        self.opensearch_request_timeout = int(os.environ.get('OPENSEARCH_REQUEST_TIMEOUT', 30))
+        self.opensearch_request_timeout = int(os.environ.get('OPENSEARCH_REQUEST_TIMEOUT', 60))
         
         # Index names
         self.integration_test_index = os.environ.get(
             'OPENSEARCH_INTEGRATION_TEST_INDEX', 
-            'opensearch-integration-test-results'
+            'opensearch-integration-test-results-*'
         )
         self.build_results_index = os.environ.get(
             'OPENSEARCH_BUILD_RESULTS_INDEX', 
-            'opensearch-distribution-build-results'
+            'opensearch-distribution-build-results-*'
         )
         self.release_metrics_index = os.environ.get(
             'OPENSEARCH_RELEASE_METRICS_INDEX', 
@@ -119,6 +119,5 @@ class MetricsConfig:
 
 # Create a singleton instance with validation based on context
 # Allow disabling validation via environment variable for testing
-import os
 _disable_validation = os.environ.get('DISABLE_METRICS_CONFIG_VALIDATION', 'false').lower() == 'true'
 config = MetricsConfig(validate_required=not _disable_validation)

@@ -42,7 +42,7 @@ class ContextStorage:
             
             # Redact the original query for privacy/security reasons
             # The original query could contain sensitive info or reveal who made the request
-            redacted_query = "[Automated message - original request details redacted for privacy]"
+            redacted_query = "[Automated message sent from another channel - original request details redacted for the user's privacy]"
             
             # Create context for the sent message
             context = {

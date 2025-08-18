@@ -219,6 +219,9 @@ if aws lambda get-function --function-name $FUNCTION_NAME --region $AWS_REGION >
     aws lambda wait function-updated --function-name $FUNCTION_NAME --region $AWS_REGION
 
     # Create environment variables JSON file
+    # Escape the CHANNEL_MAPPINGS JSON for proper embedding
+    ESCAPED_CHANNEL_MAPPINGS=$(echo "$CHANNEL_MAPPINGS" | sed 's/"/\\"/g')
+    
     cat > $TEMP_DIR/env-vars.json << EOF
 {
     "Variables": {
@@ -234,7 +237,7 @@ if aws lambda get-function --function-name $FUNCTION_NAME --region $AWS_REGION >
         "CONTEXT_TTL": "${CONTEXT_TTL:-604800}",
         "MAX_CONTEXT_LENGTH": "${MAX_CONTEXT_LENGTH:-3000}",
         "CONTEXT_SUMMARY_LENGTH": "${CONTEXT_SUMMARY_LENGTH:-500}",
-        "AGENT_TIMEOUT": "${AGENT_TIMEOUT:-60}",
+        "AGENT_TIMEOUT": "${AGENT_TIMEOUT:-180}",
         "AGENT_MAX_RETRIES": "${AGENT_MAX_RETRIES:-2}",
         "CHANNEL_ALLOW_LIST": "$CHANNEL_ALLOW_LIST",
         "AUTHORIZED_MESSAGE_SENDERS": "$AUTHORIZED_MESSAGE_SENDERS",
@@ -250,7 +253,7 @@ if aws lambda get-function --function-name $FUNCTION_NAME --region $AWS_REGION >
         "SLACK_HANDLER_THREAD_NAME_PREFIX": "${SLACK_HANDLER_THREAD_NAME_PREFIX:-oscar-agent}",
         "BEDROCK_RESPONSE_MESSAGE_VERSION": "${BEDROCK_RESPONSE_MESSAGE_VERSION:-1.0}",
         "BEDROCK_ACTION_GROUP_NAME": "${BEDROCK_ACTION_GROUP_NAME:-communication-orchestration}",
-        "DEFAULT_VERSION": "${DEFAULT_VERSION:-3.2.0}",
+        "CHANNEL_MAPPINGS": "$ESCAPED_CHANNEL_MAPPINGS",
         "AGENT_QUERY_ANNOUNCE": "$AGENT_QUERY_ANNOUNCE",
         "AGENT_QUERY_ASSIGN_OWNER": "$AGENT_QUERY_ASSIGN_OWNER",
         "AGENT_QUERY_REQUEST_OWNER": "$AGENT_QUERY_REQUEST_OWNER",
@@ -262,10 +265,12 @@ if aws lambda get-function --function-name $FUNCTION_NAME --region $AWS_REGION >
 }
 EOF
 
-    # Update environment variables using JSON file
+    # Update environment variables, timeout, and memory using JSON file
     aws lambda update-function-configuration \
         --function-name $FUNCTION_NAME \
         --environment file://$TEMP_DIR/env-vars.json \
+        --timeout ${LAMBDA_TIMEOUT:-150} \
+        --memory-size ${LAMBDA_MEMORY_SIZE:-512} \
         --region $AWS_REGION >/dev/null
 
     echo "✅ Updated Lambda function code and configuration: $FUNCTION_NAME"
