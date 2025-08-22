@@ -1,0 +1,53 @@
+[
+  {
+    "name": "get_job_info",
+    "description": "Get detailed information about a Jenkins job including parameters and requirements. Use this to understand what parameters a job needs before executing it. Does not execute the job.",
+    "parameters": {
+      "job_name": {
+        "description": "Name of the Jenkins job to get information about (defaults to docker-scan)",
+        "type": "string",
+        "required": false
+      }
+    },
+    "requireConfirmation": "DISABLED"
+  },
+  {
+    "name": "list_jobs",
+    "description": "List all Jenkins jobs supported by this agent with their parameters and descriptions. Use when users ask 'what jobs are available?' or need to see all supported Jenkins operations.",
+    "parameters": {},
+    "requireConfirmation": "DISABLED"
+  },
+  {
+    "name": "trigger_job",
+    "description": "Execute any supported Jenkins job with specified parameters. CRITICAL: Only executes when confirmed=true. Use for job execution ONLY after user confirmation.",
+    "parameters": {
+      "job_name": {
+        "description": "Name of the Jenkins job to trigger (e.g., 'docker-scan', 'Pipeline central-release-promotion')",
+        "type": "string",
+        "required": true
+      },
+      "job_parameters": {
+        "description": "JSON object containing job-specific parameters. Each job has different required and optional parameters.",
+        "type": "string",
+        "required": false
+      },
+      "confirmed": {
+        "description": "REQUIRED: Must be 'true' to execute the job. Set to 'true' ONLY after user explicitly confirms job execution. Never set to 'true' without user confirmation. Accepts: 'true', 'false', true, false.",
+        "type": "string",
+        "required": true
+      },
+      "authorized": {
+        "description": "REQUIRED: Must be 'true' to execute the job. Set to 'true' ONLY after verifying user is in AUTHORIZED_MESSAGE_SENDERS list. Never set to 'true' without authorization check.",
+        "type": "string",
+        "required": true
+      }
+    },
+    "requireConfirmation": "DISABLED"
+  },
+  {
+    "name": "test_connection",
+    "description": "Test connection to Jenkins server. Use only when explicitly asked to test connectivity or troubleshoot connection issues.",
+    "parameters": {},
+    "requireConfirmation": "DISABLED"
+  }
+]
