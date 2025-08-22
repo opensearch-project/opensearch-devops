@@ -22,8 +22,8 @@ class ContextStorage:
     
     def __init__(self) -> None:
         """Initialize DynamoDB connection."""
-        self.dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
-        self.context_table_name = os.environ.get('CONTEXT_TABLE_NAME', 'oscar-agent-context')
+        self.dynamodb = boto3.resource('dynamodb', region_name=config.region)
+        self.context_table_name = config.context_table_name
         self.context_table = self.dynamodb.Table(self.context_table_name)
     
     def store_cross_channel_context(self, channel: str, message_ts: str, original_query: str, sent_message: str) -> None:

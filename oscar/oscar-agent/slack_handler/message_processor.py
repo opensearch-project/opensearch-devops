@@ -50,6 +50,37 @@ class MessageProcessor:
         query = re.sub(config.patterns['mention'], '', text).strip()
         return query
     
+    def add_user_context_to_query(self, query: str, user_id: str) -> str:
+        """Add user context to query for sensitive operations."""
+        return f"[USER_ID: {user_id}] {query}"
+    
+    def _handle_confirmation_detection(self, response: str, channel: str, thread_ts: str) -> str:
+        """Handle confirmation detection and warning reaction management.
+        
+        Args:
+            response: The agent's response text
+            channel: Slack channel ID
+            thread_ts: Thread timestamp (original user message)
+            
+        Returns:
+            Cleaned response with confirmation marker removed
+        """
+        if response and '[CONFIRMATION_REQUIRED]' in response:
+            # Remove the marker from the response
+            cleaned_response = response.replace('[CONFIRMATION_REQUIRED]', '').strip()
+            
+            # Add warning reaction to the original user message
+            self.reaction_manager.manage_reactions(
+                channel, 
+                thread_ts,  # This is the original user message timestamp
+                add_reaction="warning"
+            )
+            logger.info(f"Added warning reaction to original message {thread_ts} due to confirmation requirement")
+            
+            return cleaned_response
+        
+        return response
+    
     def process_message(self, channel: str, thread_ts: str, user_id: str, 
                        text: str, say: Callable, message_ts: str = None, 
                        slash_command: str = None, skip_context_storage: bool = False) -> None:
@@ -89,6 +120,9 @@ class MessageProcessor:
                 query = self.extract_query(text)
                 logger.info(f"Extracted query: {query}")
             
+            # ALWAYS add user context to query for agent to use as needed
+            query = self.add_user_context_to_query(query, user_id)
+            logger.info(f"Added user context to query: {query}")
             # Check for automated message sending requests (skip for slash commands as they're pre-authorized)
             if not slash_command and self.auth_manager.is_message_sending_request(query):
                 if not self.auth_manager.is_user_authorized_for_messaging(user_id):
@@ -117,6 +151,9 @@ class MessageProcessor:
             if response is None:
                 return
             
+            # Handle confirmation detection and warning reaction
+            response = self._handle_confirmation_detection(response, channel, thread_ts)
+            
             # Validate response - handle None, empty, or whitespace-only responses
             if response is None:
                 logger.warning(f"OSCAR agent returned None response for query: {query}")
@@ -132,8 +169,16 @@ class MessageProcessor:
             if not skip_context_storage:
                 self.context_manager.update_context(thread_key, query, response, session_id, new_session_id)
             
+            # Format response for Slack before sending
+            from .message_formatter import MessageFormatter
+            formatter = MessageFormatter()
+            formatted_response = formatter.format_markdown_to_slack_mrkdwn(response)
+            formatted_response = formatter.convert_at_symbols_to_slack_pings(formatted_response)
+            
+
+            
             # Send response
-            say(text=response, thread_ts=thread_ts)
+            say(text=formatted_response, thread_ts=thread_ts)
             logger.info(f"Successfully sent response to thread {thread_ts}")
             
             # Log performance
@@ -176,7 +221,13 @@ class MessageProcessor:
                 if error_message is None or error_message.strip() == "":
                     error_message = "An unexpected error occurred. Please try again."
                     
-                say(text=error_message, thread_ts=thread_ts)
+                # Format error message for Slack before sending
+                from .message_formatter import MessageFormatter
+                formatter = MessageFormatter()
+                formatted_error = formatter.format_markdown_to_slack_mrkdwn(error_message)
+                formatted_error = formatter.convert_at_symbols_to_slack_pings(formatted_error)
+                
+                say(text=formatted_error, thread_ts=thread_ts)
             except Exception as say_error:
                 logger.error(f"Error sending error message: {say_error}", exc_info=True)
                 # Last resort - try to send a basic message

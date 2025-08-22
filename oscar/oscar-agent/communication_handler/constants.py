@@ -18,4 +18,4 @@ from config import config
 # Load configuration from environment variables
 CHANNEL_ALLOW_LIST = config.channel_allow_list
 CONTEXT_TTL = config.context_ttl
-MESSAGE_TEMPLATES = config.message_templates
+# MESSAGE_TEMPLATES = config.message_templates  # TODO: Add message_templates to config if needed

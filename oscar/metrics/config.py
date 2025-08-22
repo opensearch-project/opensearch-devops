@@ -16,10 +16,13 @@ Classes:
     MetricsConfig: Main configuration class with validation and environment variable handling
 """
 
-import logging
-import os
 from typing import Optional
-
+import os
+import boto3
+import logging
+from typing import Dict, Any, Optional
+from dotenv import load_dotenv
+from io import StringIO
 logger = logging.getLogger(__name__)
 
 
@@ -39,6 +42,7 @@ class MetricsConfig:
         Raises:
             ValueError: If required environment variables are missing
         """
+        self._load_env_from_secrets()
         # AWS region
         self.region = os.environ.get('AWS_REGION', 'us-east-1')
         
@@ -91,7 +95,31 @@ class MetricsConfig:
                 raise ValueError("OPENSEARCH_HOST environment variable is required")
         
         logger.info(f"Initialized MetricsConfig - Region: {self.region}, Mock Mode: {self.mock_mode}")
-    
+
+    def _load_env_from_secrets(self) -> None:
+        """Load environment variables from AWS Secrets Manager."""
+        try:
+            session = boto3.session.Session()
+            client = session.client(
+                service_name='secretsmanager',
+                region_name=os.getenv('AWS_REGION', 'us-east-1')
+            )
+            
+            # Get the .env content from secrets manager
+            response = client.get_secret_value(SecretId='oscar-central-env')
+            env_content = response['SecretString']
+            
+            # Load the .env content into environment variables
+            config_stream = StringIO(env_content)
+            load_dotenv(stream=config_stream, override=True)
+            
+            logger.info("Successfully loaded environment variables from AWS Secrets Manager")
+            
+        except Exception as e:
+            logger.error(f"Error loading environment from secrets manager: {e}")
+            logger.warning("Falling back to local environment variables")
+            # Continue with local environment variables if secrets manager fails
+            
     def get_opensearch_host_clean(self) -> str:
         """Get OpenSearch host with https:// prefix removed.
         

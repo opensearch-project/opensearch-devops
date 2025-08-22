@@ -14,8 +14,8 @@ import json
 import logging
 from typing import Any, Dict
 
-from communication_handler.message_handler import MessageHandler
-from communication_handler.response_builder import ResponseBuilder
+from message_handler import MessageHandler
+from response_builder import ResponseBuilder
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Message formatting utilities for Communication Handler.
+Message formatting utilities for Slack Handler.
 """
 
 import logging
@@ -27,9 +27,7 @@ class MessageFormatter:
         Returns:
             Message with Slack ping format
         """
-        logger.debug(f"Converting @ symbols to Slack pings (length: {len(message)})")
-        result = re.sub(config.patterns['at_symbol'], r'<@\1>', message)
-        return result
+        return re.sub(config.patterns['at_symbol'], r'<@\1>', message)
     
     @staticmethod
     def format_markdown_to_slack_mrkdwn(message: str) -> str:
@@ -49,7 +47,7 @@ class MessageFormatter:
             Message formatted for Slack's mrkdwn syntax
         """
         try:
-            logger.debug(f"Converting markdown to Slack mrkdwn (length: {len(message)})")
+            logger.info(f"Converting markdown to Slack mrkdwn (length: {len(message)})")
             
             # Start with the original message
             formatted = message
@@ -84,7 +82,7 @@ class MessageFormatter:
             # Remove any double underscores that might have been created  
             formatted = re.sub(r'__+', r'_', formatted)
             
-            logger.debug(f"Markdown conversion completed (original: {len(message)}, final: {len(formatted)})")
+            logger.info(f"Markdown conversion completed (original: {len(message)}, final: {len(formatted)})")
             
             return formatted
             

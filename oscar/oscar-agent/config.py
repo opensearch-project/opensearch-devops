@@ -20,6 +20,9 @@ import logging
 import os
 from typing import Optional, Tuple
 import json
+import boto3
+from dotenv import load_dotenv
+from io import StringIO
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +43,9 @@ class Config:
         Raises:
             ValueError: If required environment variables are missing
         """
+        # Load environment variables from AWS Secrets Manager
+        self._load_env_from_secrets()
+        
         # AWS region
         self.region = os.environ.get('AWS_REGION', 'us-east-1')
         
@@ -168,6 +174,30 @@ class Config:
         self.oscar_build_agent_alias_id = os.environ.get('OSCAR_BUILD_AGENT_ALIAS_ID')
         self.oscar_test_agent_id = os.environ.get('OSCAR_TEST_AGENT_ID')
         self.oscar_test_agent_alias_id = os.environ.get('OSCAR_TEST_AGENT_ALIAS_ID')
+
+    def _load_env_from_secrets(self) -> None:
+        """Load environment variables from AWS Secrets Manager."""
+        try:
+            session = boto3.session.Session()
+            client = session.client(
+                service_name='secretsmanager',
+                region_name=os.getenv('AWS_REGION', 'us-east-1')
+            )
+            
+            # Get the .env content from secrets manager
+            response = client.get_secret_value(SecretId='oscar-central-env')
+            env_content = response['SecretString']
+            
+            # Load the .env content into environment variables
+            config_stream = StringIO(env_content)
+            load_dotenv(stream=config_stream, override=True)
+            
+            logger.info("Successfully loaded environment variables from AWS Secrets Manager")
+            
+        except Exception as e:
+            logger.error(f"Error loading environment from secrets manager: {e}")
+            logger.warning("Falling back to local environment variables")
+            # Continue with local environment variables if secrets manager fails
     
     def get_slack_credentials(self) -> Tuple[Optional[str], Optional[str]]:
         """

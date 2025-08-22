@@ -9,11 +9,11 @@ Message handling for Communication Handler.
 import logging
 from typing import Any, Dict
 
-from communication_handler.channel_utils import ChannelUtils
-from communication_handler.context_storage import ContextStorage
-from communication_handler.message_formatter import MessageFormatter
-from communication_handler.response_builder import ResponseBuilder
-from communication_handler.slack_client import SlackClientManager
+from channel_utils import ChannelUtils
+from context_storage import ContextStorage
+from message_formatter import MessageFormatter
+from response_builder import ResponseBuilder
+from slack_client import SlackClientManager
 
 logger = logging.getLogger(__name__)
 
@@ -45,12 +45,13 @@ class MessageHandler:
             target_channel = params.get('target_channel', '')
             
             logger.info(f"Processing message request: query='{query}', channel='{target_channel}'")
-            logger.info(f"Message content provided: {bool(message_content)}")
+            logger.debug(f"Message content length: {len(message_content) if message_content else 0}")
             
             # Use provided message content (agent should provide complete message)
             if message_content:
-                # Convert @username to <@username> for Slack pings
-                processed_message = self.message_formatter.convert_at_symbols_to_slack_pings(message_content)
+                # Message formatting is now handled automatically in SlackClient.send_message()
+                processed_message = message_content
+                logger.debug(f"Using provided message content (length: {len(processed_message)})")
             else:
                 logger.error("No message content provided - agent should fill template with metrics")
                 return self.response_builder.create_error_response(
@@ -76,6 +77,7 @@ class MessageHandler:
                 )
             
             # Send message to Slack
+            logger.debug(f"Sending message to channel '{target_channel}' (length: {len(processed_message)})")
             result = self.slack_client.send_message(target_channel, processed_message)
             
             if result.get('success'):
@@ -88,7 +90,7 @@ class MessageHandler:
                         processed_message
                     )
                 
-                logger.info(f"Message sending completed successfully: {result}")
+                logger.info(f"Message sent successfully to channel {target_channel}")
                 return self.response_builder.create_success_response(
                     'send_automated_message',
                     f"✅ Message sent successfully to channel {target_channel}"
@@ -102,7 +104,6 @@ class MessageHandler:
                 
         except Exception as e:
             logger.error(f"Error in handle_send_message: {e}", exc_info=True)
-            logger.error(f"Query was: '{query}'")
             return self.response_builder.create_error_response(
                 'send_automated_message',
                 f'Error processing message: {str(e)}'
