@@ -129,23 +129,6 @@ CONTEXT_TABLE_NAME=oscar-conversation-context
 7. **Response Processing**: Format and deliver response
 8. **Context Storage**: Persist conversation state
 
-## Deployment
-
-### Supervisor Agent
-```bash
-./lambda_update_scripts/update_slack_agent.sh
-```
-
-### Communication Handler
-```bash
-./lambda_update_scripts/update_communication_handler.sh
-```
-
-### Full System
-```bash
-./deployment_scripts/deploy_all.sh
-```
-
 ## Development
 
 ### Adding New Functions

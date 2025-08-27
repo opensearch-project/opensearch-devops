@@ -122,25 +122,13 @@ DEFAULT_TIME_RANGE=30d
 - **Build Metrics Agent**: Specializes in build and component data
 - **Release Metrics Agent**: Handles release readiness assessment
 
-## Deployment
-
-### Metrics Lambda Function
-```bash
-./lambda_update_scripts/update_metrics.sh
-```
-
-### Full System Deployment
-```bash
-./deployment_scripts/deploy_all.sh
-```
-
 ## Development
 
 ### Adding New Metrics
 1. Extend appropriate handler in `metrics_handler.py`
 2. Add query logic in `query_builders.py`
 3. Update agent function mappings in `lambda_function.py`
-4. Deploy updated Lambda function
+4. Update Lambda function with new metrics
 
 ### Agent Configuration
 - Update agent instructions in Bedrock console
