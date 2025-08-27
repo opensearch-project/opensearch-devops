@@ -28,11 +28,6 @@ jenkins/
 ├── job_definitions.py          # Job registry and validation
 ├── config.py                   # Configuration management
 ├── requirements.txt            # Python dependencies
-├── deployment/                 # Deployment scripts and configs
-│   ├── update_lambda.sh       # Lambda deployment script
-│   └── deploy.sh              # Full deployment script
-└── schemas/
-    └── jenkins_action_group.json  # Bedrock action group schema
 ```
 
 ## Available Functions
@@ -44,7 +39,7 @@ jenkins/
 | `list_jobs` | List available jobs | None | "what jobs are available?" |
 | `test_connection` | Jenkins connectivity check | None | "is Jenkins working?" |
 
-## Supported Jobs
+## Currently Supported Jobs
 
 ### docker-scan
 - **Purpose**: Triggers Docker security scan
@@ -60,15 +55,17 @@ jenkins/
 
 ## Security Model
 
-### User Authorization
-- Uses `AUTHORIZED_MESSAGE_SENDERS` allowlist from environment variables
-- All queries include user context: `[USER_ID: <user_id>]`
-- Supervisor agent validates permissions before job execution
+### Dual-Agent Authorization
+- **Privileged Agent**: Full Jenkins access for users in `FULLY_AUTHORIZED_USERS`
+- **Limited Agent**: No access for all other users
+- **Supervisor Layer**: Automatically routes users to appropriate agent
+- **User Context**: All operations include `[USER_ID: <user_id>]` for audit trails
 
 ### Mandatory Confirmation Workflow
 1. **Information Phase**: Agent calls `get_job_info` to show job details
 2. **Confirmation Phase**: User must explicitly confirm with "yes"
 3. **Execution Phase**: Agent calls `trigger_job` with `confirmed=true`
+4. **Authorization Check**: Only privileged users can execute jobs
 
 ## Usage Examples
 
@@ -104,32 +101,7 @@ AWS_REGION=us-east-1
 JENKINS_LAMBDA_FUNCTION_NAME=oscar-jenkins-agent
 ```
 
-## Deployment
-
-### Jenkins Lambda Function
-```bash
-./deployment/update_lambda.sh
-```
-
-### Full System Deployment
-```bash
-./deployment/deploy.sh
-```
-
 ## Testing
-
-### Direct Lambda Testing
-```bash
-# Test job info retrieval
-aws lambda invoke --function-name oscar-jenkins-agent \
-  --payload '{"function":"get_job_info","parameters":[{"name":"job_name","value":"docker-scan"}]}' \
-  response.json
-
-# Test job execution (with confirmation)
-aws lambda invoke --function-name oscar-jenkins-agent \
-  --payload '{"function":"trigger_job","parameters":[{"name":"job_name","value":"docker-scan"},{"name":"IMAGE_FULL_NAME","value":"alpine:3.19"},{"name":"confirmed","value":"true"}]}' \
-  response.json
-```
 
 ### End-to-End Testing
 1. Send message in Slack: "Run docker scan on alpine:3.19"
@@ -141,8 +113,9 @@ aws lambda invoke --function-name oscar-jenkins-agent \
 ### Common Issues
 
 **"Access denied" errors**
-- Check user is in `AUTHORIZED_MESSAGE_SENDERS`
-- Verify supervisor agent has user-authentication action group
+- Check user is in `FULLY_AUTHORIZED_USERS` for job execution
+- Verify supervisor agent routes to correct privileged/limited agent
+- Limited agent users can only view job information
 
 **"Confirmation parameter" errors**
 - Ensure agent follows two-phase workflow (get_job_info → trigger_job)
@@ -152,24 +125,15 @@ aws lambda invoke --function-name oscar-jenkins-agent \
 - Verify `JENKINS_API_TOKEN` format is `username:token`
 - Check Jenkins credentials are valid
 
-### Log Monitoring
-```bash
-# Jenkins Lambda logs
-aws logs tail /aws/lambda/oscar-jenkins-agent --follow
-
-# Supervisor Agent logs  
-aws logs tail /aws/lambda/oscar-supervisor-agent --follow
-```
-
 ## Development
 
 ### Adding New Jobs
 1. Create job class in `job_definitions.py` extending `BaseJobDefinition`
 2. Register job in `job_registry`
-3. Deploy updated Lambda function
+3. Update Lambda function with new job definition
 
 ### Modifying Security Rules
-- Update `AUTHORIZED_MESSAGE_SENDERS` in environment configuration
+- Update `FULLY_AUTHORIZED_USERS` in environment configuration
 - Modify confirmation logic in `lambda_function.py` if needed
 
 The Jenkins integration provides secure, user-friendly Jenkins job execution through conversational AI while maintaining proper authorization and audit trails.

@@ -63,44 +63,30 @@ OSCAR/
 │   ├── stacks/                  # CDK stack definitions
 │   └── lambda/                  # Lambda function configurations
 ├── tests/                    # Comprehensive test suite
-├── deployment_scripts/       # Full deployment automation
-└── lambda_update_scripts/    # Code-only updates
+├── deployment_scripts/       # Infrastructure deployment
+└── lambda_update_scripts/    # Development utilities
 ```
 
-## Quick Start
+## Configuration
 
 ### Prerequisites
 - AWS CLI configured with appropriate permissions
 - Python 3.12+
 - Slack app with bot token and signing secret
 
-### Initial Setup
+### Environment Setup
 ```bash
-# 1. Clone and configure
+# Clone and configure
 git clone <repository>
 cd OSCAR
 cp .env.example .env
 # Edit .env with your AWS and Slack credentials
-
-# 2. Deploy infrastructure
-./deployment_scripts/deploy_all.sh
-
-# 3. Configure Slack app
-# - Set Request URL to your API Gateway endpoint
-# - Subscribe to bot events (message.channels, app_mention)
-# - Install app to workspace
 ```
 
-### Development Workflow
-```bash
-# Update code without changing infrastructure
-./lambda_update_scripts/update_all.sh
-
-# Deploy specific components
-./lambda_update_scripts/update_slack_agent.sh
-./lambda_update_scripts/update_jenkins.sh
-./lambda_update_scripts/update_metrics.sh
-```
+### Slack App Configuration
+- Set Request URL to your API Gateway endpoint
+- Subscribe to bot events (message.channels, app_mention)
+- Install app to workspace
 
 ## Key Components
 
@@ -154,26 +140,9 @@ python -m pytest test_metrics.py
 
 ## Contributing
 
-1. **Development**: Use `lambda_update_scripts/` for rapid iteration
-2. **Testing**: Run full test suite before deployment
+1. **Development**: Modify code and test locally
+2. **Testing**: Run full test suite before changes
 3. **Documentation**: Update relevant READMEs for changes
 4. **Security**: Follow principle of least privilege
-
-## Deployment Options
-
-### Full Deployment (New Environment)
-- Complete infrastructure setup
-- All permissions and dependencies
-- Use `deployment_scripts/deploy_all.sh`
-
-### Code Updates (Existing Environment)
-- Preserves existing configurations
-- Faster deployment for development
-- Use `lambda_update_scripts/update_all.sh`
-
-### Infrastructure Changes
-- Use CDK for infrastructure modifications
-- Deploy through `cdk/` directory
-- Includes DynamoDB, IAM roles, API Gateway
 
 OSCAR transforms complex operations into simple conversations, making powerful automation accessible to every team member.
