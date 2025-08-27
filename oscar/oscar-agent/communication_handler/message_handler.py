@@ -7,16 +7,14 @@ Message handling for Communication Handler.
 """
 
 import logging
+logger = logging.getLogger(__name__)
 from typing import Any, Dict
 
 from channel_utils import ChannelUtils
-from context_storage import ContextStorage
+from context_storage import get_storage
 from message_formatter import MessageFormatter
 from response_builder import ResponseBuilder
 from slack_client import SlackClientManager
-
-logger = logging.getLogger(__name__)
-
 
 class MessageHandler:
     """Handles message sending and formatting operations."""
@@ -24,7 +22,11 @@ class MessageHandler:
     def __init__(self) -> None:
         """Initialize message handler components."""
         self.slack_client = SlackClientManager()
-        self.context_storage = ContextStorage()
+        try:
+            self.storage = get_storage()
+        except Exception as e:
+            logger.error(f"Failed to create storage instance: {e}")
+            self.storage = None
         self.channel_utils = ChannelUtils()
         self.message_formatter = MessageFormatter()
         self.response_builder = ResponseBuilder()
@@ -82,13 +84,16 @@ class MessageHandler:
             
             if result.get('success'):
                 # Store context for the sent message to enable follow-up conversations
-                if result.get('message_ts'):
-                    self.context_storage.store_cross_channel_context(
-                        target_channel, 
-                        result.get('message_ts'), 
-                        query, 
-                        processed_message
-                    )
+                if result.get('message_ts') and self.storage:
+                    try:
+                        self.storage.store_cross_channel_context(
+                            target_channel, 
+                            result.get('message_ts'), 
+                            query, 
+                            processed_message
+                        )
+                    except Exception as e:
+                        logger.error(f"Failed to store cross-channel context: {e}")
                 
                 logger.info(f"Message sent successfully to channel {target_channel}")
                 return self.response_builder.create_success_response(

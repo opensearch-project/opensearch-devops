@@ -35,10 +35,14 @@ class AgentErrorHandler:
             error_code = error.response['Error']['Code']
             error_message = error.response['Error']['Message'].lower()
             
-            # Check for session-related errors
-            if error_code in ['ValidationException', 'BadRequestException']:
-                if any(keyword in error_message for keyword in ['session', 'expired', 'invalid']):
-                    return True
+            # Check for session-related errors using match-case
+            match error_code:
+                case 'ValidationException' | 'BadRequestException':
+                    session_keywords = ['session', 'expired', 'invalid']
+                    if any(keyword in error_message for keyword in session_keywords):
+                        return True
+                case _:
+                    pass
         
         # Check error message for session-related keywords
         error_str = str(error).lower()
@@ -60,24 +64,28 @@ class AgentErrorHandler:
         if isinstance(error, ClientError):
             error_code = error.response['Error']['Code']
             
-            if error_code == 'AccessDeniedException':
-                return "I don't have permission to access that information. Please contact your administrator."
-            elif error_code == 'ThrottlingException' or error_code == 'throttlingException':
+            match error_code:
+                case 'AccessDeniedException':
+                    return "I don't have permission to access that information. Please contact your administrator."
+                case 'ThrottlingException' | 'throttlingException':
+                    return "I'm currently experiencing high load. Please wait a moment and try again."
+                case 'ValidationException':
+                    return "There was an issue with your query format. Please try rephrasing your question."
+                case 'ResourceNotFoundException':
+                    return "The agent or knowledge base is not available. Please contact your administrator."
+                case 'ServiceUnavailableException' | 'InternalServerException':
+                    return "The service is temporarily unavailable. Please try again in a few minutes."
+                case _:
+                    # Fall through to general error handling
+                    pass
+        
+        # Handle other error types
+        match error:
+            case TimeoutError():
+                return "Your query is taking longer than expected. Please try a more specific question or try again later."
+            case _ if 'throttl' in str(error).lower():
                 return "I'm currently experiencing high load. Please wait a moment and try again."
-            elif error_code == 'ValidationException':
-                return "There was an issue with your query format. Please try rephrasing your question."
-            elif error_code == 'ResourceNotFoundException':
-                return "The agent or knowledge base is not available. Please contact your administrator."
-            elif error_code in ['ServiceUnavailableException', 'InternalServerException']:
-                return "The service is temporarily unavailable. Please try again in a few minutes."
-        
-        elif isinstance(error, TimeoutError):
-            return "Your query is taking longer than expected. Please try a more specific question or try again later."
-        
-        # Handle EventStreamError from throttling
-        elif 'throttl' or 'throttle' in str(error).lower():
-            return "I'm currently experiencing high load. Please wait a moment and try again."
-        
-        else:
-            logger.error(f"Unexpected agent error: {error}", exc_info=True)
-            return "I encountered an unexpected error. Please try again or contact support if this continues."
+            case _:
+                # Default case for unexpected errors
+                logger.error("Unexpected agent error: %s", error, exc_info=True)
+                return "I encountered an unexpected error. Please try again or contact support if this continues."

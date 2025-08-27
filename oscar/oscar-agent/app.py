@@ -32,10 +32,12 @@ import slack_bolt
 from config import config
 from bedrock import get_oscar_agent
 from slack_handler import SlackHandler
-from storage import get_storage
+from context_storage import get_storage
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+
 
 # Initialize Slack app with process_before_response=True for immediate ack
 app = App(
@@ -84,143 +86,7 @@ def process_slack_event(event: Dict[str, Any], context: Optional[object]) -> Dic
             'body': json.dumps({'error': str(e)})
         }
 
-def handle_authentication_action_group(event: Dict[str, Any], context: Optional[object]) -> Dict[str, Any]:
-    """
-    Handle Bedrock authentication action group events.
-    
-    Args:
-        event: Bedrock action group event
-        context: Lambda context object
-        
-    Returns:
-        Bedrock action group response
-    """
-    try:
-        logger.info("🔐 AUTH: Processing authentication action group event")
-        logger.info(f"🔐 AUTH: Event: {json.dumps(event, indent=2)}")
-        
-        # Extract function and parameters from event
-        function_name = event.get('function', '')
-        parameters = event.get('parameters', [])
-        
-        # Convert parameters list to dictionary
-        params = {}
-        for param in parameters:
-            if isinstance(param, dict) and 'name' in param and 'value' in param:
-                params[param['name']] = param['value']
-        
-        logger.info(f"🔐 AUTH: Function: {function_name}, Params: {params}")
-        
-        # Route to appropriate handler
-        if function_name == 'check_user_authorization':
-            result = handle_user_authorization_check(params)
-        else:
-            result = {
-                'status': 'error',
-                'message': f'Unknown authentication function: {function_name}',
-                'available_functions': ['check_user_authorization']
-            }
-        
-        return create_bedrock_response(event, result)
-        
-    except Exception as e:
-        logger.error(f"🔐 AUTH: Error in authentication handler: {e}", exc_info=True)
-        return create_bedrock_response(event, {
-            'status': 'error',
-            'message': 'Internal authentication error',
-            'error': str(e)
-        })
 
-def handle_user_authorization_check(params: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Check if a user is authorized for sensitive operations.
-    
-    Args:
-        params: Parameters including user_id
-        
-    Returns:
-        Authorization result
-    """
-    user_id = params.get('user_id')
-    
-    if not user_id:
-        logger.warning("🔐 AUTH: No user_id provided")
-        return {
-            'status': 'error',
-            'authorized': False,
-            'message': 'User ID is required for authorization check',
-            'user_id': None
-        }
-    
-    # Load authorized users from environment
-    authorized_senders_str = os.getenv('AUTHORIZED_MESSAGE_SENDERS', '')
-    if not authorized_senders_str:
-        logger.warning("🔐 AUTH: No AUTHORIZED_MESSAGE_SENDERS configured")
-        return {
-            'status': 'error',
-            'authorized': False,
-            'message': 'Authorization system not configured',
-            'user_id': user_id
-        }
-    
-    # Parse authorized users
-    authorized_senders = {user.strip() for user in authorized_senders_str.split(',') if user.strip()}
-    
-    # Check authorization
-    is_authorized = user_id in authorized_senders
-    
-    logger.info(f"🔐 AUTH: User {user_id} authorization check: {is_authorized}")
-    
-    if is_authorized:
-        return {
-            'status': 'success',
-            'authorized': True,
-            'message': f'User {user_id} is authorized for sensitive operations',
-            'user_id': user_id
-        }
-    else:
-        return {
-            'status': 'success',
-            'authorized': False,
-            'message': f'User {user_id} is not authorized for sensitive operations',
-            'user_id': user_id
-        }
-
-def create_bedrock_response(event: Dict[str, Any], result: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Create a standardized Bedrock action group response.
-    
-    Args:
-        event: Original Bedrock event
-        result: Result dictionary to return
-        
-    Returns:
-        Properly formatted Bedrock action group response
-    """
-    action_group = event.get('actionGroup', 'user-authentication')
-    function = event.get('function', 'unknown')
-    
-    # Serialize result to JSON string as required by Bedrock
-    response_body_string = json.dumps(result, default=str)
-    
-    # Create the proper Bedrock action group response format
-    bedrock_response = {
-        "messageVersion": "1.0",
-        "response": {
-            "actionGroup": action_group,
-            "function": function,
-            "functionResponse": {
-                "responseBody": {
-                    "TEXT": {
-                        "body": response_body_string
-                    }
-                }
-            }
-        }
-    }
-    
-    logger.info(f"🔐 AUTH: Created Bedrock response for {function}")
-    return bedrock_response
 
 def lambda_handler(event: Dict[str, Any], context: Optional[object]) -> Dict[str, Any]:
     """
@@ -237,10 +103,7 @@ def lambda_handler(event: Dict[str, Any], context: Optional[object]) -> Dict[str
     """
     logger.info("Received event for OSCAR agent processing")
     
-    # Check if this is a Bedrock action group event
-    if event.get('actionGroup') == 'user-authentication':
-        logger.info("Processing Bedrock authentication action group event")
-        return handle_authentication_action_group(event, context)
+
     
     # Check if this is an async processing event
     if event.get('detail_type') == 'process_slack_event':

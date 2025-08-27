@@ -9,8 +9,7 @@ Event handlers for Slack Handler.
 import logging
 from typing import Any, Callable, Dict
 
-from slack_handler.constants import CHANNEL_ALLOW_LIST
-from slack_handler.authorization import AuthorizationManager
+from config import config
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,6 @@ class EventHandlers:
             message_processor: MessageProcessor instance
         """
         self.message_processor = message_processor
-        self.auth_manager = AuthorizationManager()
     
     def handle_app_mention(self, event: Dict[str, Any], say: Callable) -> None:
         """Handle app_mention events.
@@ -36,7 +34,7 @@ class EventHandlers:
         """
         # Extract message details
         channel = event.get("channel")
-        if channel not in CHANNEL_ALLOW_LIST:
+        if channel not in config.channel_allow_list:
             logger.info(f"Channel {channel} not in allow list, ignoring event")
             return
         thread_ts = event.get("thread_ts") or event.get("ts")
@@ -69,9 +67,8 @@ class EventHandlers:
         event_ts = message.get("ts")  # Use ts for the specific message
         
         # Check if user is authorized for DM access
-        if not self.auth_manager.is_user_authorized_for_messaging(user_id):
-            logger.warning(f"Unauthorized DM attempt by user {user_id}")
-            say(text="❌ You are not authorized to use OSCAR via direct messages.")
+        if user_id not in config.fully_authorized_users and user_id not in config.dm_authorized_users:
+            logger.warning(f"Unauthorized DM attempt by user {user_id}") #we do not send a message to the user if unauthorized to minimize overhead
             return
         
         logger.info(f"Processing DM message event: channel={channel}, ts={event_ts}, thread_ts={thread_ts}")

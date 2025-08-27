@@ -35,20 +35,27 @@ class BedrockAgentCore:
         self.region = region or config.region
         self.client = boto3.client('bedrock-agent-runtime', region_name=self.region)
         
-        # Primary supervisor agent configuration
-        self.agent_id = config.oscar_bedrock_agent_id
-        self.agent_alias_id = config.oscar_bedrock_agent_alias_id
+        # Privileged supervisor agent configuration (current full-featured agent)
+        self.privileged_agent_id = config.oscar_privileged_bedrock_agent_id
+        self.privileged_agent_alias_id = config.oscar_privileged_bedrock_agent_alias_id
+        
+        # Limited supervisor agent configuration (restricted capabilities)
+        self.limited_agent_id = config.oscar_limited_bedrock_agent_id
+        self.limited_agent_alias_id = config.oscar_limited_bedrock_agent_alias_id
         
         # Timeout and retry settings
         self.timeout = config.agent_timeout
         self.max_retries = config.agent_max_retries
         
         logger.info(
-            f"Initialized BedrockAgentCore - ID: {self.agent_id}, "
-            f"Alias: {self.agent_alias_id}, Region: {self.region}"
+            f"Initialized BedrockAgentCore - Privileged ID: {self.privileged_agent_id}, "
+            f"Privileged Alias: {self.privileged_agent_alias_id}, "
+            f"Limited ID: {self.limited_agent_id}, "
+            f"Limited Alias: {self.limited_agent_alias_id}, "
+            f"Region: {self.region}"
         )
     
-    def create_agent_request(self, query: str, session_id: Optional[str] = None) -> Dict[str, Any]:
+    def create_agent_request(self, query: str, privilege: bool, session_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Create a request for the Bedrock agent.
         
@@ -59,21 +66,27 @@ class BedrockAgentCore:
         Returns:
             A dictionary containing the request parameters
         """
+        agent_id = self.limited_agent_id
+        alias_id = self.limited_agent_alias_id
+        if privilege:
+            agent_id = self.privileged_agent_id
+            alias_id = self.privileged_agent_alias_id
         request = {
-            'agentId': self.agent_id,
-            'agentAliasId': self.agent_alias_id,
+            'agentId': agent_id,
+            'agentAliasId': alias_id,
             'inputText': query,
             'sessionId': session_id or f"session-{int(time.time())}"  # Generate session ID if None
         }
         
         return request
     
-    def invoke_agent(self, query: str, session_id: Optional[str] = None) -> Tuple[str, Optional[str]]:
+    def invoke_agent(self, query: str, privilege: bool, session_id: Optional[str] = None) -> Tuple[str, Optional[str]]:
         """
         Invoke the Bedrock agent with the given query.
         
         Args:
             query: The user's query
+            privilege: Whether to use privileged or limited agent
             session_id: Optional session ID for maintaining conversation context
             
         Returns:
@@ -82,7 +95,7 @@ class BedrockAgentCore:
         Raises:
             Exception: If the agent invocation fails after all retries
         """
-        request = self.create_agent_request(query, session_id)
+        request = self.create_agent_request(query, privilege, session_id)
         logger.info(f"Invoking agent with request: {json.dumps({k: v for k, v in request.items() if k != 'inputText'}, indent=2)}")
         logger.info(f"Query: {query[:config.log_query_preview_length]}...")
         

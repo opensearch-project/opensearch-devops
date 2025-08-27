@@ -119,7 +119,8 @@ class MetricsConfig:
             logger.error(f"Error loading environment from secrets manager: {e}")
             logger.warning("Falling back to local environment variables")
             # Continue with local environment variables if secrets manager fails
-            
+    
+        
     def get_opensearch_host_clean(self) -> str:
         """Get OpenSearch host with https:// prefix removed.
         
@@ -145,7 +146,11 @@ class MetricsConfig:
         return f"{self.build_results_index}-*"
 
 
-# Create a singleton instance with validation based on context
-# Allow disabling validation via environment variable for testing
-_disable_validation = os.environ.get('DISABLE_METRICS_CONFIG_VALIDATION', 'false').lower() == 'true'
-config = MetricsConfig(validate_required=not _disable_validation)
+class _ConfigProxy:
+    """Proxy that loads fresh config on every attribute access."""
+    def __getattr__(self, name):
+        fresh_config = MetricsConfig(validate_required=False)
+        return getattr(fresh_config, name)
+
+# Global configuration proxy
+config = _ConfigProxy()

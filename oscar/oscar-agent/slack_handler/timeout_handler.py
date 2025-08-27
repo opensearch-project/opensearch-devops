@@ -30,7 +30,7 @@ class TimeoutHandler:
         self.active_queries = {}
         self.monitor_lock = threading.Lock()
     
-    def query_agent_with_timeout(self, oscar_agent, query: str, session_id: str, context_summary: str, 
+    def query_agent_with_timeout(self, oscar_agent, query: str, privilege: bool, session_id: str, context_summary: str, 
                                 channel: str, reaction_ts: str, start_time: float,
                                 say: Callable, thread_ts: str, user_id: str) -> Tuple[Optional[str], Optional[str]]:
         """Query the agent with timeout monitoring using simple threading with limits.
@@ -80,7 +80,7 @@ class TimeoutHandler:
                 
                 # Query the agent
                 response, new_session_id = oscar_agent.query(
-                    query, session_id=session_id, context_summary=context_summary
+                    query, privilege, session_id=session_id, context_summary=context_summary
                 )
                 result_queue.put(("success", response, new_session_id))
             except Exception as e:

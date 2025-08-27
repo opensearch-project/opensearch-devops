@@ -32,6 +32,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         Response for the Bedrock agent
     """
     try:
+
+        
         logger.info(f"Received event: {json.dumps(event, indent=2)}")
         
         # Extract parameters from the event

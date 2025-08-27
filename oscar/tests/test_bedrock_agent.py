@@ -36,8 +36,8 @@ class TestBedrockAgent:
                 # Directory exists, try individual modules
                 try:
                     sys.path.append(bedrock_path)
-                    import enhanced_agent
-                    assert enhanced_agent is not None
+                    import main_agent
+                    assert main_agent is not None
                 except ImportError:
                     pytest.skip("Bedrock modules not available for testing")
             else:

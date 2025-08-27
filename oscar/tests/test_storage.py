@@ -26,7 +26,7 @@ class TestStorage:
     def test_storage_interface_exists(self):
         """Test that storage interface exists."""
         try:
-            from storage import StorageInterface
+            from context_storage import StorageInterface
             assert StorageInterface is not None
         except ImportError:
             pytest.skip("StorageInterface not available for testing")
@@ -34,7 +34,7 @@ class TestStorage:
     def test_dynamodb_storage_exists(self):
         """Test that DynamoDB storage class exists."""
         try:
-            from storage import DynamoDBStorage
+            from context_storage import DynamoDBStorage
             assert DynamoDBStorage is not None
         except ImportError:
             pytest.skip("DynamoDBStorage not available for testing")
@@ -42,7 +42,7 @@ class TestStorage:
     def test_get_storage_function(self):
         """Test get_storage factory function."""
         try:
-            from storage import get_storage
+            from context_storage import get_storage
             assert get_storage is not None
             
             # Test that function can be called (will fail without AWS creds, but that's ok)
@@ -58,7 +58,7 @@ class TestStorage:
     def test_storage_interface_methods(self):
         """Test that storage interface has required methods."""
         try:
-            from storage import StorageInterface
+            from context_storage import StorageInterface
             
             # Check that abstract methods exist
             required_methods = ['store_context', 'get_context', 'has_seen_event', 'mark_event_seen', 'get_context_for_query']

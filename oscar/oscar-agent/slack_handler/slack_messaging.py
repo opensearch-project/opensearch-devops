@@ -10,7 +10,7 @@ import logging
 from typing import Any, Dict
 from slack_sdk.errors import SlackApiError
 
-from slack_handler.constants import CHANNEL_ALLOW_LIST
+from config import config
 from .message_formatter import MessageFormatter
 
 logger = logging.getLogger(__name__)
@@ -19,15 +19,15 @@ logger = logging.getLogger(__name__)
 class SlackMessaging:
     """Handles Slack message sending functionality."""
     
-    def __init__(self, client, context_manager) -> None:
-        """Initialize with Slack client and context manager.
+    def __init__(self, client, storage) -> None:
+        """Initialize with Slack client and storage.
         
         Args:
             client: Slack client instance
-            context_manager: ContextManager instance
+            storage: Storage instance
         """
         self.client = client
-        self.context_manager = context_manager
+        self.storage = storage
         self.message_formatter = MessageFormatter()
     
     def send_slack_message(self, channel: str, message: str) -> Dict[str, Any]:
@@ -44,7 +44,7 @@ class SlackMessaging:
         """
         try:
             # Validate channel is in allow list
-            if channel not in CHANNEL_ALLOW_LIST:
+            if channel not in config.channel_allow_list:
                 return {
                     "success": False,
                     "error": f"Channel {channel} not in allow list"
@@ -66,7 +66,7 @@ class SlackMessaging:
             
             # Store context for the bot message to enable follow-up conversations
             if response and 'ts' in response:
-                self.context_manager.store_bot_message_context(channel, response['ts'], formatted_message)
+                self.storage.store_bot_message_context(channel, response['ts'], formatted_message)
             
             logger.info(f"Successfully sent automated message to channel {channel}")
             return {

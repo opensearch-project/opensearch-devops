@@ -22,7 +22,7 @@ Functions:
 """
 
 # Import the refactored components from the new modular structure
-from bedrock.enhanced_agent import OSCARAgentInterface, EnhancedBedrockOSCARAgent, get_oscar_agent
+from bedrock.main_agent import OSCARAgentInterface, EnhancedBedrockOSCARAgent, get_oscar_agent
 
 # Re-export for backward compatibility
 __all__ = ['OSCARAgentInterface', 'EnhancedBedrockOSCARAgent', 'get_oscar_agent']

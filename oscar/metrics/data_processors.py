@@ -78,7 +78,7 @@ def deduplicate_integration_test_results(results: List[Dict[str, Any]]) -> List[
     if not results:
         return results
     
-    logger.info(f"🔄 DEDUP: Starting deduplication of {len(results)} integration test results")
+    logger.info(f"DEDUP: Starting deduplication of {len(results)} integration test results")
     
     # Group by (component, version, rc_number, platform, architecture, distribution)
     groups = {}
@@ -98,18 +98,18 @@ def deduplicate_integration_test_results(results: List[Dict[str, Any]]) -> List[
         if component and version and rc_number and platform and architecture and distribution is not None:
             key = (component, str(version), str(rc_number), str(platform), str(architecture), str(distribution))
             
-            logger.debug(f"🔄 DEDUP: Processing {component} - key: {key}, build_time: {build_start_time}")
+            logger.debug(f"DEDUP: Processing {component} - key: {key}, build_time: {build_start_time}")
             
             if key not in groups:
                 groups[key] = result
-                logger.debug(f"🔄 DEDUP: Added new entry for {component}")
+                logger.debug(f"DEDUP: Added new entry for {component}")
             else:
                 # Compare by build_start_time (most recent wins)
                 existing_time = groups[key].get('build_start_time')
                 existing_status = groups[key].get('component_build_result')
                 new_status = result.get('component_build_result')
                 
-                logger.debug(f"🔄 DEDUP: Comparing {component} - existing_time: {existing_time} ({existing_status}) vs new_time: {build_start_time} ({new_status})")
+                logger.debug(f"DEDUP: Comparing {component} - existing_time: {existing_time} ({existing_status}) vs new_time: {build_start_time} ({new_status})")
                 
                 if build_start_time and existing_time:
                     try:
@@ -118,27 +118,27 @@ def deduplicate_integration_test_results(results: List[Dict[str, Any]]) -> List[
                         existing_time_int = int(existing_time) if isinstance(existing_time, str) else existing_time
                         
                         if new_time_int > existing_time_int:
-                            logger.debug(f"🔄 DEDUP: Replacing {component} - newer time {new_time_int} > {existing_time_int}")
+                            logger.debug(f"DEDUP: Replacing {component} - newer time {new_time_int} > {existing_time_int}")
                             groups[key] = result
                         else:
-                            logger.debug(f"🔄 DEDUP: Keeping existing {component} - older time {new_time_int} <= {existing_time_int}")
+                            logger.debug(f"DEDUP: Keeping existing {component} - older time {new_time_int} <= {existing_time_int}")
                     except (ValueError, TypeError) as e:
-                        logger.error(f"🔄 DEDUP: Error comparing times for {component}: {e}")
+                        logger.error(f"DEDUP: Error comparing times for {component}: {e}")
                         # If conversion fails, do string comparison
                         if build_start_time > existing_time:
                             groups[key] = result
                 elif build_start_time and not existing_time:
                     # New result has timestamp, existing doesn't - prefer new
-                    logger.debug(f"🔄 DEDUP: Replacing {component} - new has timestamp, existing doesn't")
+                    logger.debug(f"DEDUP: Replacing {component} - new has timestamp, existing doesn't")
                     groups[key] = result
                 # If neither has timestamp or existing is newer, keep existing
         else:
             # Keep results without proper grouping keys
-            logger.debug(f"🔄 DEDUP: Adding to ungrouped - missing fields: component={component}, version={version}, rc_number={rc_number}")
+            logger.debug(f"DEDUP: Adding to ungrouped - missing fields: component={component}, version={version}, rc_number={rc_number}")
             ungrouped.append(result)
     
     deduplicated_results = list(groups.values()) + ungrouped
-    logger.info(f"🔄 DEDUP: Deduplication complete: {len(results)} -> {len(deduplicated_results)} results")
+    logger.info(f"DEDUP: Deduplication complete: {len(results)} -> {len(deduplicated_results)} results")
     
     return deduplicated_results
 
@@ -184,10 +184,10 @@ def deduplicate_release_results(results: List[Dict[str, Any]]) -> List[Dict[str,
 
 def extract_test_results(opensearch_result: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Extract comprehensive test result information based on real data structure."""
-    logger.info(f"🔄 EXTRACT_RESULTS: Starting result extraction")
+    logger.info(f"EXTRACT_RESULTS: Starting result extraction")
     results = []
     hits = opensearch_result.get('hits', {}).get('hits', [])
-    logger.info(f"🔄 EXTRACT_RESULTS: Processing {len(hits)} hits")
+    logger.info(f"EXTRACT_RESULTS: Processing {len(hits)} hits")
     
     for hit in hits:
         source = hit['_source']
@@ -220,9 +220,9 @@ def extract_test_results(opensearch_result: Dict[str, Any]) -> List[Dict[str, An
             'without_security': without_security,
         })
     
-    logger.info(f"🔄 EXTRACT_RESULTS: Extracted {len(results)} results, about to deduplicate")
+    logger.info(f"EXTRACT_RESULTS: Extracted {len(results)} results, about to deduplicate")
     deduplicated = deduplicate_integration_test_results(results)
-    logger.info(f"🔄 EXTRACT_RESULTS: Deduplication complete, returning {len(deduplicated)} results")
+    logger.info(f"EXTRACT_RESULTS: Deduplication complete, returning {len(deduplicated)} results")
     return deduplicated
 
 

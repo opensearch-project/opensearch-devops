@@ -58,12 +58,12 @@ def query_integration_test_results(
     Returns:
         Dictionary containing OpenSearch query results
     """
-    logger.info(f"🔍 INTEGRATION_QUERY: Starting integration test query")
-    logger.info(f"🔍 INTEGRATION_QUERY: version={version}, rc_number={rc_number}, components={components}")
+    logger.info(f"INTEGRATION_QUERY: Starting integration test query")
+    logger.info(f"INTEGRATION_QUERY: version={version}, rc_number={rc_number}, components={components}")
     
     # Use large size limit - we'll deduplicate results for cleaner output
     size_limit = config.large_query_size
-    logger.info(f"🔍 INTEGRATION_QUERY: Using size limit: {size_limit}")
+    logger.info(f"INTEGRATION_QUERY: Using size limit: {size_limit}")
 
     # Build query with version and RC filters
     must_clauses = [{"match_phrase": {"version": version}}]
@@ -153,9 +153,9 @@ def query_integration_test_results(
         query_body["query"]["bool"]["must"].append(integ_clause)
     
     # Execute the main query
-    logger.info(f"🔍 INTEGRATION_QUERY: About to execute OpenSearch request")
+    logger.info(f"INTEGRATION_QUERY: About to execute OpenSearch request")
     result = opensearch_request('POST', f'/{config.get_integration_test_index_pattern()}/_search', query_body)
-    logger.info(f"🔍 INTEGRATION_QUERY: OpenSearch request completed")
+    logger.info(f"INTEGRATION_QUERY: OpenSearch request completed")
     
     if result and 'hits' in result:
         total_hits = result['hits'].get('total', {})
@@ -164,7 +164,7 @@ def query_integration_test_results(
         else:
             hit_count = total_hits
         actual_results = len(result['hits'].get('hits', []))
-        logger.info(f"🔍 INTEGRATION_QUERY: Query completed - Total matches: {hit_count}, Returned: {actual_results}")
+        logger.info(f"INTEGRATION_QUERY: Query completed - Total matches: {hit_count}, Returned: {actual_results}")
         
         # Add metadata about result limits
         if 'metadata' not in result:
@@ -177,9 +177,9 @@ def query_integration_test_results(
         else:
             result['metadata']['note'] = f"Query completed successfully. Showing {actual_results} results."
     else:
-        logger.error("🔍 INTEGRATION_QUERY: Query failed or returned no hits structure")
+        logger.error("INTEGRATION_QUERY: Query failed or returned no hits structure")
     
-    logger.info(f"🔍 INTEGRATION_QUERY: Returning result")
+    logger.info(f"INTEGRATION_QUERY: Returning result")
     return result
 
 

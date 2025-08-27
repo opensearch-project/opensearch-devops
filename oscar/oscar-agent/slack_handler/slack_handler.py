@@ -20,11 +20,11 @@ from slack_bolt import App
 
 from config import config
 from bedrock import OSCARAgentInterface
-from storage import StorageInterface
+from context_storage import StorageInterface
 
 from config import config
 from slack_handler.reaction_manager import ReactionManager
-from slack_handler.context_manager import ContextManager
+
 from slack_handler.timeout_handler import TimeoutHandler
 from slack_handler.message_processor import MessageProcessor
 from slack_handler.event_handlers import EventHandlers
@@ -71,18 +71,16 @@ class SlackHandler:
         
         # Initialize components
         self.reaction_manager = ReactionManager(self.client)
-        self.context_manager = ContextManager(self.storage)
         self.timeout_handler = TimeoutHandler(self.reaction_manager)
         self.message_processor = MessageProcessor(
             self.storage, 
             self.oscar_agent, 
             self.reaction_manager, 
-            self.context_manager, 
             self.timeout_handler
         )
         self.event_handlers = EventHandlers(self.message_processor)
-        self.slash_commands = SlashCommandHandlers(self.message_processor, self.context_manager)
-        self.slack_messaging = SlackMessaging(self.client, self.context_manager)
+        self.slash_commands = SlashCommandHandlers(self.message_processor, self.storage)
+        self.slack_messaging = SlackMessaging(self.client, self.storage)
     
     def register_handlers(self) -> App:
         """Register event handlers with the Slack app.

@@ -11,7 +11,7 @@ import time
 from typing import Any, Callable, Dict
 
 from config import config
-from slack_handler.authorization import AuthorizationManager
+
 
 logger = logging.getLogger(__name__)
 
@@ -19,16 +19,15 @@ logger = logging.getLogger(__name__)
 class SlashCommandHandlers:
     """Handles Slack slash commands."""
     
-    def __init__(self, message_processor, context_manager) -> None:
-        """Initialize with message processor and context manager.
+    def __init__(self, message_processor, storage) -> None:
+        """Initialize with message processor and storage.
         
         Args:
             message_processor: MessageProcessor instance
-            context_manager: ContextManager instance
+            storage: Storage instance
         """
         self.message_processor = message_processor
-        self.context_manager = context_manager
-        self.auth_manager = AuthorizationManager()
+        self.storage = storage
     
     def handle_announce_command(self, ack, command, say) -> None:
         """Handle /announce slash command."""
@@ -65,11 +64,6 @@ class SlashCommandHandlers:
         user_id = command.get('user_id')
         params = command.get('text', '').strip().split()
         
-        # Check authorization
-        if not self.auth_manager.is_user_authorized_for_messaging(user_id):
-            say(text="❌ You are not authorized to use OSCAR slash commands.", response_type="ephemeral")
-            return
-        
         # Require channel and version, RC is optional
         if len(params) < 2 or len(params) > 3:
             say(text=f"❌ Usage: `/{slash_command_type.replace('_', '-')} <channel_id_or_name> <version> [rc_number]`", response_type="ephemeral")
@@ -97,7 +91,7 @@ class SlashCommandHandlers:
             if response and 'ts' in response:
                 actual_thread_ts = response['ts']
                 original_query = f"/{slash_command_type.replace('_', '-')} {channel_param} {version_param} {params[2] if len(params) == 3 else ''}".strip()
-                self.context_manager.store_bot_message_context(channel_id, actual_thread_ts, text, None, original_query)
+                self.storage.store_bot_message_context(channel_id, actual_thread_ts, text, None, original_query)
             return response
         
         # Process directly with context storage skipped (handled by say_with_context_storage)
@@ -109,11 +103,6 @@ class SlashCommandHandlers:
         
         user_id = command.get('user_id')
         text = command.get('text', '').strip()
-        
-        # Check authorization
-        if not self.auth_manager.is_user_authorized_for_messaging(user_id):
-            say(text="❌ You are not authorized to use OSCAR slash commands.", response_type="ephemeral")
-            return
         
         # Parse channel and query
         parts = text.split(' ', 1)
@@ -138,7 +127,7 @@ class SlashCommandHandlers:
             if response and 'ts' in response:
                 actual_thread_ts = response['ts']
                 original_query = f"/oscar-broadcast {channel_param} {user_query}"
-                self.context_manager.store_bot_message_context(channel_id, actual_thread_ts, text, None, original_query)
+                self.storage.store_bot_message_context(channel_id, actual_thread_ts, text, None, original_query)
             return response
         
         # Process directly with context storage skipped (handled by say_with_context_storage)

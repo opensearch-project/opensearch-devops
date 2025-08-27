@@ -49,21 +49,30 @@ class Config:
         # AWS region
         self.region = os.environ.get('AWS_REGION', 'us-east-1')
         
-        # Bedrock Agent configuration (Phase 1)
-        self.oscar_bedrock_agent_id = os.environ.get('OSCAR_BEDROCK_AGENT_ID')
-        self.oscar_bedrock_agent_alias_id = os.environ.get('OSCAR_BEDROCK_AGENT_ALIAS_ID')
+        # Dual-agent security configuration
+        self.oscar_privileged_bedrock_agent_id = os.environ.get('OSCAR_PRIVILEGED_BEDROCK_AGENT_ID', None)
+        self.oscar_privileged_bedrock_agent_alias_id = os.environ.get('OSCAR_PRIVILEGED_BEDROCK_AGENT_ALIAS_ID', None)
+        self.oscar_limited_bedrock_agent_id = os.environ.get('OSCAR_LIMITED_BEDROCK_AGENT_ID')
+        self.oscar_limited_bedrock_agent_alias_id = os.environ.get('OSCAR_LIMITED_BEDROCK_AGENT_ALIAS_ID')
         
         # Only validate Bedrock agent config if we're in the main agent (not communication handler)
-        if validate_required and not self.oscar_bedrock_agent_id:
-            logger.error("OSCAR_BEDROCK_AGENT_ID environment variable is required")
-            raise ValueError("OSCAR_BEDROCK_AGENT_ID environment variable is required")
+        if validate_required and not self.oscar_privileged_bedrock_agent_id:
+            logger.error("OSCAR_PRIVILEGED_BEDROCK_AGENT_ID environment variable is required")
+            raise ValueError("OSCAR_PRIVILEGED_BEDROCK_AGENT_ID environment variable is required")
             
-        if validate_required and not self.oscar_bedrock_agent_alias_id:
-            logger.error("OSCAR_BEDROCK_AGENT_ALIAS_ID environment variable is required")
-            raise ValueError("OSCAR_BEDROCK_AGENT_ALIAS_ID environment variable is required")
+        if validate_required and not self.oscar_privileged_bedrock_agent_alias_id:
+            logger.error("OSCAR_PRIVILEGED_BEDROCK_AGENT_ALIAS_ID environment variable is required")
+            raise ValueError("OSCAR_PRIVILEGED_BEDROCK_AGENT_ALIAS_ID environment variable is required")
+            
+        if validate_required and not self.oscar_limited_bedrock_agent_id:
+            logger.error("OSCAR_LIMITED_BEDROCK_AGENT_ID environment variable is required")
+            raise ValueError("OSCAR_LIMITED_BEDROCK_AGENT_ID environment variable is required")
+            
+        if validate_required and not self.oscar_limited_bedrock_agent_alias_id:
+            logger.error("OSCAR_LIMITED_BEDROCK_AGENT_ALIAS_ID environment variable is required")
+            raise ValueError("OSCAR_LIMITED_BEDROCK_AGENT_ALIAS_ID environment variable is required")
         
         # DynamoDB tables
-        self.sessions_table_name = os.environ.get('SESSIONS_TABLE_NAME', 'oscar-agent-sessions')
         self.context_table_name = os.environ.get('CONTEXT_TABLE_NAME', 'oscar-agent-context')
         
         # Slack credentials
@@ -80,7 +89,6 @@ class Config:
             raise ValueError("SLACK_SIGNING_SECRET environment variable is required")
         
         # TTL settings
-        self.dedup_ttl = int(os.environ.get('DEDUP_TTL', 300))  # 5 minutes
         self.session_ttl = int(os.environ.get('SESSION_TTL', 3600))  # 1 hour
         self.context_ttl = int(os.environ.get('CONTEXT_TTL', 604800))  # 7 days
         
@@ -107,12 +115,16 @@ class Config:
         # Thread naming
         self.slack_handler_thread_prefix = os.environ.get('SLACK_HANDLER_THREAD_NAME_PREFIX', 'oscar-agent')
         
-        # Authorization
-        authorized_senders = os.environ.get('AUTHORIZED_MESSAGE_SENDERS', '')
-        self.authorized_message_senders = [s.strip() for s in authorized_senders.split(',') if s.strip()]
+        # DM Authorization - users who can DM the bot
+        dm_authorized_users = os.environ.get('DM_AUTHORIZED_USERS', '')
+        self.dm_authorized_users = [u.strip() for u in dm_authorized_users.split(',') if u.strip()]
         
         channel_allow_list = os.environ.get('CHANNEL_ALLOW_LIST', '')
         self.channel_allow_list = [c.strip() for c in channel_allow_list.split(',') if c.strip()]
+        
+        # Fully authorized users for dual-agent security
+        fully_authorized_users = os.environ.get('FULLY_AUTHORIZED_USERS', '')
+        self.fully_authorized_users = [u.strip() for u in fully_authorized_users.split(',') if u.strip()]
         
         # Message formatting
         self.message_preview_length = int(os.environ.get('MESSAGE_PREVIEW_LENGTH', 100))
@@ -199,6 +211,7 @@ class Config:
             logger.warning("Falling back to local environment variables")
             # Continue with local environment variables if secrets manager fails
     
+
     def get_slack_credentials(self) -> Tuple[Optional[str], Optional[str]]:
         """
         Get Slack credentials from environment variables.
@@ -208,7 +221,11 @@ class Config:
         """
         return self.slack_bot_token, self.slack_signing_secret
 
-# Create a singleton instance with validation based on context
-# Allow disabling validation via environment variable for communication handler
-_disable_validation = os.environ.get('DISABLE_CONFIG_VALIDATION', 'false').lower() == 'true'
-config = Config(validate_required=not _disable_validation)
+class _ConfigProxy:
+    """Proxy that loads fresh config on every attribute access."""
+    def __getattr__(self, name):
+        fresh_config = Config(validate_required=False)
+        return getattr(fresh_config, name)
+
+# Global configuration proxy
+config = _ConfigProxy()
