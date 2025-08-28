@@ -16,6 +16,7 @@ from typing import Any, Dict
 
 from message_handler import MessageHandler
 from response_builder import ResponseBuilder
+from config import config
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -31,9 +32,11 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     Returns:
         Response for the Bedrock agent
     """
+    # Set the Lambda request ID for config caching
+    if context and hasattr(context, 'aws_request_id'):
+        config.set_request_id(context.aws_request_id)
+    
     try:
-
-        
         logger.info(f"Received event: {json.dumps(event, indent=2)}")
         
         # Extract parameters from the event
