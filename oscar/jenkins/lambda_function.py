@@ -40,6 +40,10 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
     Returns:
         Response dictionary with results
     """
+    # Set the Lambda request ID for config caching
+    if context and hasattr(context, 'aws_request_id'):
+        config.set_request_id(context.aws_request_id)
+    
     try:
         # Extract function and parameters from event
         function_name = event.get('function', '')
