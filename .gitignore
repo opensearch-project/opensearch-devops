@@ -8,7 +8,7 @@ build_docs/
 metrics/docs/
 .kiro/
 instructions.md
-
+instructions.txt
 # Build outputs
 build_docs/
 cdk.out/
