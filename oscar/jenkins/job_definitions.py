@@ -177,6 +177,13 @@ class CentralReleasePromotionJob(BaseJobDefinition):
                 description="OpenSearch Dashboards Release Candidate Build Number",
                 required=True,
                 parameter_type="string"
+            ),
+            JobParameter(
+                name="TAG_DOCKER_LATEST",
+                description="Tag the images as latest",
+                required=False,
+                default_value='True',
+                parameter_type='boolean'
             )
         ]
 
