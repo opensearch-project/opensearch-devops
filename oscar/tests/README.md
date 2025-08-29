@@ -16,9 +16,9 @@ tests/
 ├── test_metrics.py          # Analytics and monitoring tests
 ├── test_dynamodb_setup.py   # DynamoDB setup and table access tests
 ├── test_aws_connectivity.py # AWS role assumption and OpenSearch connectivity tests
-├── test_jenkins.py          # Comprehensive jenkins/ directory testing
+├── test_jenkins.py          # Comprehensive jenkins/ directory testing=
 ├── requirements.txt         # Test dependencies
-└── run_tests.sh             # Test runner script
+└── run_tests.sh            # Test runner script
 ```
 
 ## Running Tests
