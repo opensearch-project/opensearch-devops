@@ -48,7 +48,7 @@ class MessageHandler:
             confirmed = params.get('confirmed')
 
             if confirmed is None or (isinstance(confirmed, str) and confirmed.lower().strip() == 'false') or (isinstance(confirmed, bool) and confirmed == False):
-                return self.response_builder(action_group, function_name, 'Confirmed was not True')
+                return self.response_builder.create_error_response(action_group, function_name, 'Confirmed was not True')
             
             logger.info(f"Processing message request: query='{query}', channel='{target_channel}'")
             logger.debug(f"Message content length: {len(message_content) if message_content else 0}")
