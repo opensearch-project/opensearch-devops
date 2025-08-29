@@ -14,7 +14,7 @@ class ResponseBuilder:
     """Builds standardized responses for Bedrock agent."""
     
     @staticmethod
-    def create_success_response(function_name: str, message: str) -> Dict[str, Any]:
+    def create_success_response(action_group: str, function_name: str, message: str) -> Dict[str, Any]:
         """Create a success response for Bedrock agent.
         
         Args:
@@ -27,7 +27,7 @@ class ResponseBuilder:
         return {
             "messageVersion": config.bedrock_message_version,
             "response": {
-                "actionGroup": config.bedrock_action_group,
+                "actionGroup": action_group,
                 "function": function_name,
                 "functionResponse": {
                     "responseBody": {
@@ -40,7 +40,7 @@ class ResponseBuilder:
         }
     
     @staticmethod
-    def create_error_response(function_name: str, error_message: str) -> Dict[str, Any]:
+    def create_error_response(action_group: str, function_name: str, error_message: str) -> Dict[str, Any]:
         """Create an error response for Bedrock agent.
         
         Args:
@@ -53,12 +53,12 @@ class ResponseBuilder:
         return {
             "messageVersion": config.bedrock_message_version,
             "response": {
-                "actionGroup": config.bedrock_action_group,
+                "actionGroup": action_group,
                 "function": function_name,
                 "functionResponse": {
                     "responseBody": {
                         "TEXT": {
-                            "body": f'❌ {error_message}'
+                            "body": f'ERROR! {error_message}'
                         }
                     }
                 }
