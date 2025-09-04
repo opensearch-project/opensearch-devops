@@ -1,0 +1,36 @@
+[
+  {
+    "actionGroupName": "communication-orchestration",
+    "description": "Send automated release management messages to Slack channels for authorized users",
+    "actionGroupState": "ENABLED",
+    "actionGroupExecutor": {
+      "lambda": "arn:aws:lambda:us-east-1:395380602281:function:oscar-communication-handler-cdk"
+    },
+    "functionSchema": {
+      "functions": [
+        {
+          "description": "Send automated messages to Slack channels for release management tasks. Processes natural language requests to generate and send templated messages. This can only be sent after acknowledging direct confirmation from the user.",
+          "name": "send_automated_message",
+          "parameters": {
+            "message_content": {
+              "description": "Complete message content filled with actual data",
+              "required": true,
+              "type": "string"
+            },
+            "confirmed": {
+              "description": "A 'confirmed' parameter describing whether the user has explicitly confirmed the message sending request. IMPORTANT: do not set this parameter to true until the user has explicitly reviewed/confirmed the message sending request",
+              "required": true,
+              "type": "boolean"
+            },
+            "target_channel": {
+              "description": "Target Slack channel ID or name",
+              "required": true,
+              "type": "string"
+            }
+          },
+          "requireConfirmation": "DISABLED"
+        }
+      ]
+    }
+  }
+]

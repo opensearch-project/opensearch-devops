@@ -1,0 +1,61 @@
+{
+  "actionGroupName": "build-metrics-group-agent",
+  "description": "Enhanced build metrics analysis and distribution build insights",
+  "actionGroupState": "ENABLED",
+  "actionGroupExecutor": {
+    "lambda": "arn:aws:lambda:us-east-1:395380602281:function:oscar-build-metrics-agent-cdk"
+  },
+  "functionSchema": {
+    "functions": [
+      {
+        "description": "Retrieve comprehensive build performance metrics including success rates, failure patterns, and component build results",
+        "name": "get_build_metrics",
+        "parameters": {
+          "rc_numbers": {
+            "description": "Comma-separated RC numbers to analyze (e.g., '1,2,3')",
+            "required": false,
+            "type": "string"
+          },
+          "components": {
+            "description": "Comma-separated component names to focus on (e.g., 'OpenSearch,OpenSearch-Dashboards')",
+            "required": false,
+            "type": "string"
+          },
+          "status_filter": {
+            "description": "Filter by build status: 'passed' or 'failed'",
+            "required": false,
+            "type": "string"
+          },
+          "build_numbers": {
+            "description": "Comma-separated distribution build numbers to analyze (e.g., '12345,12346')",
+            "required": false,
+            "type": "string"
+          },
+          "version": {
+            "description": "OpenSearch version to analyze (e.g., '3.2.0', '2.18.0') - REQUIRED",
+            "required": false,
+            "type": "string"
+          }
+        },
+        "requireConfirmation": "DISABLED"
+      },
+      {
+        "description": "Resolve which components are associated with specific build numbers",
+        "name": "resolve_components_from_builds",
+        "parameters": {
+          "build_numbers": {
+            "description": "List of build numbers to resolve",
+            "required": false,
+            "type": "array"
+          },
+          "version": {
+            "description": "Version number",
+            "required": false,
+            "type": "string"
+          }
+        },
+        "requireConfirmation": "DISABLED"
+      }
+    ]
+  }
+}

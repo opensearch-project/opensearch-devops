@@ -1,0 +1,81 @@
+{
+  "agents": {
+    "jenkins": {
+      "name": "jenkins-agent-cdk",
+      "lambda_function": "oscar-jenkins-agent-cdk",
+      "dependencies": [],
+      "collaborators": [],
+      "knowledge_bases": []
+    },
+    "build-metrics": {
+      "name": "build-metrics-agent-cdk",
+      "lambda_function": "oscar-build-metrics-agent-cdk",
+      "dependencies": [],
+      "collaborators": [],
+      "knowledge_bases": []
+    },
+    "test-metrics": {
+      "name": "integration-test-agent-cdk",
+      "lambda_function": "oscar-test-metrics-agent-cdk",
+      "dependencies": [],
+      "collaborators": [],
+      "knowledge_bases": []
+    },
+    "release-metrics": {
+      "name": "release-metrics-agent-cdk",
+      "lambda_function": "oscar-release-metrics-agent-cdk",
+      "dependencies": [],
+      "collaborators": [],
+      "knowledge_bases": []
+    },
+    "oscar-limited": {
+      "name": "oscar-supervisor-agent-limited-cdk",
+      "lambda_function": "oscar-supervisor-agent-cdk",
+      "dependencies": ["build-metrics", "test-metrics", "release-metrics"],
+      "collaborators": ["build-metrics", "test-metrics", "release-metrics"],
+      "knowledge_bases": ["opensearch-docs"]
+    },
+    "oscar-privileged": {
+      "name": "oscar-supervisor-agent-privileged-cdk",
+      "lambda_function": "oscar-supervisor-agent-cdk",
+      "communication_lambda": "oscar-communication-handler-cdk",
+      "dependencies": ["jenkins", "build-metrics", "test-metrics", "release-metrics"],
+      "collaborators": ["jenkins", "build-metrics", "test-metrics", "release-metrics"],
+      "knowledge_bases": ["opensearch-docs"]
+    }
+  },
+  "knowledge_bases": {
+    "opensearch-docs": {
+      "id": "NBRUVWHAYY",
+      "name": "OpenSearch Documentation Knowledge Base"
+    }
+  },
+  "lambda_functions": {
+    "oscar-jenkins-agent-cdk": {
+      "description": "Jenkins operations Lambda function"
+    },
+    "oscar-build-metrics-agent-cdk": {
+      "description": "Build metrics Lambda function"
+    },
+    "oscar-test-metrics-agent-cdk": {
+      "description": "Test metrics Lambda function"
+    },
+    "oscar-release-metrics-agent-cdk": {
+      "description": "Release metrics Lambda function"
+    },
+    "oscar-supervisor-agent-cdk": {
+      "description": "Supervisor agent Lambda function"
+    },
+    "oscar-communication-handler-cdk": {
+      "description": "Communication handler Lambda function"
+    }
+  },
+  "deployment_order": [
+    "jenkins",
+    "build-metrics", 
+    "test-metrics",
+    "release-metrics",
+    "oscar-limited",
+    "oscar-privileged"
+  ]
+}
