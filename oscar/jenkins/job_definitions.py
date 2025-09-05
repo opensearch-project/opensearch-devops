@@ -180,6 +180,134 @@ class CentralReleasePromotionJob(BaseJobDefinition):
             )
         ]
 
+class DistributionBuildOpenSearchJob(BaseJobDefinition):
+    """OpenSearch distribution build job definition."""
+    
+    def get_job_name(self) -> str:
+        return "distribution-build-opensearch"
+    
+    def get_description(self) -> str:
+        return ("Workflow to build different OpenSearch distributions. "
+                "Success - Everything was built from given manifest. "
+                "Failure - Core engine, common-utils and/or job-scheduler failed to build or other infra related failures. "
+                "Unstable - Some components failed but a distribution was built with passing ones.")
+    
+    def get_parameters(self) -> List[JobParameter]:
+        return [
+            JobParameter(
+                name="INPUT_MANIFEST",
+                description="Input manifest under the manifests folder, e.g. 2.0.0/opensearch-2.0.0.yml",
+                required=True,
+                parameter_type="string"
+            ),
+            JobParameter(
+                name="TEST_MANIFEST",
+                description="Test manifest under the manifests folder, e.g. 2.0.0/opensearch-2.0.0-test.yml",
+                required=False,
+                parameter_type="string"
+            ),
+            JobParameter(
+                name="BUILD_PLATFORM",
+                description="Build selected platform, choices include 'linux', 'windows'. Can combine multiple platforms separated by space (docker is only available on linux)",
+                required=True,
+                parameter_type="string",
+                choices=["linux", "windows", "linux windows"]
+            ),
+            JobParameter(
+                name="BUILD_DISTRIBUTION",
+                description="Build selected distribution, choices include 'tar', 'rpm', 'deb', 'zip'. Can combine multiple distributions separated by space (docker is only available on tar)",
+                required=True,
+                parameter_type="string",
+                choices=["tar", "rpm", "deb", "zip", "tar rpm", "tar deb", "tar zip", "rpm deb", "rpm zip", "deb zip", "tar rpm deb", "tar rpm zip", "tar deb zip", "rpm deb zip", "tar rpm deb zip"]
+            ),
+            JobParameter(
+                name="TEST_PLATFORM",
+                description="Test selected platform, choices include 'linux', 'windows'. Can combine multiple platforms separated by space",
+                required=False,
+                parameter_type="string",
+                choices=["linux", "windows", "linux windows"]
+            ),
+            JobParameter(
+                name="TEST_DISTRIBUTION",
+                description="Test selected distribution, choices include 'tar', 'rpm', 'deb', 'zip'. Can combine multiple distributions separated by space",
+                required=False,
+                parameter_type="string",
+                choices=["tar", "rpm", "deb", "zip", "tar rpm", "tar deb", "tar zip", "rpm deb", "rpm zip", "deb zip", "tar rpm deb", "tar rpm zip", "tar deb zip", "rpm deb zip", "tar rpm deb zip"]
+            ),
+            JobParameter(
+                name="UPDATE_GITHUB_ISSUE",
+                description="To create/close/update a github issue for all component or not",
+                required=False,
+                parameter_type="boolean",
+                default_value="false"
+            ),
+            JobParameter(
+                name="COMPONENT_NAME",
+                description="If this field contains one or more component names (e.g. OpenSearch common-utils ...), will build with \"--component COMPONENT_NAME_HERE ...\", else build everything in the INPUT_MANIFEST",
+                required=False,
+                parameter_type="string"
+            ),
+            JobParameter(
+                name="INTEG_TEST_JOB_NAME",
+                description="Name of integration test job that will be triggered, e.g. Playground/integ-test. A non-null empty value here will skip integration tests",
+                required=False,
+                parameter_type="string"
+            ),
+            JobParameter(
+                name="SMOKE_TEST_JOB_NAME",
+                description="Name of smoke test job that will be triggered, e.g. smoke-test. A non-null empty value here will skip smoke tests",
+                required=False,
+                parameter_type="string"
+            ),
+            JobParameter(
+                name="BWC_TEST_JOB_NAME",
+                description="Name of backwards compatibility test job that will be triggered, e.g. Playground/bwc-test. A non-null empty value here will skip BWC tests",
+                required=False,
+                parameter_type="string"
+            ),
+            JobParameter(
+                name="RC_NUMBER",
+                description="The RC build count. Default is 0 which means its not a Release Candidate",
+                required=False,
+                parameter_type="string",
+                default_value="0"
+            ),
+            JobParameter(
+                name="BUILD_DOCKER",
+                description="Build docker image or not with options: build_docker, do_not_build_docker, etc.",
+                required=True,
+                parameter_type="string"
+            ),
+            JobParameter(
+                name="UPDATE_LATEST_URL",
+                description="Update latest url so /latest/ is pointed to this build",
+                required=False,
+                parameter_type="boolean",
+                default_value="false"
+            ),
+            JobParameter(
+                name="CONTINUE_ON_ERROR",
+                description="Continue building the distribution even if a one or more component fails",
+                required=False,
+                parameter_type="boolean",
+                default_value="true"
+            ),
+            JobParameter(
+                name="INCREMENTAL",
+                description="Whether to trigger incremental build. Defaults to false",
+                required=False,
+                parameter_type="boolean",
+                default_value="false"
+            ),
+            JobParameter(
+                name="PREVIOUS_BUILD_ID",
+                description="The build ID used to download previous build artifacts. Defaults to latest",
+                required=False,
+                parameter_type="string",
+                default_value="latest"
+            )
+        ]
+
 class JobRegistry:
     """Registry for managing available Jenkins jobs."""
     
@@ -191,6 +319,7 @@ class JobRegistry:
         """Register the default set of Jenkins jobs."""
         self.register_job(DockerScanJob())
         self.register_job(CentralReleasePromotionJob())
+        self.register_job(DistributionBuildOpenSearchJob())
     
     def register_job(self, job_definition: BaseJobDefinition):
         """Register a new job definition."""

@@ -23,6 +23,10 @@ from aws_cdk import (
     CfnOutput
 )
 from constructs import Construct
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'utils'))
+from lambda_assets import get_lambda_asset_path, prepare_lambda_assets
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -65,6 +69,11 @@ class OscarLambdaStack(Stack):
         self.secrets_stack = secrets_stack
         self.vpc_stack = vpc_stack
         
+        # Prepare Lambda assets dynamically
+        logger.info("Preparing Lambda assets dynamically...")
+        if not prepare_lambda_assets():
+            raise RuntimeError("Failed to prepare Lambda assets for deployment")
+        
         # Dictionary to store all Lambda functions
         self.lambda_functions: Dict[str, lambda_.Function] = {}
         
@@ -94,7 +103,7 @@ class OscarLambdaStack(Stack):
             function_name="oscar-supervisor-agent-cdk",
             runtime=lambda_.Runtime.PYTHON_3_12,
             handler="app.lambda_handler",
-            code=lambda_.Code.from_asset("lambda_assets/oscar-agent"),
+            code=lambda_.Code.from_asset(get_lambda_asset_path("oscar-agent")),
             timeout=Duration.seconds(300),  # 5 minutes for complex agent interactions
             memory_size=1024,  # Higher memory for better performance
             environment=self._get_main_agent_environment_variables(),
@@ -123,7 +132,7 @@ class OscarLambdaStack(Stack):
             function_name="oscar-communication-handler-cdk",
             runtime=lambda_.Runtime.PYTHON_3_12,
             handler="lambda_function.lambda_handler",  # Flattened structure
-            code=lambda_.Code.from_asset("lambda_assets/oscar-communication-handler"),  # Separate flattened asset
+            code=lambda_.Code.from_asset(get_lambda_asset_path("oscar-communication-handler")),  # Dynamically generated flattened asset
             timeout=Duration.seconds(60),
             memory_size=512,
             environment=self._get_communication_handler_environment_variables(),
@@ -152,7 +161,7 @@ class OscarLambdaStack(Stack):
             function_name="oscar-jenkins-agent-cdk",
             runtime=lambda_.Runtime.PYTHON_3_12,
             handler="lambda_function.lambda_handler",
-            code=lambda_.Code.from_asset("lambda_assets/jenkins"),
+            code=lambda_.Code.from_asset(get_lambda_asset_path("jenkins")),
             timeout=Duration.seconds(120),  # 2 minutes for Jenkins API calls
             memory_size=512,
             environment=self._get_jenkins_agent_environment_variables(),
@@ -221,7 +230,7 @@ class OscarLambdaStack(Stack):
                 function_name=f"oscar-{metrics_type}-metrics-agent-cdk",
                 runtime=lambda_.Runtime.PYTHON_3_12,
                 handler="lambda_function.lambda_handler",
-                code=lambda_.Code.from_asset("lambda_assets/metrics"),
+                code=lambda_.Code.from_asset(get_lambda_asset_path("metrics")),
                 timeout=Duration.seconds(180),  # 3 minutes for metrics queries
                 memory_size=1024,  # Higher memory for data processing
                 environment=self._get_metrics_agent_environment_variables(metrics_type),

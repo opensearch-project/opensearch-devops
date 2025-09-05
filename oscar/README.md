@@ -92,18 +92,21 @@ OSCAR uses a **single source of truth** approach where `cdk/.env` contains all r
 
 ### Resource Flow
 1. **Pre-deployment**: Required resources configured in `.env`
-2. **CDK Deployment**: Creates infrastructure, outputs resource IDs
-3. **Resource Capture**: `update-cdk-env.sh` captures all created resources
-4. **Agent Deployment**: Uses captured Lambda ARNs for action groups
-5. **Permissions Update**: `oscar-permissions-fixer.sh` uses dynamic values
+2. **Dynamic Asset Generation**: Lambda packages built on-demand with dependencies
+3. **CDK Deployment**: Creates infrastructure, outputs resource IDs
+4. **Resource Capture**: `update-cdk-env.sh` captures all created resources
+5. **Agent Deployment**: Uses captured Lambda ARNs for action groups
+6. **Permissions Update**: `oscar-permissions-fixer.sh` uses dynamic values
+7. **Cleanup**: Temporary assets removed to save disk space
 
 ### Key Dynamic Resources
-- Lambda Function ARNs and Names
-- DynamoDB Table Names and ARNs  
-- API Gateway URLs and IDs
-- IAM Role Names and ARNs
-- Secrets Manager Names
-- Agent IDs and Aliases
+- **Lambda Assets**: Generated on-demand with optimized dependencies
+- **Lambda Function ARNs and Names**: Captured from CDK deployment
+- **DynamoDB Table Names and ARNs**: Dynamic table references
+- **API Gateway URLs and IDs**: Auto-generated endpoints
+- **IAM Role Names and ARNs**: Dynamic permission management
+- **Secrets Manager Names**: Centralized configuration
+- **Agent IDs and Aliases**: Bedrock agent identifiers
 
 ## 📁 Project Structure
 
@@ -152,9 +155,10 @@ OSCAR implements comprehensive security with multiple layers:
 ### `deploy-complete-oscar.sh`
 The master deployment script that orchestrates everything:
 - Validates prerequisites
-- Deploys infrastructure in dependency order
+- Deploys infrastructure in dependency order (with dynamic Lambda asset generation)
 - Configures agents with proper relationships
 - Applies all necessary permissions
+- Cleans up temporary assets to save space
 - Verifies deployment success
 
 ### `oscar-permissions-fixer.sh`

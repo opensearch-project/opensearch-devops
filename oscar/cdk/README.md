@@ -33,6 +33,7 @@ The CDK deploys:
 ```bash
 cd cdk
 pip install -r requirements.txt
+# Lambda assets are prepared automatically during deployment
 cdk deploy --all --require-approval never
 ```
 
@@ -70,7 +71,7 @@ These are automatically captured during deployment:
 |------|---------|
 | `app.py` | CDK application entry point |
 | `.env` | Configuration and resource IDs |
-| `prepare_lambda_assets.sh` | Packages Lambda code with dependencies |
+| `prepare_lambda_assets.sh` | Dynamically packages Lambda code with dependencies |
 | `stacks/` | CDK stack definitions |
 | `lambda/` | Lambda function source code |
 | `agents/` | Bedrock agent configurations |
@@ -90,6 +91,29 @@ These are automatically captured during deployment:
 | `oscar-communication-handler-cdk` | Slack integration | No | 512MB | 180s |
 | `oscar-jenkins-agent-cdk` | Jenkins operations | No | 512MB | 180s |
 | `oscar-*-metrics-agent-cdk` | Metrics queries | Yes | 512MB | 180s |
+
+## 🚀 Dynamic Lambda Assets
+
+OSCAR uses **on-demand Lambda asset generation** to optimize deployment:
+
+### Benefits
+- **Space Efficient**: No pre-built packages in repository
+- **Always Fresh**: Dependencies installed at deployment time
+- **Optimized**: Packages cleaned and minimized automatically
+- **Consistent**: Same build process every time
+
+### How It Works
+1. **CDK Deployment Starts**: Lambda stack initialization triggers asset preparation
+2. **Dependencies Installed**: Python packages installed with optimizations
+3. **Package Optimization**: Unnecessary files removed to reduce size
+4. **Deployment**: CDK uses generated assets for Lambda functions
+5. **Cleanup**: Assets automatically removed after deployment
+
+### Asset Generation Process
+```bash
+# Automatic during CDK deployment
+utils/lambda_assets.py -> prepare_lambda_assets.sh -> Optimized packages
+```
 
 ## 🔐 Security Features
 
