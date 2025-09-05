@@ -35,7 +35,7 @@ head -n 2 ../sample-data/search-relevance/esci_us_ecommerce_shrunk.ndjson | curl
 echo
 echo Populating ecommerce index
 
-exe curl -s -X POST "$OPENSEARCH_SERVER_URL/index-name/_bulk?pretty" \
+curl -s -X POST "$OPENSEARCH_SERVER_URL/index-name/_bulk?pretty" \
 -H "Content-type: application/x-ndjson" \
 --data-binary @../sample-data/search-relevance/esci_us_ecommerce_shrunk.ndjson
   
