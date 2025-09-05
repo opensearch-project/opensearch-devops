@@ -17,6 +17,9 @@ cdk.out/
 cdk-outputs.json
 oscar-agent-deploy/
 
+# Dynamic Lambda assets (generated on-demand)
+cdk/lambda_assets/
+
 # Dependencies
 node_modules/
 .serverless/
@@ -37,6 +40,13 @@ dist/
 venv/
 ENV/
 env/
+
+# Backup and temporary files
+*.bak
+*.bak2
+*.tmp
+*~
+*.orig
 
 # IDE and OS
 .idea/

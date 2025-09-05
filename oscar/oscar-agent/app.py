@@ -34,8 +34,6 @@ from bedrock import get_oscar_agent
 from slack_handler import SlackHandler
 from context_storage import get_storage
 
-
-
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -75,10 +73,6 @@ def process_slack_event(event: Dict[str, Any], context: Optional[object]) -> Dic
     """
     logger.info("Processing Slack event asynchronously with OSCAR agent")
     
-    # Set the Lambda request ID for config caching
-    if context and hasattr(context, 'aws_request_id'):
-        config.set_request_id(context.aws_request_id)
-    
     try:
         # Handle the Slack event
         slack_handler = SlackRequestHandler(app=app)
@@ -108,10 +102,6 @@ def lambda_handler(event: Dict[str, Any], context: Optional[object]) -> Dict[str
         API Gateway response object or processing result
     """
     logger.info("Received event for OSCAR agent processing")
-    
-    # Set the Lambda request ID for config caching
-    if context and hasattr(context, 'aws_request_id'):
-        config.set_request_id(context.aws_request_id)
     
 
     

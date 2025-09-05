@@ -1,148 +1,288 @@
-# OSCAR - AI-Powered Operations Assistant
+# OSCAR - OpenSearch Conversational AI Release Assistant
 
-OSCAR is a serverless AI assistant that brings intelligent automation to Slack workspaces. Built on AWS Bedrock and Lambda, it provides conversational interfaces for complex operations like Jenkins job management, system monitoring, and team collaboration.
+OSCAR is a comprehensive AI-powered assistant system built on AWS Bedrock that helps manage OpenSearch releases, Jenkins operations, and metrics queries through Slack integration.
 
-## Features
+## 🏗️ Architecture Overview
 
-### Conversational AI
-- **Natural Language Processing**: Understand complex requests in plain English
-- **Context Awareness**: Maintains conversation history and context across interactions
-- **Multi-Agent Architecture**: Specialized agents for different domains (Jenkins, monitoring, etc.)
+OSCAR consists of multiple specialized AI agents working together:
 
-### Operations Automation
-- **Jenkins Integration**: Secure job execution with mandatory confirmation workflows
-- **System Monitoring**: Real-time metrics and performance tracking
-- **User Authorization**: Role-based access control with audit trails
+- **OSCAR Privileged Agent**: Full access supervisor with advanced capabilities
+- **OSCAR Limited Agent**: Restricted access agent for basic operations  
+- **Jenkins Agent**: Handles Jenkins CI/CD operations
+- **Metrics Agents**: Query OpenSearch metrics (Test, Build, Release)
+- **Communication Handler**: Manages Slack integration and routing
 
-### Developer Experience
-- **Slack Native**: Seamless integration with existing Slack workflows
-- **Serverless Architecture**: Auto-scaling AWS Lambda functions
-- **Infrastructure as Code**: CDK-based deployment and management
+## 🚀 Quick Start Deployment
 
-## Use Cases
+### Prerequisites
 
-- **DevOps Teams**: Execute Jenkins jobs, monitor deployments, manage releases
-- **Engineering Teams**: Automate routine tasks, get system status, troubleshoot issues
-- **Operations Teams**: Monitor metrics, manage infrastructure, coordinate responses
+Before deploying OSCAR, ensure you have:
 
-## Architecture
+1. **AWS CLI configured** with appropriate permissions
+2. **CDK installed** (`npm install -g aws-cdk`)
+3. **Python 3.12+** with pip
+4. **Node.js 18+** for CDK
+5. **Pre-existing AWS resources**:
+   - VPC with subnets and security groups
+   - Knowledge Base in AWS Bedrock
+   - Cross-account OpenSearch access role (for metrics)
 
-OSCAR uses a modular, event-driven architecture:
+### Step 1: Configure Environment
 
+1. **Update `cdk/.env`** with your AWS resources:
+
+```bash
+# Required Pre-existing Resources
+AWS_ACCOUNT_ID=your-account-id
+AWS_REGION=us-east-1
+VPC_ID=vpc-xxxxxxxxx
+SUBNET_IDS=subnet-xxx,subnet-yyy,subnet-zzz
+SECURITY_GROUP_ID=sg-xxxxxxxxx
+KNOWLEDGE_BASE_ID=your-kb-id
+OSCAR_METRICS_LAMBDA_VPC_ROLE_ARN=arn:aws:iam::account:role/role-name
+
+# Slack Configuration
+SLACK_BOT_TOKEN=xoxb-your-token
+SLACK_SIGNING_SECRET=your-signing-secret
+CHANNEL_ALLOW_LIST=C1234567890
+
+# Authorization
+DM_AUTHORIZED_USERS=U1234567890
+FULLY_AUTHORIZED_USERS=U1234567890
 ```
-┌─────────────┐    ┌──────────────┐    ┌─────────────────┐
-│    Slack    │───▶│   Gateway    │───▶│  Supervisor     │
-│   Events    │    │   Lambda     │    │    Agent        │
-└─────────────┘    └──────────────┘    └─────────────────┘
-                                                │
-                   ┌─────────────────────────────┼─────────────────────────────┐
-                   │                             │                             │
-            ┌──────▼──────┐              ┌──────▼──────┐              ┌──────▼──────┐
-            │   Jenkins   │              │  Monitoring │              │   Future    │
-            │  Specialist │              │  Specialist │              │ Specialists │
-            └─────────────┘              └─────────────┘              └─────────────┘
+
+### Step 2: Deploy Everything
+
+Run the complete deployment script:
+
+```bash
+./deploy-complete-oscar.sh
 ```
 
-## Project Structure
+This single command will:
+1. Deploy all CDK infrastructure stacks
+2. Create and configure Bedrock agents
+3. Update environment variables dynamically
+4. Configure all permissions
+5. Verify the deployment
+
+## 📋 What the Complete Deployment Script Does
+
+The `deploy-complete-oscar.sh` script orchestrates the entire OSCAR deployment in the correct order:
+
+### Phase 1: Infrastructure Deployment
+- **Permissions Stack**: Creates IAM roles and policies
+- **Storage Stack**: Creates DynamoDB tables for context and sessions
+- **Lambda Stack**: Deploys all Lambda functions with dependencies
+- **API Gateway Stack**: Creates REST API for Slack integration
+
+### Phase 2: Agent Configuration
+- **Lambda ARN Updates**: Updates agent configs with deployed Lambda ARNs
+- **Agent Deployment**: Creates all Bedrock agents with proper collaborator relationships
+- **Resource Capture**: Updates `.env` with all created resource IDs
+
+### Phase 3: Final Configuration
+- **Secrets Manager**: Deploys and populates with environment variables
+- **Permissions Fixing**: Applies comprehensive IAM and resource-based policies
+- **Verification**: Confirms all components are working
+
+## 🔧 Dynamic Resource Management
+
+OSCAR uses a **single source of truth** approach where `cdk/.env` contains all resource configurations:
+
+### Resource Flow
+1. **Pre-deployment**: Required resources configured in `.env`
+2. **Dynamic Asset Generation**: Lambda packages built on-demand with dependencies
+3. **CDK Deployment**: Creates infrastructure, outputs resource IDs
+4. **Resource Capture**: `update-cdk-env.sh` captures all created resources
+5. **Agent Deployment**: Uses captured Lambda ARNs for action groups
+6. **Permissions Update**: `oscar-permissions-fixer.sh` uses dynamic values
+7. **Cleanup**: Temporary assets removed to save disk space
+
+### Key Dynamic Resources
+- **Lambda Assets**: Generated on-demand with optimized dependencies
+- **Lambda Function ARNs and Names**: Captured from CDK deployment
+- **DynamoDB Table Names and ARNs**: Dynamic table references
+- **API Gateway URLs and IDs**: Auto-generated endpoints
+- **IAM Role Names and ARNs**: Dynamic permission management
+- **Secrets Manager Names**: Centralized configuration
+- **Agent IDs and Aliases**: Bedrock agent identifiers
+
+## 📁 Project Structure
 
 ```
 OSCAR/
-├── oscar-agent/              # Core AI agent and Slack integration
-│   ├── app.py                   # Main supervisor agent
-│   ├── slack_handler/           # Slack event processing
-│   ├── communication_handler/   # Message formatting and routing
-│   └── bedrock/                # AI agent orchestration
-├── jenkins/                  # Jenkins operations integration
-│   ├── lambda_function.py       # Jenkins job execution
-│   ├── jenkins_client.py        # Jenkins API client
-│   └── job_definitions.py       # Job registry and validation
-├── metrics/                  # Analytics and monitoring
-│   ├── lambda_function.py       # Metrics collection
-│   └── storage.py              # Data persistence
-├── cdk/                      # Infrastructure as Code
-│   ├── stacks/                  # CDK stack definitions
-│   └── lambda/                  # Lambda function configurations
-├── tests/                    # Comprehensive test suite
-├── deployment_scripts/       # Infrastructure deployment
-└── lambda_update_scripts/    # Development utilities
+├── cdk/                          # CDK Infrastructure
+│   ├── .env                      # Main configuration file
+│   ├── app.py                    # CDK app entry point
+│   ├── stacks/                   # CDK stack definitions
+│   ├── lambda/                   # Lambda function source code
+│   └── agents/                   # Bedrock agent configurations
+├── oscar-agent/                  # Main supervisor agent code
+├── jenkins/                      # Jenkins agent code  
+├── metrics/                      # Metrics agents code
+├── agent-configs/                # Agent configuration files
+├── tests/                        # Test files
+├── deploy-complete-oscar.sh      # Main deployment script
+├── deploy-all-agents.sh          # Agent deployment logic
+├── oscar-permissions-fixer.sh    # Comprehensive permissions fixer
+├── update-cdk-env.sh            # Resource ID capture script
+└── update-lambda-arns.sh        # Lambda ARN update script
 ```
 
-## Configuration
+## 🔐 Security & Permissions
 
-### Prerequisites
-- AWS CLI configured with appropriate permissions
-- Python 3.12+
-- Slack app with bot token and signing secret
+OSCAR implements comprehensive security with multiple layers:
 
-### Environment Setup
+### Identity-Based Policies (IAM Roles)
+- **Supervisor Agent**: Bedrock agents, DynamoDB, Lambda invocation
+- **Communication Handler**: Bedrock agents, DynamoDB, CloudWatch
+- **Metrics Agents**: Cross-account OpenSearch, Secrets Manager
+- **Jenkins Agent**: Bedrock agents, CloudWatch
+
+### Resource-Based Policies
+- **Lambda Functions**: Allow Bedrock agent invocation
+- **Bedrock Agents**: Allow Lambda role access
+- **DynamoDB Tables**: Scoped access per agent type
+
+### Authorization Levels
+- **Fully Authorized Users**: Complete OSCAR access
+- **DM Authorized Users**: Direct message capabilities
+- **Channel Allow List**: Restricted channel access
+
+## 🛠️ Key Scripts Explained
+
+### `deploy-complete-oscar.sh`
+The master deployment script that orchestrates everything:
+- Validates prerequisites
+- Deploys infrastructure in dependency order (with dynamic Lambda asset generation)
+- Configures agents with proper relationships
+- Applies all necessary permissions
+- Cleans up temporary assets to save space
+- Verifies deployment success
+
+### `oscar-permissions-fixer.sh`
+Comprehensive permissions management:
+- **Dynamic Configuration**: Reads all values from `.env`
+- **Identity-Based Policies**: Updates IAM role policies
+- **Resource-Based Policies**: Configures Lambda and Bedrock permissions
+- **Cross-Account Access**: Handles OpenSearch metrics permissions
+
+### `update-cdk-env.sh`
+Resource capture and propagation:
+- Extracts resource IDs from deployed CDK stacks
+- Updates `.env` with Lambda ARNs, table names, API Gateway URLs
+- Captures agent IDs from deployment files
+- Maintains single source of truth
+
+## 🔄 Agent Collaboration System
+
+OSCAR agents work together through a sophisticated collaboration system:
+
+### Supervisor Agents
+- **OSCAR Privileged**: Full system access, can invoke all agents
+- **OSCAR Limited**: Restricted access, basic operations only
+
+### Specialist Agents  
+- **Jenkins Agent**: CI/CD pipeline management
+- **Test Metrics Agent**: Integration test results
+- **Build Metrics Agent**: Build pipeline metrics
+- **Release Metrics Agent**: Release-specific metrics
+
+### Collaboration Flow
+1. User sends message to Slack
+2. Communication Handler routes to appropriate supervisor
+3. Supervisor determines required specialist agents
+4. Specialist agents execute specific tasks
+5. Results aggregated and returned to user
+
+## 🧪 Testing & Verification
+
+After deployment, verify OSCAR functionality:
+
+### 1. Check Deployed Resources
 ```bash
-# Clone and configure
-git clone <repository>
-cd OSCAR
-cp .env.example .env
-# Edit .env with your AWS and Slack credentials
+# List agents
+aws bedrock-agent list-agents --query "agentSummaries[?contains(agentName, 'oscar')]"
+
+# List Lambda functions  
+aws lambda list-functions --query "Functions[?contains(FunctionName, 'oscar')]"
 ```
 
-### Slack App Configuration
-- Set Request URL to your API Gateway endpoint
-- Subscribe to bot events (message.channels, app_mention)
-- Install app to workspace
+### 2. Test Slack Integration
+- Send a direct message to the OSCAR bot
+- Try basic queries like "Hello" or "What can you do?"
+- Test metrics queries: "What are the test results for version 3.2.0?"
 
-## Key Components
+### 3. Verify Permissions
+- Check IAM role policies are applied
+- Verify Lambda function resource policies
+- Confirm agent collaboration works
 
-### Supervisor Agent
-- Routes requests to specialized agents
-- Handles user authorization and context
-- Manages conversation flow and error handling
+## 🚨 Troubleshooting
 
-### Jenkins Integration
-- Secure job execution with confirmation workflows
-- Dynamic job discovery and parameter validation
-- Real-time progress monitoring with workflow URLs
+### Common Issues
 
-### Metrics System
-- Performance tracking and analytics
-- Usage patterns and error monitoring
-- Custom dashboards and alerting
+**Deployment Fails**
+- Check AWS credentials and permissions
+- Verify pre-existing resources exist
+- Review CloudFormation stack events
 
-### Infrastructure
-- CDK-based AWS resource management
-- DynamoDB for conversation storage
-- Lambda functions with proper IAM roles
+**Agent Creation Fails**
+- Ensure Lambda functions are deployed first
+- Check IAM role permissions
+- Verify knowledge base access
 
-## Security
+**Permissions Issues**
+- Run `oscar-permissions-fixer.sh` manually
+- Check resource-based policies on Lambda functions
+- Verify cross-account role assumptions
 
-- **User Authorization**: Allowlist-based access control
-- **Confirmation Workflows**: Mandatory approval for sensitive operations
-- **Audit Trails**: Complete logging of all operations
-- **Secrets Management**: AWS Secrets Manager integration
-- **Least Privilege**: Minimal IAM permissions per component
+**Slack Integration Issues**
+- Verify API Gateway URL is correct
+- Check Slack app configuration
+- Review CloudWatch logs for errors
 
-## Testing
+### Log Locations
+- **Lambda Logs**: CloudWatch `/aws/lambda/oscar-*`
+- **CDK Deployment**: Local terminal output
+- **Agent Deployment**: `deployed-agent-ids.json`
 
+## 🔄 Updates & Maintenance
+
+### Updating Lambda Code
 ```bash
-# Run comprehensive test suite
-cd tests
-./run_tests.sh
-
-# Test specific components
-python -m pytest test_slack_handler.py
-python -m pytest test_jenkins.py
-python -m pytest test_metrics.py
+cd cdk
+./prepare_lambda_assets.sh
+cdk deploy OscarLambdaStack
 ```
 
-## Monitoring
+### Adding New Agents
+1. Create agent configuration in `agent-configs/`
+2. Add to `deployment-config.json`
+3. Run `./deploy-all-agents.sh`
+4. Update permissions with `./oscar-permissions-fixer.sh`
 
-- **CloudWatch Logs**: Centralized logging for all components
-- **Metrics Dashboard**: Real-time performance monitoring
-- **Error Tracking**: Automated alerting for failures
-- **Usage Analytics**: User interaction patterns and trends
+### Environment Changes
+1. Update `cdk/.env` with new values
+2. Run `./update-cdk-env.sh` to propagate changes
+3. Redeploy affected stacks as needed
 
-## Contributing
+## 📞 Support
 
-1. **Development**: Modify code and test locally
-2. **Testing**: Run full test suite before changes
-3. **Documentation**: Update relevant READMEs for changes
-4. **Security**: Follow principle of least privilege
+For issues or questions:
+1. Check CloudWatch logs for error details
+2. Review deployment script output
+3. Verify all prerequisites are met
+4. Check AWS service limits and quotas
 
-OSCAR transforms complex operations into simple conversations, making powerful automation accessible to every team member.
+## 🎯 Next Steps
+
+After successful deployment:
+1. **Test Core Functionality**: Verify all agents respond correctly
+2. **Configure Monitoring**: Set up CloudWatch alarms and dashboards  
+3. **Train Users**: Provide Slack usage guidelines
+4. **Customize Agents**: Adjust agent instructions for your use case
+5. **Scale Resources**: Monitor usage and adjust Lambda memory/timeout as needed
+
+OSCAR is now ready to assist with your OpenSearch release management! 🚀

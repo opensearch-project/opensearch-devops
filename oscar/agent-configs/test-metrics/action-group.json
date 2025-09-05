@@ -1,0 +1,96 @@
+{
+  "actionGroupName": "integration_test_action_group",
+  "description": "Enhanced integration test failure analysis and component testing insights",
+  "actionGroupState": "ENABLED",
+  "actionGroupExecutor": {
+    "lambda": "arn:aws:lambda:us-east-1:395380602281:function:oscar-test-metrics-agent-cdk"
+  },
+  "functionSchema": {
+    "functions": [
+      {
+        "description": "Retrieve comprehensive integration test results including pass/fail rates, component testing, and security test outcomes",
+        "name": "get_integration_test_metrics",
+        "parameters": {
+          "rc_numbers": {
+            "description": "Comma-separated RC numbers to analyze (e.g., '1,2,3' or '1')",
+            "required": false,
+            "type": "string"
+          },
+          "integ_test_build_numbers": {
+            "description": "Comma-separated integration test build numbers to analyze",
+            "required": false,
+            "type": "string"
+          },
+          "components": {
+            "description": "Comma-separated component names to focus on (e.g., 'OpenSearch,OpenSearch-Dashboards')",
+            "required": false,
+            "type": "string"
+          },
+          "status_filter": {
+            "description": "Filter by test status: 'passed' or 'failed'",
+            "required": false,
+            "type": "string"
+          },
+          "without_security": {
+            "description": "Filter non-security tests: 'pass' or 'fail'",
+            "required": false,
+            "type": "string"
+          },
+          "build_numbers": {
+            "description": "Comma-separated distribution build numbers to analyze (e.g., '12345,12346')",
+            "required": false,
+            "type": "string"
+          },
+          "with_security": {
+            "description": "Filter security tests: 'pass' or 'fail'",
+            "required": false,
+            "type": "string"
+          },
+          "distribution": {
+            "description": "Distribution type: 'tar', 'rpm', or 'deb' (default: 'tar')",
+            "required": false,
+            "type": "string"
+          },
+          "version": {
+            "description": "OpenSearch version to analyze (e.g., '3.2.0', '2.18.0') - REQUIRED",
+            "required": false,
+            "type": "string"
+          },
+          "platform": {
+            "description": "Platform: 'linux' or 'windows' (default: 'linux')",
+            "required": false,
+            "type": "string"
+          },
+          "architecture": {
+            "description": "Architecture: 'x64' or 'arm64' (default: 'x64')",
+            "required": false,
+            "type": "string"
+          }
+        },
+        "requireConfirmation": "DISABLED"
+      },
+      {
+        "description": "Get build numbers for specific RC numbers",
+        "name": "get_rc_build_mapping",
+        "parameters": {
+          "rc_numbers": {
+            "description": "List of RC numbers",
+            "required": false,
+            "type": "array"
+          },
+          "component": {
+            "description": "Component name for RC resolution",
+            "required": false,
+            "type": "string"
+          },
+          "version": {
+            "description": "Version number",
+            "required": false,
+            "type": "string"
+          }
+        },
+        "requireConfirmation": "DISABLED"
+      }
+    ]
+  }
+}

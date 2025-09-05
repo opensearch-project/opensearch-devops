@@ -6,19 +6,18 @@ Comprehensive test suite for the OSCAR bot, covering unit tests for all major co
 
 ```
 tests/
-├── conftest.py                    # Shared fixtures and test configuration
-├── test_app.py                    # Main application handler tests
-├── test_config.py                 # Configuration management tests
-├── test_storage.py                # DynamoDB storage tests
-├── test_slack_handler.py          # Slack integration tests
-├── test_bedrock_agent.py          # Bedrock AI agent tests
+├── conftest.py              # Shared fixtures and test configuration
+├── test_app.py              # Main application handler tests
+├── test_config.py           # Configuration management tests
+├── test_storage.py          # DynamoDB storage tests
+├── test_slack_handler.py    # Slack integration tests
+├── test_bedrock_agent.py    # Bedrock AI agent tests
 ├── test_communication_handler.py  # Message processing tests
-├── test_metrics.py                # Analytics and monitoring tests
-├── test_dynamodb_setup.py         # DynamoDB setup and table access tests
-├── test_aws_connectivity.py       # AWS role assumption and OpenSearch connectivity tests
-├── test_jenkins.py                # Comprehensive jenkins/ directory testing
-├── requirements.txt               # Test dependencies
-└── run_tests.sh                   # Test runner script
+├── test_metrics.py          # Analytics and monitoring tests
+├── test_dynamodb_setup.py   # DynamoDB setup and table access tests
+├── test_aws_connectivity.py # AWS role assumption and OpenSearch connectivity tests
+├── requirements.txt         # Test dependencies
+└── run_tests.sh            # Test runner script
 ```
 
 ## Running Tests

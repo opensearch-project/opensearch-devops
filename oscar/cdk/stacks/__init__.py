@@ -1,25 +1,30 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright OpenSearch Contributors
 # SPDX-License-Identifier: Apache-2.0
-#
-# The OpenSearch Contributors require contributions made to
-# this file be licensed under the Apache-2.0 license or a
-# compatible open source license.
 """
 OSCAR CDK stacks package.
 
-This package contains the CDK stacks for deploying the OSCAR Slack Bot infrastructure.
+This package contains the CDK stacks for deploying the complete OSCAR infrastructure.
 """
 
-from .oscar_slack_bot_stack import OscarSlackBotStack
+from .permissions_stack import OscarPermissionsStack
+from .secrets_stack import OscarSecretsStack
 from .storage_stack import OscarStorageStack
+from .vpc_stack import OscarVpcStack
+from .api_gateway_stack import OscarApiGatewayStack
+from .knowledge_base_stack import OscarKnowledgeBaseStack
 from .lambda_stack import OscarLambdaStack
+from .bedrock_agents_stack import OscarAgentsStack
 
 __all__ = [
-    'OscarSlackBotStack',
+    'OscarPermissionsStack',
+    'OscarSecretsStack',
     'OscarStorageStack',
-    'OscarLambdaStack'
+    'OscarVpcStack',
+    'OscarApiGatewayStack',
+    'OscarKnowledgeBaseStack',
+    'OscarLambdaStack',
+    'OscarAgentsStack'
 ]
 
-# Package version
-__version__ = '0.1.0'
+__version__ = '1.0.0'

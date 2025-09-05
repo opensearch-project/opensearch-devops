@@ -197,7 +197,7 @@ class Config:
             )
             
             # Get the .env content from secrets manager
-            response = client.get_secret_value(SecretId='oscar-central-env')
+            response = client.get_secret_value(SecretId='oscar-central-env-dev-cdk')
             env_content = response['SecretString']
             
             # Load the .env content into environment variables
@@ -222,23 +222,10 @@ class Config:
         return self.slack_bot_token, self.slack_signing_secret
 
 class _ConfigProxy:
-    """Proxy that caches config per lambda execution."""
-    def __init__(self):
-        self._cached_config = None
-        self.aws_request_id = None
-        self._lambda_request_id = None
-    
-    def set_request_id(self, request_id: str) -> None:
-        """Set the AWS Lambda request ID."""
-        self.aws_request_id = request_id
-    
+    """Proxy that loads fresh config on every attribute access."""
     def __getattr__(self, name):
-        # If no config cached yet or request ID changed, create fresh config
-        if self._cached_config is None or (self.aws_request_id and self._lambda_request_id != self.aws_request_id):
-            self._cached_config = Config(validate_required=False)
-            self._lambda_request_id = self.aws_request_id
-        
-        return getattr(self._cached_config, name)
+        fresh_config = Config(validate_required=False)
+        return getattr(fresh_config, name)
 
 # Global configuration proxy
 config = _ConfigProxy()

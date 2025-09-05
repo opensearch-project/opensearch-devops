@@ -1,0 +1,22 @@
+{
+  "actionGroupName": "user-authentication",
+  "description": "User authentication and authorization functions for sensitive operations",
+  "actionGroupExecutor": {
+    "lambda": "oscar-supervisor-agent"
+  },
+  "functionSchema": {
+    "functions": [
+      {
+        "name": "check_user_authorization",
+        "description": "Check if a user is authorized to perform sensitive operations like Jenkins jobs or communication sending. ALWAYS call this function before executing any Jenkins operations or sending communications.",
+        "parameters": {
+          "user_id": {
+            "description": "The Slack user ID to check authorization for (e.g., U091B0QH1QD)",
+            "required": true,
+            "type": "string"
+          }
+        }
+      }
+    ]
+  }
+}

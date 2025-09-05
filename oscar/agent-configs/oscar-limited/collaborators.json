@@ -1,0 +1,29 @@
+[
+  {
+    "collaboratorName": "BuildMetricsSpecialist",
+    "collaborationInstruction": "This BuildMetricsSpecialist agent specializes in build metrics, distribution build analysis, and build pipeline performance. It can analyze build failures, success rates, and component-specific build issues across different versions and time ranges. Collaborate with this BuildMetricsSpecialist for dynamic/analytical queries regarding Build Metrics.",
+    "agentDescriptor": {
+      "agentId": "XMFGQBAIFP",
+      "agentVersion": "DRAFT"
+    },
+    "relayConversationHistory": "TO_COLLABORATOR"
+  },
+  {
+    "collaboratorName": "IntegrationTestSpecialist",
+    "collaborationInstruction": "This IntegrationTestSpecialist agent specializes in integration test failures, RC-based analysis, and component testing patterns. It can analyze test failures across different platforms, architectures, and distributions. You provide detailed failure analysis with test reports and build URLs for debugging. Collaborate with this IntegrationTestSpecialist for dynamic/analytical queries regarding Test Metrics.",
+    "agentDescriptor": {
+      "agentId": "KU4NE0K9IL",
+      "agentVersion": "DRAFT"
+    },
+    "relayConversationHistory": "TO_COLLABORATOR"
+  },
+  {
+    "collaboratorName": "ReleaseReadinessSpecialist",
+    "collaborationInstruction": "This ReleaseReadinessSpecialist agent specializes in release readiness analysis, component release status, and release blocking issues. It can assess release readiness scores, identify components that need attention, and provide release owner information for coordination. Collaborate with this ReleaseReadinessSpecialist for dynamic/analytical queries regarding Release Metrics.",
+    "agentDescriptor": {
+      "agentId": "9ST0OZ6SMD",
+      "agentVersion": "DRAFT"
+    },
+    "relayConversationHistory": "TO_COLLABORATOR"
+  }
+]

@@ -15,7 +15,7 @@
     ]
   },
   "context": {
-    "aws:cdk:toolkit:default-region": "us-west-2",
+    "aws:cdk:toolkit:default-region": "us-east-1",
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,
     "@aws-cdk/core:target-partitions": [

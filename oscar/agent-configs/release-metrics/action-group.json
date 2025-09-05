@@ -1,0 +1,39 @@
+{
+  "actionGroupName": "release-metrics-actions-group",
+  "description": "Enhanced release readiness analysis and component release insights",
+  "actionGroupState": "ENABLED",
+  "actionGroupExecutor": {
+    "lambda": "arn:aws:lambda:us-east-1:395380602281:function:oscar-release-metrics-agent-cdk"
+  },
+  "functionSchema": {
+    "functions": [
+      {
+        "description": "Get comprehensive release readiness metrics and component analysis",
+        "name": "get_release_metrics",
+        "parameters": {
+          "components": {
+            "description": "List of component names",
+            "required": false,
+            "type": "array"
+          },
+          "time_range": {
+            "description": "Time range for analysis (1d, 7d, 30d)",
+            "required": false,
+            "type": "string"
+          },
+          "query": {
+            "description": "Natural language query about release readiness or status",
+            "required": false,
+            "type": "string"
+          },
+          "version": {
+            "description": "Version number (e.g., 3.2.0)",
+            "required": false,
+            "type": "string"
+          }
+        },
+        "requireConfirmation": "DISABLED"
+      }
+    ]
+  }
+}
