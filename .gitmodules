@@ -6,3 +6,6 @@
 [submodule "ansible-playbook"]
 	path = ansible-playbook
 	url = https://github.com/opensearch-project/ansible-playbook
+[submodule "oscar-ai-bot"]
+	path = oscar-ai-bot
+	url = https://github.com/opensearch-project/oscar-ai-bot
