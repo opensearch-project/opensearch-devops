@@ -137,7 +137,7 @@ jobs:
     needs: validate-and-deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Add sample data
+      - name: Add sample Dashboard data
         run : |
           for dataset in logs flights ecommerce; do
             for tenant in global private; do
@@ -150,3 +150,7 @@ jobs:
                 --insecure
             done
           done
+          
+      - name: Add Search Relevance Workbench data
+        run : |
+          ./nightly-playground/scripts/search_relevance --url https://${{needs.validate-and-deploy.outputs.ENDPOINT}}/${{needs.validate-and-deploy.outputs.PLAYGROUND_ID}}/
