@@ -22,6 +22,8 @@ from io import StringIO
 
 logger = logging.getLogger(__name__)
 
+
+
 class JenkinsConfig:
     """Centralized configuration for Jenkins integration."""
     
@@ -133,10 +135,23 @@ class JenkinsConfig:
 
 
 class _ConfigProxy:
-    """Proxy that loads fresh config on every attribute access."""
+    """Proxy that caches config per lambda execution."""
+    def __init__(self):
+        self._cached_config = None
+        self.aws_request_id = None
+        self._lambda_request_id = None
+    
+    def set_request_id(self, request_id: str) -> None:
+        """Set the AWS Lambda request ID."""
+        self.aws_request_id = request_id
+    
     def __getattr__(self, name):
-        fresh_config = JenkinsConfig()
-        return getattr(fresh_config, name)
+        # If no config cached yet or request ID changed, create fresh config
+        if self._cached_config is None or (self.aws_request_id and self._lambda_request_id != self.aws_request_id):
+            self._cached_config = JenkinsConfig()
+            self._lambda_request_id = self.aws_request_id
+        
+        return getattr(self._cached_config, name)
 
 # Global configuration proxy
 config = _ConfigProxy()

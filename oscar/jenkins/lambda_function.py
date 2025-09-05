@@ -40,6 +40,10 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
     Returns:
         Response dictionary with results
     """
+    # Set the Lambda request ID for config caching
+    if context and hasattr(context, 'aws_request_id'):
+        config.set_request_id(context.aws_request_id)
+    
     try:
         # Extract function and parameters from event
         function_name = event.get('function', '')
@@ -347,21 +351,3 @@ def create_response(event: Dict[str, Any], result: Dict[str, Any]) -> Dict[str, 
             }
         }
     }
-
-# For local testing
-if __name__ == "__main__":
-    # Test event for central release promotion
-    test_event = {
-        "function": "trigger_job",
-        "parameters": [
-            {"name": "job_name", "value": "Pipeline central-release-promotion"},
-            {"name": "RELEASE_VERSION", "value": "2.11.0"},
-            {"name": "OPENSEARCH_RC_BUILD_NUMBER", "value": "123"},
-            {"name": "OPENSEARCH_DASHBOARDS_RC_BUILD_NUMBER", "value": "456"}
-        ]
-    }
-    
-    class MockContext:
-        pass
-    
-    result = lambda_handler(test_event, MockContext())

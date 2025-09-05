@@ -21,6 +21,9 @@ class MessageFormatter:
     def convert_at_symbols_to_slack_pings(message: str) -> str:
         """Convert @username to <@username> for Slack pings.
         
+        Only converts @ symbols that are not already in Slack ping format.
+        This prevents double-formatting of pings that are already properly formatted.
+        
         Args:
             message: Message content with @ symbols
             
@@ -28,7 +31,9 @@ class MessageFormatter:
             Message with Slack ping format
         """
         logger.debug(f"Converting @ symbols to Slack pings (length: {len(message)})")
-        result = re.sub(config.patterns['at_symbol'], r'<@\1>', message)
+        # Only convert @ symbols that are NOT already inside < > brackets
+        # This prevents converting <@username> to <<@username>>
+        result = re.sub(r'(?<!<)@([a-zA-Z0-9_-]+)(?![^<]*>)', r'<@\1>', message)
         return result
     
     @staticmethod
