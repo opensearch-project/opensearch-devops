@@ -1,51 +1,44 @@
-aws_id.txt
+# Environment, secrets, and docs
 .env
-.env.example
+aws_id.txt
 DEPLOYMENT_GUIDE.md
-# Autogen Serverless Framework
-.serverless/
-.node_modules/
-slack-bot/node_modules/
-./slack-bot/node_modules/
-# CDK specific
+MIGRATION_GUIDE.md
+PHASE1_COMPLETE.md
+build_docs/
+metrics/docs/
+.kiro/
+instructions.md
+instructions.txt
+
+# Build outputs
+build_docs/
 cdk.out/
 .cdk.staging/
 cdk-outputs.json
-slack-bot/.pytest_cache
-slack-bot/node_modules
-slack-bot/node_modules/*
-slack-bot/node_modules/
-build_docs
-build_docs/
-./build_docs/
+oscar-agent-deploy/
+
+# Dependencies
+node_modules/
+.serverless/
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
 *.egg-info/
-.installed.cfg
-*.egg
+.pytest_cache/
 
-# Virtual Environment
+# Virtual environments
 .venv/
 venv/
 ENV/
+env/
 
-# IDE specific files
+# IDE and OS
 .idea/
 .vscode/
 *.swp
