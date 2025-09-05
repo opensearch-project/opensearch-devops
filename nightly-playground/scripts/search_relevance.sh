@@ -24,54 +24,22 @@ echo "Using OpenSearch server: $OPENSEARCH_SERVER_URL"
 echo Deleting ecommerce sample data
 (curl -s -X DELETE "$OPENSEARCH_SERVER_URL/ecommerce" > /dev/null) || true
 
-ECOMMERCE_DATA_FILE="esci_us_opensearch-2025-06-06.json"
-# Check if data file exists locally, if not download it
-if [ ! -f "$ECOMMERCE_DATA_FILE" ]; then
-  echo "Data file not found locally. Downloading from S3..."
-  wget https://o19s-public-datasets.s3.amazonaws.com/esci_us_opensearch-2025-06-06.json
-fi
+
 
 echo "Creating ecommerce index using default bulk ingestion schema"
 
-# Create the index by reading in one doc
-head -n 2 "$ECOMMERCE_DATA_FILE" | curl -s -X POST "$OPENSEARCH_SERVER_URL/index-name/_bulk?pretty" \
+# Create the index by reading in one product as a pair of rows
+head -n 2 ../sample-data/search-relevance/esci_us_ecommerce_shrunk.ndjson | curl -s -X POST "$OPENSEARCH_SERVER_URL/index-name/_bulk?pretty" \
   -H 'Content-Type: application/x-ndjson' --data-binary @-
 
 echo
 echo Populating ecommerce index
-  
-# Get total line count of the file
-TOTAL_LINES=$(wc -l < "$ECOMMERCE_DATA_FILE")
-echo "Total lines in file: $TOTAL_LINES"
 
-# Calculate number of chunks (50000 lines per chunk)
-CHUNK_SIZE=50000
-CHUNKS=$(( (TOTAL_LINES + CHUNK_SIZE - 1) / CHUNK_SIZE ))
-echo "Will process file in $CHUNKS chunks of $CHUNK_SIZE lines each"
-
-# Process file in chunks
-for (( i=0; i<CHUNKS; i++ )); do
-  START_LINE=$(( i * CHUNK_SIZE + 1 ))
-  END_LINE=$(( (i + 1) * CHUNK_SIZE ))
+exe curl -s -X POST "$OPENSEARCH_SERVER_URL/index-name/_bulk?pretty" \
+-H "Content-type: application/x-ndjson" \
+--data-binary @../sample-data/search-relevance/esci_us_ecommerce_shrunk.ndjson
   
-  # Ensure we don't go past the end of the file
-  if [ $END_LINE -gt $TOTAL_LINES ]; then
-    END_LINE=$TOTAL_LINES
-  fi
-  
-  LINES_TO_PROCESS=$(( END_LINE - START_LINE + 1 ))
-  echo "Processing chunk $((i+1))/$CHUNKS: lines $START_LINE-$END_LINE ($LINES_TO_PROCESS lines)"
-  
-  # Use sed to extract the chunk and pipe to curl for indexing
-  sed -n "${START_LINE},${END_LINE}p" "$ECOMMERCE_DATA_FILE" | \
-    curl -s -o /dev/null -w "%{http_code}" -X POST "$OPENSEARCH_SERVER_URL/ecommerce/_bulk" \
-    -H 'Content-Type: application/x-ndjson' --data-binary @- 
-  
-  # Give OpenSearch a moment to process the chunk
-  sleep 1
-done
-
-echo "All data indexed successfully"
+echo "Ecommerce data indexed successfully"
 
 
 echo Deleting UBI indexes
