@@ -22,7 +22,7 @@ fi
 echo "Using OpenSearch server: $OPENSEARCH_SERVER_URL"
 
 echo Deleting ecommerce sample data
-(curl -s -X DELETE "$OPENSEARCH_SERVER_URL/ecommerce" > /dev/null) || true
+(curl -s -X DELETE "$OPENSEARCH_SERVER_URL/ecommerce" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k > /dev/null) || true
 
 
 
@@ -30,32 +30,35 @@ echo "Creating ecommerce index using default bulk ingestion schema"
 
 # Create the index by reading in one product as a pair of rows
 head -n 2 ../sample-data/search-relevance/esci_us_ecommerce_shrunk.ndjson | curl -s -X POST "$OPENSEARCH_SERVER_URL/index-name/_bulk?pretty" \
+  -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
   -H 'Content-Type: application/x-ndjson' --data-binary @-
 
 echo
 echo Populating ecommerce index
 
-curl -s -X POST "$OPENSEARCH_SERVER_URL/index-name/_bulk?pretty" \
+exe curl -s -X POST "$OPENSEARCH_SERVER_URL/index-name/_bulk?pretty" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD \
 -H "Content-type: application/x-ndjson" \
---data-binary @../sample-data/search-relevance/esci_us_ecommerce_shrunk.ndjson
+--data-binary @../sample-data/search-relevance/esci_us_ecommerce_shrunk.ndjson -k
   
 echo "Ecommerce data indexed successfully"
 
 
+
 echo Deleting UBI indexes
-(curl -s -X DELETE "$OPENSEARCH_SERVER_URL/ubi_queries" > /dev/null) || true
-(curl -s -X DELETE "$OPENSEARCH_SERVER_URL/ubi_events" > /dev/null) || true
+(exe curl -s -X DELETE "$OPENSEARCH_SERVER_URL/ubi_queries" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k > /dev/null) || true
+(exe curl -s -X DELETE "$OPENSEARCH_SERVER_URL/ubi_events" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k > /dev/null) || true
+
 
 echo Creating UBI indexes using mappings
-curl -s -X POST "$OPENSEARCH_SERVER_URL/_plugins/ubi/initialize"
+exe curl -s -X POST "$OPENSEARCH_SERVER_URL/_plugins/ubi/initialize" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k
 
 echo Loading sample UBI data
-curl -o /dev/null -X POST "$OPENSEARCH_SERVER_URL/index-name/_bulk?pretty" --data-binary @../sample-data/search-relevance/ubi_queries_events.ndjson -H "Content-Type: application/x-ndjson"
+exe curl -o /dev/null -X POST "$OPENSEARCH_SERVER_URL/index-name/_bulk?pretty" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD --data-binary @../sample-data/search-relevance/ubi_queries_events.ndjson -H "Content-Type: application/x-ndjson" -k
 
 echo Refreshing UBI indexes to make indexed data available for query sampling
-curl -XPOST "$OPENSEARCH_SERVER_URL/ubi_queries/_refresh"
+exe curl -XPOST "$OPENSEARCH_SERVER_URL/ubi_queries/_refresh" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k
 echo
-curl -XPOST "$OPENSEARCH_SERVER_URL/ubi_events/_refresh"
+exe curl -XPOST "$OPENSEARCH_SERVER_URL/ubi_events/_refresh" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k
 
 read -r -d '' QUERY_BODY << EOF
 {
@@ -66,11 +69,11 @@ read -r -d '' QUERY_BODY << EOF
 }
 EOF
 
-NUMBER_OF_QUERIES=$(curl -s -XGET "$OPENSEARCH_SERVER_URL/ubi_queries/_search" \
+NUMBER_OF_QUERIES=$(exe curl -s -XGET "$OPENSEARCH_SERVER_URL/ubi_queries/_search" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
   -H "Content-Type: application/json" \
-  -d "${QUERY_BODY}" | jq -r '.hits.total.value')
+  -d "${QUERY_BODY}" | jq -r '.hits.total.value') \
 
-NUMBER_OF_EVENTS=$(curl -s -XGET "$OPENSEARCH_SERVER_URL/ubi_events/_search" \
+NUMBER_OF_EVENTS=$(exe curl -s -XGET "$OPENSEARCH_SERVER_URL/ubi_events/_search" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
   -H "Content-Type: application/json" \
   -d "${QUERY_BODY}" | jq -r '.hits.total.value')
   
@@ -78,17 +81,17 @@ echo
 echo "Indexed UBI data: $NUMBER_OF_QUERIES queries and $NUMBER_OF_EVENTS events"
 
 echo Deleting queryset, search config, judgment and experiment indexes
-(curl -s -X DELETE "$OPENSEARCH_SERVER_URL/search-relevance-search-config" > /dev/null) || true
-(curl -s -X DELETE "$OPENSEARCH_SERVER_URL/search-relevance-queryset" > /dev/null) || true
-(curl -s -X DELETE "$OPENSEARCH_SERVER_URL/search-relevance-judgment" > /dev/null) || true
-(curl -s -X DELETE "$OPENSEARCH_SERVER_URL/.plugins-search-relevance-experiment" > /dev/null) || true
-(curl -s -X DELETE "$OPENSEARCH_SERVER_URL/search-relevance-evaluation-result" > /dev/null) || true
-(curl -s -X DELETE "$OPENSEARCH_SERVER_URL/search-relevance-experiment-variant" > /dev/null) || true
+(curl -s -X DELETE "$OPENSEARCH_SERVER_URL/search-relevance-search-config" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k > /dev/null) || true
+(curl -s -X DELETE "$OPENSEARCH_SERVER_URL/search-relevance-queryset" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k > /dev/null) || true
+(curl -s -X DELETE "$OPENSEARCH_SERVER_URL/search-relevance-judgment" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k > /dev/null) || true
+(curl -s -X DELETE "$OPENSEARCH_SERVER_URL/.plugins-search-relevance-experiment" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k > /dev/null) || true
+(curl -s -X DELETE "$OPENSEARCH_SERVER_URL/search-relevance-evaluation-result" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k > /dev/null) || true
+(curl -s -X DELETE "$OPENSEARCH_SERVER_URL/search-relevance-experiment-variant" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k > /dev/null) || true
 
 sleep 2
 echo Create search configs
 
-exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/search_configurations" \
+exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/search_configurations" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
 -H "Content-type: application/json" \
 -d'{
       "name": "baseline",
@@ -98,7 +101,7 @@ exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/search_con
 
 SC_BASELINE=`jq -r '.search_configuration_id' < RES`
 
-exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/search_configurations" \
+exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/search_configurations" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
 -H "Content-type: application/json" \
 -d'{
       "name": "baseline with title weight",
@@ -110,7 +113,7 @@ SC_CHALLENGER=`jq -r '.search_configuration_id' < RES`
 
 echo
 echo List search configurations
-exe curl -s -X GET "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/search_configurations" \
+exe curl -s -X GET "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/search_configurations" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
 -H "Content-type: application/json" \
 -d'{
      "sort": {
@@ -127,7 +130,7 @@ echo Challenger search config id: $SC_CHALLENGER
 
 echo
 echo Create Query Sets by Sampling UBI Data
-exe curl -s -X POST "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/query_sets" \
+exe curl -s -X POST "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/query_sets" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
 -H "Content-type: application/json" \
 -d'{
    	"name": "Top 20",
@@ -143,7 +146,7 @@ sleep 2
 echo
 echo Upload Manually Curated Query Set 
 
-exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/query_sets" \
+exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/query_sets" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
 -H "Content-type: application/json" \
 -d'{
    	"name": "TVs",
@@ -160,7 +163,7 @@ QUERY_SET_MANUAL=`jq -r '.query_set_id' < RES`
 echo
 echo Upload ESCI Query Set 
 
-exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/query_sets" \
+exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/query_sets" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
 -H "Content-type: application/json" \
 --data-binary @../sample-data/search-relevance/esci_us_queryset.json
 
@@ -171,7 +174,7 @@ QUERY_SET_ESCI=`jq -r '.query_set_id' < RES`
 echo
 echo List Query Sets
 
-exe curl -s -X GET "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/query_sets" \
+exe curl -s -X GET "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/query_sets" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
 -H "Content-type: application/json" \
 -d'{
      "sort": {
@@ -184,7 +187,7 @@ exe curl -s -X GET "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/query_sets
 
 echo
 echo Create Implicit Judgments
-exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/judgments" \
+exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/judgments" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
 -H "Content-type: application/json" \
 -d'{
    	"clickModel": "coec",
@@ -200,7 +203,7 @@ sleep 2
 
 echo
 echo Import Manually Curated Judgements
-exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/judgments" \
+exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/judgments" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
 -H "Content-type: application/json" \
 -d'{
     "name": "Imported Judgments",
@@ -265,7 +268,7 @@ IMPORTED_JUDGMENT_LIST_ID=`jq -r '.judgment_id' < RES`
 echo
 echo Upload ESCI Judgments 
 
-exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/judgments" \
+exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/judgments" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
 -H "Content-type: application/json" \
 --data-binary @../sample-data/search-relevance/esci_us_judgments.json
 
@@ -275,7 +278,7 @@ ESCI_JUDGMENT_LIST_ID=`jq -r '.judgment_id' < RES`
 
 echo
 echo Create PAIRWISE Experiment
-exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/experiments" \
+exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/experiments" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
 -H "Content-type: application/json" \
 -d"{
    	\"querySetId\": \"$QUERY_SET_MANUAL\",
@@ -292,12 +295,12 @@ echo Experiment id: $EX_PAIRWISE
 
 echo
 echo Show PAIRWISE Experiment
-exe curl -s -X GET "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/experiments/$EX_PAIRWISE"
+ exe curl -s -X GET "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/experiments/$EX_PAIRWISE" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k
 
 echo
 echo Create POINTWISE Experiment
 
-exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/experiments" \
+ exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/experiments" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
 -H "Content-type: application/json" \
 -d"{
    	\"querySetId\": \"$QUERY_SET_MANUAL\",
