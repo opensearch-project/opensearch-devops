@@ -295,12 +295,12 @@ echo Experiment id: $EX_PAIRWISE
 
 echo
 echo Show PAIRWISE Experiment
- exe curl -s -X GET "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/experiments/$EX_PAIRWISE" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k
+exe curl -s -X GET "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/experiments/$EX_PAIRWISE" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k
 
 echo
 echo Create POINTWISE Experiment
 
- exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/experiments" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
+exe curl -s -X PUT "$OPENSEARCH_SERVER_URL/_plugins/_search_relevance/experiments" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
 -H "Content-type: application/json" \
 -d"{
    	\"querySetId\": \"$QUERY_SET_MANUAL\",
