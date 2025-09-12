@@ -8,3 +8,5 @@ node_modules
 cdk.out
 cdk.context.json
 output.json
+
+*RES
