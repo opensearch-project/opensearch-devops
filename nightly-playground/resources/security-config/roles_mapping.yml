@@ -11,7 +11,86 @@ opendistro_security_anonymous_role:
   backend_roles:
     - "opendistro_security_anonymous_backendrole"
     - "default-roles-opensearch-nightly-playgrounds"
-## Demo roles mapping
+
+alerting_read_access:
+  backend_roles:
+    - "opendistro_security_anonymous_backendrole"
+    - "default-roles-opensearch-nightly-playgrounds"
+
+anomaly_read_access:
+  backend_roles:
+    - "opendistro_security_anonymous_backendrole"
+    - "default-roles-opensearch-nightly-playgrounds"
+
+knn_read_access:
+  backend_roles:
+    - "opendistro_security_anonymous_backendrole"
+    - "default-roles-opensearch-nightly-playgrounds"
+
+ip2geo_datasource_read_access:
+  backend_roles:
+    - "opendistro_security_anonymous_backendrole"
+    - "default-roles-opensearch-nightly-playgrounds"
+
+observability_read_access:
+  backend_roles:
+    - "opendistro_security_anonymous_backendrole"
+    - "default-roles-opensearch-nightly-playgrounds"
+
+notebooks_read_access:
+  backend_roles:
+    - "opendistro_security_anonymous_backendrole"
+    - "default-roles-opensearch-nightly-playgrounds"
+
+reports_instances_read_access:
+  backend_roles:
+    - "opendistro_security_anonymous_backendrole"
+    - "default-roles-opensearch-nightly-playgrounds"
+
+reports_read_access:
+  backend_roles:
+    - "opendistro_security_anonymous_backendrole"
+    - "default-roles-opensearch-nightly-playgrounds"
+
+asynchronous_search_read_access:
+  backend_roles:
+    - "opendistro_security_anonymous_backendrole"
+    - "default-roles-opensearch-nightly-playgrounds"
+
+ml_read_access:
+  backend_roles:
+    - "opendistro_security_anonymous_backendrole"
+    - "default-roles-opensearch-nightly-playgrounds"
+
+notifications_read_access:
+  backend_roles:
+    - "opendistro_security_anonymous_backendrole"
+    - "default-roles-opensearch-nightly-playgrounds"
+
+snapshot_management_read_access:
+  backend_roles:
+    - "opendistro_security_anonymous_backendrole"
+    - "default-roles-opensearch-nightly-playgrounds"
+
+security_analytics_read_access:
+  backend_roles:
+    - "opendistro_security_anonymous_backendrole"
+    - "default-roles-opensearch-nightly-playgrounds"
+
+flow_framework_read_access:
+  backend_roles:
+    - "opendistro_security_anonymous_backendrole"
+    - "default-roles-opensearch-nightly-playgrounds"
+
+ltr_read_access:
+  backend_roles:
+    - "opendistro_security_anonymous_backendrole"
+    - "default-roles-opensearch-nightly-playgrounds"
+
+search_relevance_read_access:
+  backend_roles:
+    - "opendistro_security_anonymous_backendrole"
+    - "default-roles-opensearch-nightly-playgrounds"
 
 all_access:
   reserved: false
