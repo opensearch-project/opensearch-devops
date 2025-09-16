@@ -160,4 +160,4 @@ jobs:
           export OPENSEARCH_USER=${{ secrets.OPENSEARCH_USER }}
           export OPENSEARCH_PASSWORD=${{ secrets.OPENSEARCH_PASSWORD }}
           cd scripts
-          # ./search_relevance.sh --url https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443
+          ./search_relevance.sh --url https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443
