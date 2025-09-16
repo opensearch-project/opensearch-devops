@@ -150,11 +150,14 @@ jobs:
                 --insecure
             done
           done
+
+      - uses: actions/checkout@v3
           
       - name: Add Search Relevance Workbench data
+        if: startsWith(inputs.dist_version, '3.')
         working-directory: nightly-playground
         run : |
           export OPENSEARCH_USER=${{ secrets.OPENSEARCH_USER }}
           export OPENSEARCH_PASSWORD=${{ secrets.OPENSEARCH_PASSWORD }}
           cd scripts
-          ./search_relevance.sh --url https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443
+          # ./search_relevance.sh --url https://${{needs.validate-and-deploy.outputs.ENDPOINT}}:8443
