@@ -92,6 +92,10 @@ search_relevance_read_access:
     - "opendistro_security_anonymous_backendrole"
     - "default-roles-opensearch-nightly-playgrounds"
 
+search_relevance_full_access:
+  backend_roles:
+    - "search-relevance-full-access-role"
+
 all_access:
   reserved: false
   backend_roles:
