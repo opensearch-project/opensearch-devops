@@ -10,7 +10,7 @@ jobs:
     if: github.repository == 'opensearch-project/opensearch-devops'
     strategy:
       matrix:
-        dist_version: ['2.19.4', '3.3.0']
+        dist_version: ['2.19.4', '3.3.2']
       fail-fast: false
     uses: ./.github/workflows/nightly-playground-deploy.yml
     secrets: inherit
