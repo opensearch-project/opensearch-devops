@@ -60,22 +60,27 @@ exe curl -XPOST "$OPENSEARCH_SERVER_URL/ubi_queries/_refresh" -u $OPENSEARCH_USE
 echo
 exe curl -XPOST "$OPENSEARCH_SERVER_URL/ubi_events/_refresh" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k
 
-read -r -d '' QUERY_BODY << EOF
-{
+exe curl -s -XGET "$OPENSEARCH_SERVER_URL/ubi_queries/_search" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
+-H "Content-type: application/json" \
+-d'{
   "query": {
     "match_all": {}
   },
   "size": 0
-}
-EOF
+}'
 
-NUMBER_OF_QUERIES=$(exe curl -s -XGET "$OPENSEARCH_SERVER_URL/ubi_queries/_search" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
-  -H "Content-Type: application/json" \
-  -d "${QUERY_BODY}" | jq -r '.hits.total.value') \
+NUMBER_OF_QUERIES=`jq -r '.hits.total.value' < RES`
 
-NUMBER_OF_EVENTS=$(exe curl -s -XGET "$OPENSEARCH_SERVER_URL/ubi_events/_search" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
-  -H "Content-Type: application/json" \
-  -d "${QUERY_BODY}" | jq -r '.hits.total.value')
+exe curl -s -XGET "$OPENSEARCH_SERVER_URL/ubi_events/_search" -u $OPENSEARCH_USER:$OPENSEARCH_PASSWORD -k \
+-H "Content-type: application/json" \
+-d'{
+  "query": {
+    "match_all": {}
+  },
+  "size": 0
+}'
+
+NUMBER_OF_EVENTS=`jq -r '.hits.total.value' < RES`
   
 echo
 echo "Indexed UBI data: $NUMBER_OF_QUERIES queries and $NUMBER_OF_EVENTS events"
