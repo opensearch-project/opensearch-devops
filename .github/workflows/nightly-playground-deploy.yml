@@ -36,6 +36,7 @@ jobs:
     outputs:
       ENDPOINT: ${{ steps.deploy.outputs.ENDPOINT }}
       PLAYGROUND_ID: ${{ steps.deploy.outputs.playground_id }}
+      DEPLOYED: ${{ steps.deploy.outputs.DEPLOYED }}
     permissions:
       id-token: write
       contents: read
@@ -73,19 +74,29 @@ jobs:
       - name: Deploy nightly playground
         id: deploy
         working-directory: nightly-playground
+        shell: bash
         run: |
+          set -o pipefail
           npm install
           playground_id=`echo ${{inputs.dist_version}} | cut -d. -f1`x
           echo "PLAYGROUND_ID=$playground_id" >> "$GITHUB_OUTPUT"
           aws s3 cp s3://nightly-playgrounds-snapshots-bucket/internal_users.yml resources/security-config/internal_users.yml
-          npm run cdk deploy "infra*" -- -c playGroundId=$playground_id -c distVersion=${{inputs.dist_version}} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} -c adminPassword=${{ SECRETS.OPENSEARCH_PASSWORD }} -c dashboardOpenIDClientSecret=${{ SECRETS.DASHBOARD_OPENID_CLIENT_SECRET }} --require-approval never
+
+          npm run cdk deploy "infra*" -- -c playGroundId=$playground_id -c distVersion=${{inputs.dist_version}} -c distributionUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_URL}} -c dashboardsUrl=${{needs.set-os-osd-urls.outputs.OPENSEARCH_DASHBOARDS_URL}} -c dashboardPassword=${{ SECRETS.DASHBOARDS_PASSWORD }} -c adminPassword=${{ SECRETS.OPENSEARCH_PASSWORD }} -c dashboardOpenIDClientSecret=${{ SECRETS.DASHBOARD_OPENID_CLIENT_SECRET }} --require-approval never 2>&1 | tee /tmp/cdk_deploy.log
+
+          if grep -q "infraStack-$playground_id (no changes)" /tmp/cdk_deploy.log; then
+            echo "DEPLOYED=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "DEPLOYED=true" >> "$GITHUB_OUTPUT"
+          fi
 
           echo "ENDPOINT=$(aws cloudformation --region us-west-2 describe-stacks --stack-name infraStack-$playground_id --query 'Stacks[0].Outputs[0].OutputValue' --output text)" >> "$GITHUB_OUTPUT"
 
   index-dist-manifests:
-    needs: 
+    needs:
       - set-os-osd-urls
       - validate-and-deploy
+    if: needs.validate-and-deploy.outputs.DEPLOYED == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Index distribution manifests
@@ -101,6 +112,7 @@ jobs:
 
   configure-alerts-notifications:
     needs: validate-and-deploy
+    if: needs.validate-and-deploy.outputs.DEPLOYED == 'true'
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -135,6 +147,7 @@ jobs:
 
   add-sample-data:
     needs: validate-and-deploy
+    if: needs.validate-and-deploy.outputs.DEPLOYED == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Add sample Dashboard data
