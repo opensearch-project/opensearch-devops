@@ -8,6 +8,9 @@ on:
 jobs:   
   deploy-nightly-playground:
     if: github.repository == 'opensearch-project/opensearch-devops'
+    permissions:
+      id-token: write
+      contents: read
     strategy:
       matrix:
         dist_version: ['2.19.6', '3.7.0']
