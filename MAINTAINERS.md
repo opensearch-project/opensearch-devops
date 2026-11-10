@@ -10,10 +10,10 @@ This document contains a list of maintainers in this repo. See [opensearch-proje
 | Prudhvi Godithi   | [prudhvigodithi](https://github.com/prudhvigodithi)           | Amazon      |
 | Sayali Gaikawad   | [gaiksaya](https://github.com/gaiksaya)             | Amazon      |
 | Dhiraj Kumar Jain | [TheAlgo](https://github.com/TheAlgo)               | Amazon      |
-| Aaron Layfield    | [DandyDeveloper](https://github.com/DandyDeveloper) | Community   |
 
 ## Emeritus
 
 | Maintainer            | GitHub ID                                 | Affiliation |
 | --------------------- | ----------------------------------------- | ----------- |
 | Barani Bikshandi  | [bbarani](https://github.com/bbarani)               | Amazon      |
+| Aaron Layfield    | [DandyDeveloper](https://github.com/DandyDeveloper) | Community   |
