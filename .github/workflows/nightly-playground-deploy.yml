@@ -10,7 +10,7 @@ on:
 
 jobs:
   set-os-osd-urls:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       OPENSEARCH_URL: ${{ steps.set-env.outputs.OPENSEARCH_URL }}
       OPENSEARCH_DASHBOARDS_URL: ${{ steps.set-env.outputs.OPENSEARCH_DASHBOARDS_URL }}
@@ -41,7 +41,7 @@ jobs:
       id-token: write
       contents: read
     needs: set-os-osd-urls
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
         with:
@@ -97,7 +97,7 @@ jobs:
       - set-os-osd-urls
       - validate-and-deploy
     if: needs.validate-and-deploy.outputs.DEPLOYED == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Index distribution manifests
         run: |
@@ -113,7 +113,7 @@ jobs:
   configure-alerts-notifications:
     needs: validate-and-deploy
     if: needs.validate-and-deploy.outputs.DEPLOYED == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     continue-on-error: true
     steps:
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
@@ -148,7 +148,7 @@ jobs:
   add-sample-data:
     needs: validate-and-deploy
     if: needs.validate-and-deploy.outputs.DEPLOYED == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Add sample Dashboard data
         run : |
